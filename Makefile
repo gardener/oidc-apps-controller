@@ -38,8 +38,8 @@ include $(REPO_ROOT)/hack/tools.mk
 #################################################################
 
 .PHONY: docker-images
-@docker-images:
-	docker buildx build --push --platform=$(PLATFORM) --build-arg LD_FLAGS="$(LD_FLAGS)" \
+docker-images:
+	@docker buildx build --push --platform=$(PLATFORM) --build-arg LD_FLAGS="$(LD_FLAGS)" \
 	-t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest \
 	-f Dockerfile .
 
