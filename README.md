@@ -35,7 +35,7 @@ targets:
         name: "ingress-wildcard-tls"
 ```
 
-![image](images/oauth2-rbac-proxy)
+![image](images/oauth2-rbac-proxy.png)
 
 External dependencies:
 
