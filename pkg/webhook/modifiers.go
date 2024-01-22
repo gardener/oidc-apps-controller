@@ -386,7 +386,7 @@ func getOIDCProxyContainer() corev1.Container {
 			"--config=/etc/oauth2-proxy.cfg",
 			"--code-challenge-method=S256",
 			"--pass-authorization-header=true",
-			"--cookie-secret=73e4-1d15-4106-9",
+			"--cookie-secret=" + rand.GenerateRandomString(16),
 			"--cookie-refresh=3600s",
 			"--http-address=0.0.0.0:8000",
 			"--email-domain=*",
