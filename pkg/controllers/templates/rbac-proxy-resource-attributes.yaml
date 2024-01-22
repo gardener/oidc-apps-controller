@@ -1,0 +1,7 @@
+authorization:
+  resourceAttributes:
+    apiGroup: core.gardener.cloud
+    apiVersion: v1alpha1
+    resource: observabilityapps
+    subresource: "..."
+    namespace: "..."

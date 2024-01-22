@@ -1,0 +1,16 @@
+{{- if and .Values.clusterRole.create .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "oidc-apps-extension.clusterRoleName" . }}
+subjects:
+  - kind: ServiceAccount
+    name:  {{ include "oidc-apps-extension.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+  {{- end }}

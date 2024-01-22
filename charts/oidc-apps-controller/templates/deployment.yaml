@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+    high-availability-config.resources.gardener.cloud/type: server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      {{- include "oidc-apps-extension.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/configuration: {{ include (print $.Template.BasePath "/configuration.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "oidc-apps-extension.selectorLabels" . | nindent 8 }}
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-private-networks: allowed
+        networking.gardener.cloud/to-public-networks: allowed
+        networking.gardener.cloud/to-runtime-apiserver: allowed
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "oidc-apps-extension.serviceAccountName" . }}
+      automountServiceAccountToken: true
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if .Values.imageVectorOverwrite }}
+            - name: IMAGEVECTOR_OVERWRITE
+              value: /charts_overwrite/images_overwrite.yaml
+            {{- end }}
+          args:
+          - "--config=/etc/controller.yaml"
+          - "--use-cert-manager={{ .Values.certificate.create }}"
+          - "--webhook-certs-dir=/etc/webhook"
+          - "--webhook-name={{ include "oidc-apps-extension.fullname" . }}"
+          - "--webhook-port={{ .Values.service.port | int }}"
+          {{- if .Values.imagePullSecrets }}
+          {{- with (index .Values.imagePullSecrets 0) }}
+          - "--registry-secret={{ .name }}"
+          {{- end }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 5
+          ports:
+            - name: webhook
+              containerPort: {{ .Values.service.port | int }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /etc/webhook
+              name: certs
+            - mountPath: /etc/controller.yaml
+              name: configuration
+              subPath: controller.yaml
+            {{- if .Values.imageVectorOverwrite }}
+            - name: extension-imagevector-overwrite
+              mountPath: /charts_overwrite/
+              readOnly: true
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "oidc-apps-extension.selectorLabels" . | nindent 14 }}
+      volumes:
+        - name: certs
+        {{- if .Values.certificate.create }}
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "oidc-apps-extension.certificateSecretName" . }}
+        {{- else }}
+          emptyDir:
+            medium: Memory
+        {{- end }}
+        - name: configuration
+          secret:
+            secretName: {{ include "oidc-apps-extension.fullname" . }}
+        {{- if .Values.imageVectorOverwrite }}
+        - name: extension-imagevector-overwrite
+          configMap:
+            name: {{ include "oidc-apps-extension.fullname" . }}-imagevector-overwrite
+            defaultMode: 420
+        {{- end }}

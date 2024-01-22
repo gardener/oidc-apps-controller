@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+  annotations:
+    networking.resources.gardener.cloud/from-world-to-ports: '[{"protocol":"TCP","port":{{.Values.service.port}}}]'
+    networking.resources.gardener.cloud/namespace-selectors: '[{"matchLabels":{"kubernetes.io/metadata.name":"garden"}}]'
+    networking.resources.gardener.cloud/pod-label-selector-namespace-alias: 'extensions'
+  {{- with .Values.service.annotations }}
+  {{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port | int }}
+      targetPort: webhook
+      protocol: TCP
+      name: webhook
+  selector:
+    {{- include "oidc-apps-extension.selectorLabels" . | nindent 4 }}

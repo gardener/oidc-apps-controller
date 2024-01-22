@@ -1,0 +1,25 @@
+{{- if .Values.vpa.enabled}}
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "oidc-apps-extension.fullname" . }}
+  updatePolicy:
+    updateMode: {{ .Values.vpa.updatePolicy.updateMode }}
+  {{- with .Values.vpa.minAllowed }}
+  resourcePolicy:
+    containerPolicies:
+      - containerName: {{ $.Chart.Name }}
+        controlledResources:
+          - cpu
+          - memory
+        minAllowed: {{ toYaml . | nindent 10 }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,8 @@
+configuration:
+  domainName: "domain.org"
+
+targets:
+  - name: app
+    labelSelector:
+      matchLabels:
+        app: service

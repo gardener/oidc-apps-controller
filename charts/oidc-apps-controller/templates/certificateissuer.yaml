@@ -1,0 +1,11 @@
+{{- if .Values.certificate.create -}}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.certificateLabels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}

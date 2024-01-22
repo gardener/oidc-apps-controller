@@ -1,0 +1,28 @@
+run:
+  concurrency: 4
+  # some of the linters don't work correctly with 1.18, ref https://github.com/golangci/golangci-lint/issues/2649
+  # we are not using generics, so let's pin this to 1.17 until 1.18 is fully supported
+  go: "1.21"
+
+linters:
+  disable:
+    - unused
+  enable:
+    - revive
+
+skip-files:
+  - "zz_generated\\..*\\.go$"
+
+issues:
+  exclude-use-default: false
+  exclude:
+    # revive
+    - var-naming # ((var|const|struct field|func) .* should be .*
+    - dot-imports # should not use dot imports
+    - package-comments # package comment should be of the form
+    - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
+    - unexported-return # exported func .* returns unexported type .*, which can be annoying to use
+    - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
+    # typecheck:
+    - "undeclared name: `.*`"
+    - '".*" imported but not used'

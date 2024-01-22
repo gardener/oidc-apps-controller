@@ -1,0 +1,104 @@
+---
+apiVersion: core.gardener.cloud/v1beta1
+kind: ControllerDeployment
+metadata:
+  name: oidc-apps-controller
+type: helm
+providerConfig:
+  chart: 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
+  values:
+    image:
+      repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/oidc-apps-controller
+      tag: v0.0.0
+    imagePullSecrets:
+      - name: gardener-images
+    webhook:
+      namespaceSelector:
+        matchExpressions:
+          - {key: "gardener.cloud/role", operator: "In", values: ["shoot","project"]}
+          - {key: "shoot.gardener.cloud/no-cleanup", operator: "NotIn", values: ["true"]}
+          - {key: "gardener.cloud/purpose", operator: "NotIn", values: ["kube-system"]}
+          - {key: "kubernetes.io/metadata.name", operator: "NotIn", values: ["kube-system"]}
+    vpa:
+      enabled: true
+    configuration:
+      domainName: "... cluster domain ..." #cluster domain
+      oauth2Proxy:
+        sslInsecureSkipVerify: true
+        insecureOidcSkipIssuerVerification: false
+        oidcIssuerUrl: "... OIDC issuer URL ..."
+        clientId: "... OIDC client ID ..."
+        scope: "openid email groups"
+      kubeRbacProxy:
+        oidcCABundle: |
+          -----BEGIN CERTIFICATE-----
+          ...
+          -----END CERTIFICATE-----
+    targets:
+      - name: "shoot--plutono"
+        namespaceSelector:
+          matchLabels:
+            gardener.cloud/role: shoot
+        labelSelector:
+          matchLabels:
+            component: plutono
+        targetPort: 3000
+        ingress:
+          create: true
+          ingressClassName: "nginx-ingress-gardener"
+          tlsSecretRef:
+            name: "ingress-wildcard-cert"
+      - name: "shoot--prometheus"
+        namespaceSelector:
+          matchLabels:
+            gardener.cloud/role: shoot
+        labelSelector:
+          matchLabels:
+            app: prometheus
+        targetPort: 9090
+        ingress:
+          create: true
+          ingressClassName: "nginx-ingress-gardener"
+          tlsSecretRef:
+            name: "ingress-wildcard-cert"
+      - name: "garden-plutono"
+        namespaceSelector:
+          matchLabels:
+            project.gardener.cloud/name: garden
+        labelSelector:
+          matchLabels:
+            component: plutono
+        targetPort: 3000
+        ingress:
+          create: true
+          ingressClassName: "nginx-ingress-gardener"
+          tlsSecretRef:
+            name: "ingress-wildcard-cert"
+            namespace: "garden"
+      - name: "garden-prometheus"
+        namespaceSelector:
+          matchLabels:
+            project.gardener.cloud/name: garden
+        labelSelector:
+          matchLabels:
+            app: prometheus
+        targetPort: 9090
+        ingress:
+          create: true
+          ingressClassName: "nginx-ingress-gardener"
+          tlsSecretRef:
+            name: "ingress-wildcard-cert"
+            namespace: "garden"
+---
+apiVersion: core.gardener.cloud/v1beta1
+kind: ControllerRegistration
+metadata:
+  name: oidc-apps-controller
+  annotations:
+    security.gardener.cloud/pod-security-enforce: baseline
+spec:
+  deployment:
+    deploymentRefs:
+    - name: "oidc-apps-controller"
+    policy: Always
+---

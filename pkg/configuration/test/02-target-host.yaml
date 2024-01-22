@@ -1,0 +1,10 @@
+configuration:
+  domainName: "domain.org" #cluster domain
+
+targets:
+  - name: service
+    namespaceSelector:
+      matchExpressions:
+        - {key: "kubernetes.io/metadata.name", operator: "In", values: ["default"]}
+    ingress:
+      hostPrefix: "my-service"

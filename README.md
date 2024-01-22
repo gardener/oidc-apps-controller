@@ -1,36 +1,58 @@
-# <repo name>
+# oidc-apps-controller
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
-## How to use this repository template
+## Usage
 
-This template repository can be used to seed new git repositories in the gardener github organisation.
+This controller enhances target deployments and statefulsets with side-cars containers for performing oidc authentications and k8s rbac authorization for incoming http requests.
 
-- you need to be a [member of the gardener organisation](https://github.com/orgs/gardener/people)
-  in order to be able to create a new private repository
-- [create the new repository](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template)
-  based on this template repository
-- in the files
-  - `.reuse/dep5`
-  - `CODEOWNERS`
-  - `README.md`
-- replace the following placeholders
-  - `<repo name>`: name of the new repository
-  - `<maintainer team>`: name of the github team in [gardener teams](https://github.com/orgs/gardener/teams)
-    defining maintainers of the new repository.
-    If several repositories share a common topic and the same
-    set of maintainers they can share a common maintainer team
-- set the repository description in the "About" section of your repository
-- describe the new component in additional sections in this `README.md`
-- any contributions to the new repository must follow the rules in the 
-  [contributor guide](https://github.com/gardener/documentation/blob/master/CONTRIBUTING.md)
-- remove this section from this `README.md`
-- ask [@msohn](https://github.com/orgs/gardener/people/msohn) or another
-  [owner of the gardener github organisation](https://github.com/orgs/gardener/people?query=role%3Aowner)
-  - to double-check the initial content of this repository
-  - to create the maintainer team for this new repository
-  - to make this repository public
-  - protect at least the master branch requiring mandatory code review by the maintainers defined in CODEOWNERS
-  - grant admin permission to the maintainers team of the new repository defined in CODEOWNERS
+Usually applications such as`prometheus` do not offer any security mechanisms and delegate such responsibilities to cluster owners. This controller aims at providing a solution for bringing authentication [(oauth2-proxy)](https://github.com/oauth2-proxy/oauth2-proxy) and authorization [(kube-rbac-proxy)](https://github.com/brancz/kube-rbac-proxy)
+layers in front of the targeted workloads, simplifying required configurations in a consistent way.
 
-## UNDER CONSTRUCTION
+Targets for enhancement are identified by using labels and/or namespaces selectors.
+For example
+
+```yaml
+# OIDC Apps Extension Configuration for a k8s cluster
+configuration:
+  oidcProviderConfig:
+    scope: "openid"  # The default OIDC scope.
+    clientId: "nginx"  # Client identifier in the oidc provider configuration.
+    oidcIssuerUrl: "https://oidc.provider.com"  # OIDC issuer
+  domainName: "company.org" # Cluster wide domain, shared by all enhanced targets
+
+# All deployments in the cluster with app=nginx label are enhanced by the oidc-app-controller
+targets:
+  - name: nginx
+    labelSelector: # matching labels for the deployments
+      matchLabels:
+        app: nginx
+    targetPort: http # upstream port of the targeted container
+    targetProtocol: http # upstream protocol
+    ingress:
+      create: true
+      tlsSecretRef:
+        name: "ingress-wildcard-tls"
+```
+
+![image](images/oauth2-rbac-proxy)
+
+External dependencies:
+
+- [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy)
+- [kube-rbac-proxy](https://github.com/brancz/kube-rbac-proxy)
+
+## Feedback and Support
+
+Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-os-gardenlinux/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
+
+## Learn more
+
+Please find further resources about out project here:
+
+* [Our landing page gardener.cloud](https://gardener.cloud/)
+* ["Gardener, the Kubernetes Botanist" blog on kubernetes.io](https://kubernetes.io/blog/2018/05/17/gardener/)
+* ["Gardener Project Update" blog on kubernetes.io](https://kubernetes.io/blog/2019/12/02/gardener-project-update/)
+* [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
+* [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
+* [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)

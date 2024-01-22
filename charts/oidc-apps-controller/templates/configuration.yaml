@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.certificateLabels" . | nindent 4 }}
+type: opaque
+stringData:
+  controller.yaml: |
+    configuration:
+      {{- toYaml .Values.configuration | nindent 6 }}
+    targets:
+      {{- toYaml .Values.targets  | nindent 6 }}

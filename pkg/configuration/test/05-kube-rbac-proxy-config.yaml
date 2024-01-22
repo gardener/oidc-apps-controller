@@ -1,0 +1,12 @@
+configuration:
+  kubeRbacProxy:
+    kubeConfigStr: Imt1YmVjb25maWci
+    kubeSecretRef:
+      name: "kubeconfig-secret"
+    oidcCABundle: |
+      ...
+    oidcCASecretRef:
+      name: "oidcca"
+
+targets:
+  - name: service

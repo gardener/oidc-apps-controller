@@ -1,0 +1,16 @@
+configuration:
+  oauth2Proxy:
+    scope: "openid email"
+    clientId: "client-id"
+    clientSecret: "client-secret"
+    redirectUrl: "https://*.domainName/oauth2/callback"
+    oidcIssuerUrl: "https://oidc.provider.org"
+    
+targets:
+  - name: service
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: default
+    labelSelector:
+      matchExpressions:
+        - {key: "app", operator: "In", values: ["service"]}

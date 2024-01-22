@@ -1,0 +1,86 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "oidc-apps-extension.fullname" . }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+  annotations:
+    resources.gardener.cloud/ignore: "true"
+    {{- if .Values.certificate.create }}
+    cert-manager.io/inject-ca-from: {{ include "oidc-apps-extension.certificateRef" . }}
+    {{- end }}
+webhooks:
+  - name:  {{ include "oidc-apps-extension.fullname" . }}-deployments.gardener.cloud
+    clientConfig:
+      service:
+        name: {{ include "oidc-apps-extension.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: /oidc-mutate-v1-deployment
+        port: {{ .Values.service.port | int }}
+      caBundle:
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        resources: ["deployments"]
+    {{- with .Values.webhook.objectSelector }}
+    objectSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.webhook.namespaceSelector }}
+    namespaceSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    sideEffects: NoneOnDryRun
+    admissionReviewVersions:
+      - v1
+    reinvocationPolicy: IfNeeded
+  - name: {{ include "oidc-apps-extension.fullname" . }}-statefulsets.gardener.cloud
+    clientConfig:
+      service:
+        name: {{ include "oidc-apps-extension.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: /oidc-mutate-v1-statefulset
+        port: {{ .Values.service.port | int }}
+      caBundle:
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [ "apps" ]
+        apiVersions: [ "v1" ]
+        resources: [ "statefulsets" ]
+    {{- with .Values.webhook.objectSelector }}
+    objectSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.webhook.namespaceSelector }}
+    namespaceSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    sideEffects: NoneOnDryRun
+    admissionReviewVersions:
+      - v1
+    reinvocationPolicy: IfNeeded
+  - name: {{ include "oidc-apps-extension.fullname" . }}-pods.gardener.cloud
+    clientConfig:
+      service:
+        name: {{ include "oidc-apps-extension.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: /oidc-mutate-v1-pod
+        port: {{ .Values.service.port | int }}
+      caBundle:
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [ "" ]
+        apiVersions: [ "v1" ]
+        resources: [ "pods" ]
+    objectSelector:
+      matchLabels:
+        oidc-application-controller/component: pod
+    {{- with .Values.webhook.namespaceSelector }}
+    namespaceSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    sideEffects: NoneOnDryRun
+    admissionReviewVersions:
+      - v1
+    reinvocationPolicy: IfNeeded

@@ -1,0 +1,10 @@
+configuration:
+  domainName: "service.domain.org" #cluster domain
+
+targets:
+  - name: service
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: default
+    ingress:
+      host: "this.overwrites"
