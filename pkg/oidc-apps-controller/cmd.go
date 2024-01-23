@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
+
+	"k8s.io/client-go/rest"
 
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
@@ -111,6 +114,13 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		return fmt.Errorf("could not initialize the controller-runtime manager: %w", err)
 	}
 
+	// Set domain name if we are running in a gardener cluster
+	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 && os.Getenv(constants.GARDEN_DOMAIN_NAME) == "" {
+		if err := setGardenDomainNameEnvVar(ctx, mgr.GetConfig()); err != nil {
+			return fmt.Errorf("could not set the garden domain name: %w", err)
+		}
+	}
+
 	extensionConfig = configuration.CreateControllerConfigOrDie(
 		o.controllerConfigPath,
 		configuration.WithClient(mgr.GetClient()),
@@ -155,6 +165,27 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	// Start the manager
 	return mgr.Start(ctx)
+}
+
+func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
+	c, err := client.New(config, client.Options{})
+	if err != nil {
+		return fmt.Errorf("could not initialize the controller-runtime client: %w", err)
+	}
+	ingress := &networkingv1.Ingress{}
+	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, ingress); err != nil {
+		return fmt.Errorf("could not get kube-apiserver ingress: %w", err)
+	}
+	if len(ingress.Spec.Rules) > 0 {
+		_, h, ok := strings.Cut(ingress.Spec.Rules[0].Host, ".")
+		if ok {
+			if err := os.Setenv(constants.GARDEN_DOMAIN_NAME, h); err != nil {
+				return fmt.Errorf("could not set the garden domain name: %w", err)
+			}
+			_log.Info("Set domain name env variable", constants.GARDEN_DOMAIN_NAME, h)
+		}
+	}
+	return nil
 }
 
 func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) predicate.GenerationChangedPredicate {

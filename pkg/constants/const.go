@@ -52,4 +52,6 @@ const (
 	GARDEN_KUBECONFIG = "GARDEN_KUBECONFIG"
 	//GARDEN_NAMESPACE is the default k8s namespace containing seed workloads
 	GARDEN_NAMESPACE = "garden"
+	//GARDEN_DOMAIN_NAME is the default domain name of the seed cluster, where the extension is running
+	GARDEN_DOMAIN_NAME = "GARDEN_DOMAIN_NAME"
 )

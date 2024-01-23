@@ -20,6 +20,8 @@ import (
 	"strings"
 	"sync"
 
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	"k8s.io/utils/ptr"
 
 	"github.com/go-logr/logr"
@@ -37,9 +39,8 @@ import (
 type OIDCAppsControllerConfig struct {
 	Configuration Configuration `json:"configuration"`
 	Targets       []Target      `json:"targets"`
-	// TODO: this is needed to match the target namespace selectors
-	client client.Client
-	log    logr.Logger
+	client        client.Client
+	log           logr.Logger
 }
 
 // Configuration holds the concrete target configurations for the auth & autz proxies
@@ -174,6 +175,14 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 	}
 	if t.Ingress != nil && t.Ingress.Host != "" {
 		prefix, domain, _ = strings.Cut(t.Ingress.Host, ".")
+	}
+
+	// If we run in gardener seed environment the domain name is not fetched from the configuration
+	// but from the kube-apiserver ingress in the garden namespace
+	// This is a workaround until we have a proper solution for the propagating seed specific configurations
+	// for the extension controllers
+	if domain == "" && (len(os.Getenv(oidc_apps_controller.GARDEN_DOMAIN_NAME)) > 0) {
+		domain = os.Getenv(oidc_apps_controller.GARDEN_DOMAIN_NAME)
 	}
 
 	if domain == "" {
