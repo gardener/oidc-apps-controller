@@ -1,0 +1,74 @@
+# OIDC Apps Extension Configuration
+# Cluster-wide extension configuration
+configuration:
+  # OIDC Provider Configuration shared by all targets in the cluster
+  # All fields can be overwritten by a concrete target
+  oauth2Proxy:
+    # OIDC Scope
+    scope: "openid email"
+    # OIDC client ID shared by all oauth2 proxies in the cluster, shall correspond to the application configuration in the oidc provider
+    clientId: ""
+    # OIDC client secret shared by all oauth2 proxies in the cluster, shall correspond to the application configuration in the oidc provider
+    # Uses PKCE client authentication when not set
+    clientSecret: ""
+    # OIDC redirect URL shared by all oauth2 proxies in the cluster, shall correspond to the application configuration in the oidc provider
+    # Some OIDC providers support wildcards https://*.{{ domainName }}/oauth2/callback
+    redirectUrl: ""
+    # OIDC provider Url
+    # Used as a prefix to .well-known/openid-configuration discovery path
+    oidcIssuerUrl: ""
+    sslInsecureSkipVerify: false
+    insecureOidcSkipIssuerVerification: false
+  kubeRbacProxy:
+    # kubeConfig used by kube-rbac-proxy to create SubjectAccessReview authorizing incoming requests
+    # A string that will be marshaled to a clientcmd.Config https://pkg.go.dev/k8s.io/client-go/tools/clientcmd/api/v1#Config
+    kubeConfigStr: ""
+    # A reference to a secret containing kube config for the Kube-RBAC Proxy SubjectAccessReviews target
+    # Type corev1.SecretReference https://github.com/kubernetes/api/blob/v0.28.2/core/v1/types.go#L1014
+    kubeSecretRef: {} # Ignored if kubeConfig is present
+    # If niether of those is provided the kube-rbac-proxy uses the target pod's service account
+
+    # A trusted CA bundle in pem format used to verify the server identity of OIDC
+    oidcCABundle: ""
+    # A secret with ca.crt key container the trusted CA bundle
+    # Type corev1.SecretReference https://github.com/kubernetes/api/blob/v0.28.2/core/v1/types.go#L1014
+    oidcCASecretRef: {} # Ignored if oidcCABundle is present
+    #Due to https://github.com/brancz/kube-rbac-proxy/issues/259 issue for now either of those two is a mandatory option
+
+  # Adds additional labels to the target pod templates
+  labels: {}
+  # Adds additional annotations to the target pod templates
+  annotations: {} # Adds additional annotations to the target pod templates
+  # The domain shared by all targets
+  domainName:
+
+targets:
+  # Target name
+  - name:
+    # Target namespace
+    # Type metav1.LabelSelector https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#LabelSelector
+    namespaceSelector:
+    # Target labels
+    # Type metav1.LabelSelector https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#LabelSelector
+    labelSelector:
+    # The final target upstream port, once the request is authenticated and authorized.
+    targetPort:
+    # The final target upstream protocol (http,https)
+    # TODO: the configuration shall support adding trusted CAs for the upstream communication
+    targetProtocol:
+    # Target ingress entry-point
+    ingress:
+      create: #false
+      # Target URL prefix, to concatenate to the domainName, if not uses the target {{name}}-{{namespace}}
+      hostPrefix: ""
+      # Target host for the ingress if differ from the {{hostPrefix}} + {{domainName}}
+      host:
+      # Target ingress annotations for the ingress controller
+      annotations: {}
+      # TLS Secret for front ssl termination
+      tlsSecretRef:
+      # Ingress Class Name
+      ingressClassName:
+    # Optional target oidc configuration.
+    # It overwrites the cluster wide {{configuration}} for this target
+    configuration:
