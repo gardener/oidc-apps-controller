@@ -33,6 +33,7 @@ endif
 TOOLS_DIR := $(REPO_ROOT)/hack/tools
 include $(REPO_ROOT)/hack/tools.mk
 
+.DEFAULT_GOAL := build
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -48,8 +49,9 @@ docker-images:
 #####################################################################
 
 .PHONY: build
-build:
+build: verify
 	@mkdir -p $(BIN)
+	@go mod tidy
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) GOBIN=$(BIN) \
 		CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(BIN)/$(NAME) $(REPO_ROOT)/cmd/main.go
@@ -81,7 +83,7 @@ test-clean:
 	@rm -f $(REPO_ROOT)/test.*
 
 .PHONY: verify
-verify: check format test
+verify: format check test
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
