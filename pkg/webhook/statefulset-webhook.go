@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 // Register the webhook with the server

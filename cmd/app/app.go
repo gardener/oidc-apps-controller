@@ -18,15 +18,14 @@ import (
 	"flag"
 	"fmt"
 
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var _log = logf.Log

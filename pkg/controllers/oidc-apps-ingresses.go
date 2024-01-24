@@ -17,14 +17,13 @@ package controllers
 import (
 	"fmt"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
-
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 )
 
 func createIngress(host string, object client.Object) (networkingv1.Ingress, error) {

@@ -22,13 +22,12 @@ import (
 
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels2 "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -64,7 +63,7 @@ type Oauth2ProxyConfig struct {
 	InsecureOidcSkipIssuerVerification *bool  `json:"insecureOidcSkipIssuerVerification,omitempty"`
 }
 
-// KubeRbacProxyConfig kube-rbac-rpoxy configuration
+// KubeRbacProxyConfig kube-rbac-proxy configuration
 type KubeRbacProxyConfig struct {
 	KubeConfigStr   string                  `json:"kubeConfigStr,omitempty"`
 	KubeSecretRef   *corev1.SecretReference `json:"kubeSecretRef,omitempty"`
@@ -96,7 +95,7 @@ type IngressConf struct {
 var config *OIDCAppsControllerConfig
 var once sync.Once
 
-// Options is a option setter function
+// Options is an option setter function
 type Options func(config *OIDCAppsControllerConfig)
 
 // WithClient supports setting client.Client option
@@ -113,7 +112,7 @@ func WithLog(l logr.Logger) Options {
 	}
 }
 
-// CreateControllerConfigOrDie initializes the targets configurations or exits the controller when unsuccessfull
+// CreateControllerConfigOrDie initializes the targets configurations or exits the controller when unsuccessful
 func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControllerConfig {
 	var (
 		cf  []byte

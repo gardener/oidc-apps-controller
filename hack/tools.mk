@@ -26,11 +26,14 @@ endif
 TOOLS_BIN_DIR              := $(TOOLS_DIR)/bin
 GOLANGCI_LINT              := $(TOOLS_BIN_DIR)/golangci-lint
 GOIMPORTS                  := $(TOOLS_BIN_DIR)/goimports
+GOIMPORTSREVISER           := $(TOOLS_BIN_DIR)/goimports-reviser
 GO_ADD_LICENSE             := $(TOOLS_BIN_DIR)/addlicense
+MOCKGEN                    := $(TOOLS_BIN_DIR)/mockgen
 
 # default tool versions
 GOLANGCI_LINT_VERSION ?= v1.55.2
 GO_ADD_LICENSE_VERSION ?= v1.1.1
+GOIMPORTSREVISER_VERSION ?= v3.6.4
 GOIMPORTS_VERSION ?= $(call version_gomod,golang.org/x/tools)
 MOCKGEN_VERSION ?= $(call version_gomod,github.com/golang/mock)
 
@@ -74,7 +77,7 @@ ifeq ($(shell if [ -d $(TOOLS_BIN_SOURCE_DIR) ]; then echo "found"; fi),found)
 endif
 
 .PHONY: create-tools-bin
-create-tools-bin: $(GOLANGCI_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS)
+create-tools-bin: $(GOLANGCI_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(MOCKGEN) $(GOIMPORTSREVISER)
 
 #########################################
 # Tools                                 #
@@ -87,6 +90,9 @@ $(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERS
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
 	go build -o $(GOIMPORTS) golang.org/x/tools/cmd/goimports
+
+$(GOIMPORTSREVISER): $(call tool_version_file,$(GOIMPORTSREVISER),$(GOIMPORTSREVISER_VERSION))
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTSREVISER_VERSION)
 
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)

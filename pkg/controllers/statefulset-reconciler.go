@@ -17,15 +17,15 @@ package controllers
 import (
 	"context"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 // StatefulSetReconciler holds configuration for the reconciler

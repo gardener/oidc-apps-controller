@@ -21,14 +21,14 @@ import (
 	"slices"
 	"strings"
 
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 // Register the webhook with the server

@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"time"
 
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,8 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
-
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 var _ manager.Runnable = &gardenerAccessTokenNotifier{}

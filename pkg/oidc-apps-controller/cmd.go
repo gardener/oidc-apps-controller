@@ -24,26 +24,22 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/client-go/rest"
-
-	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
-
-	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
-
 	"github.com/gardener/oidc-apps-controller/pkg/certificates"
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/controllers"
-
 	"github.com/gardener/oidc-apps-controller/pkg/notifiers"
+	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
+
+	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
-
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,12 +47,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var extensionConfig *configuration.OIDCAppsControllerConfig

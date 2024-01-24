@@ -71,8 +71,10 @@ generate:
 	@go generate $(REPO_ROOT)/charts/... $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
-format:
+format: $(GOIMPORTSREVISER)
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
+	@GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
+		$(REPO_ROOT)/hack/format.sh ./cmd ./pkg
 
 .PHONY: test
 test:

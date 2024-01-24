@@ -17,12 +17,12 @@ package controllers
 import (
 	"fmt"
 
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 func createOauth2Service(object client.Object) (corev1.Service, error) {
