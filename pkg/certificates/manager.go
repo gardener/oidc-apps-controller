@@ -22,16 +22,14 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
-
 	"github.com/go-logr/logr"
+	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	v1 "k8s.io/api/admissionregistration/v1"
 )
 
 const (
@@ -92,7 +90,7 @@ func New(l logr.Logger, certPath string, objectKey types.NamespacedName, c clien
 
 	var err error
 	// Generating CA certificate
-	if runnable.ca, err = generateCACert(certPath); err != nil {
+	if runnable.ca, err = generateCACert(certPath, realCertOps{}); err != nil {
 		return nil, err
 	}
 
@@ -213,7 +211,7 @@ OuterLoop:
 	for {
 		select {
 		case <-caTicker.C:
-			crt, err := generateCACert(c.certPath)
+			crt, err := generateCACert(c.certPath, realCertOps{})
 			if err != nil {
 				c.log.Error(err, "Error rotating CA certificate")
 			}

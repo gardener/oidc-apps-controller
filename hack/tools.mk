@@ -32,6 +32,7 @@ GO_ADD_LICENSE             := $(TOOLS_BIN_DIR)/addlicense
 GOLANGCI_LINT_VERSION ?= v1.55.2
 GO_ADD_LICENSE_VERSION ?= v1.1.1
 GOIMPORTS_VERSION ?= $(call version_gomod,golang.org/x/tools)
+MOCKGEN_VERSION ?= $(call version_gomod,github.com/golang/mock)
 
 export TOOLS_BIN_DIR := $(TOOLS_BIN_DIR)
 export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
@@ -89,3 +90,6 @@ $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
 
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
+
+$(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
+	go build -o $(MOCKGEN) go.uber.org/mock/mockgen

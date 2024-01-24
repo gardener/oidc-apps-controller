@@ -58,7 +58,7 @@ build: verify
 
 .PHONY: clean
 clean: test-clean
-	@go clean --testcache
+	@$(shell find $(REPO_ROOT)/example -type f -name "controller-registration.yaml" -exec rm '{}' \;)
 	@go clean -r $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@GOBIN=$(BIN) go clean -i $(REPO_ROOT)/cmd/main.go
 
@@ -68,7 +68,7 @@ check: $(GOLANGCI_LINT)
 
 .PHONY: generate
 generate:
-	@go generate $(REPO_ROOT)/...
+	@go generate $(REPO_ROOT)/charts/... $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
 format:
@@ -76,6 +76,7 @@ format:
 
 .PHONY: test
 test:
+	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: test-clean

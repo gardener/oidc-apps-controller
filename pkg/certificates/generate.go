@@ -46,9 +46,9 @@ type certificate struct {
 	key  crypto.PrivateKey
 }
 
-func generateCACert(path string) (*certificate, error) {
+func generateCACert(path string, ops CertificateOperations) (*certificate, error) {
 	// Generate Certificate Private Key
-	privateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
+	privateKey, err := ops.GenerateKey(rand.Reader, keyLength)
 	if err != nil {
 		return nil, fmt.Errorf("error generating the CA private key: %w", err)
 	}
@@ -70,7 +70,7 @@ func generateCACert(path string) (*certificate, error) {
 		IsCA:                  true,
 	}
 	// Self-Signed Certificate
-	certDERBytes, err := x509.CreateCertificate(rand.Reader, &certTmpl, &certTmpl, privateKey.Public(), privateKey)
+	certDERBytes, err := ops.CreateCertificate(rand.Reader, &certTmpl, &certTmpl, privateKey.Public(), privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("error creating the CA certificate: %w", err)
 	}
