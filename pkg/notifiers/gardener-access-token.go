@@ -50,7 +50,7 @@ func NewGardenerAccessTokenNotifier(c client.Client, path string) manager.Runnab
 	}
 }
 
-// Start implements the controler-runtime runnable interface
+// Start implements the controller-runtime runnable interface
 func (g *gardenerAccessTokenNotifier) Start(ctx context.Context) error {
 	g.log = log.FromContext(ctx).WithName("gardener access token")
 	g.pathHash = getTotalHash(g.log, g.tokenPath)
