@@ -45,10 +45,10 @@ func TestGenerateInvalidCACert(t *testing.T) {
 
 	mockCertOps := NewMockCertificateOperations(mockCtrl)
 
-	mockCertOps.EXPECT().GenerateKey(gomock.Any(), keyLength).Return(&rsa.PrivateKey{}, nil)
-	mockCertOps.EXPECT().CreateCertificate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil)
+	mockCertOps.EXPECT().GenerateKey(keyLength).Return(&rsa.PrivateKey{}, nil)
+	mockCertOps.EXPECT().CreateCertificate(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&x509.Certificate{}, nil)
 
-	// Since the key and certificate generation are mocked the generateCACert shall return an error
+	// Since the key and bundle generation are mocked the generateCACert shall return an error
 	_, err := generateCACert(".", mockCertOps)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "x509: malformed certificate")
@@ -58,16 +58,16 @@ func TestGenerateInvalidCACert(t *testing.T) {
 func TestGenerateCACert(t *testing.T) {
 	ops := realCertOps{}
 
-	// Generate CA certificate
+	// Generate CA bundle
 	certCA, err := generateCACert(tmp, ops)
 	assert.Nil(t, err)
 
-	// Verify that the certificate is a CA certificate for the oidc-apps-controller
+	// Verify that the bundle is a CA bundle for the oidc-apps-controller
 	assert.Contains(t, certCA.cert.Subject.CommonName, "oidc-apps-controller-ca")
-	// Verify that the certificate is a CA certificate
+	// Verify that the bundle is a CA bundle
 	assert.True(t, certCA.cert.IsCA)
 
-	// Verify that the persisted certificate is present
+	// Verify that the persisted bundle is present
 	pemData, err := os.ReadFile(filepath.Join(tmp, "ca.crt"))
 	assert.Nil(t, err)
 	assert.NotEmpty(t, pemData)
@@ -75,25 +75,25 @@ func TestGenerateCACert(t *testing.T) {
 	block, _ := pem.Decode(pemData)
 	assert.Equal(t, block.Type, "CERTIFICATE")
 
-	// Parse the certificate
+	// Parse the bundle
 	parsedCA, err := x509.ParseCertificate(block.Bytes)
 	assert.Nil(t, err)
-	// Verify that the parsed certificate is the same as the generated one
+	// Verify that the parsed bundle is the same as the generated one
 	assert.Equal(t, parsedCA.Subject.CommonName, certCA.cert.Subject.CommonName)
 }
 
 func TestGenerateTLSCert(t *testing.T) {
 	ops := realCertOps{}
-	// Generate CA certificate
+	// Generate CA bundle
 	certCA, err := generateCACert(tmp, ops)
 	assert.Nil(t, err)
 
-	// Generate TLS certificate
-	tlsCert, err := generateTLSCert(tmp, []string{"test"}, certCA)
+	// Generate TLS bundle
+	tlsCert, err := generateTLSCert(tmp, ops, []string{"test"}, certCA)
 	assert.Nil(t, err)
 	assert.False(t, tlsCert.cert.IsCA)
 
-	// Verify that the TLS certificate has `test` as an expected DNS names value
+	// Verify that the TLS bundle has `test` as an expected DNS names value
 	assert.Contains(t, tlsCert.cert.DNSNames, "test")
 
 	roots := x509.NewCertPool()
@@ -101,7 +101,7 @@ func TestGenerateTLSCert(t *testing.T) {
 	opts := x509.VerifyOptions{
 		Roots: roots,
 	}
-	// Verify that the TLS certificate is signed by the CA's private key
+	// Verify that the TLS bundle is signed by the CA's private key
 	_, err = tlsCert.cert.Verify(opts)
 	assert.Nil(t, err)
 

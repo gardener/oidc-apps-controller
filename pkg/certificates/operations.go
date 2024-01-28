@@ -15,24 +15,32 @@
 package certificates
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"io"
 )
 
 // CertificateOperations is an interface for the operations that are used to generate certificates with purpose of
 // mocking dependencies in tests
 type CertificateOperations interface {
-	GenerateKey(rand io.Reader, bits int) (*rsa.PrivateKey, error)
-	CreateCertificate(rand io.Reader, template, parent *x509.Certificate, pub interface{}, priv interface{}) ([]byte, error)
+	GenerateKey(keyLength int) (*rsa.PrivateKey, error)
+	CreateCertificate(template, parent *x509.Certificate, pub interface{}, priv interface{}) (*x509.Certificate, error)
 }
 
 type realCertOps struct{}
 
-func (realCertOps) GenerateKey(rand io.Reader, bits int) (*rsa.PrivateKey, error) {
-	return rsa.GenerateKey(rand, bits)
+func (realCertOps) GenerateKey(keyLength int) (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, keyLength)
 }
 
-func (realCertOps) CreateCertificate(rand io.Reader, template, parent *x509.Certificate, pub interface{}, priv interface{}) ([]byte, error) {
-	return x509.CreateCertificate(rand, template, parent, pub, priv)
+func (realCertOps) CreateCertificate(template, parent *x509.Certificate, pub interface{}, priv interface{}) (*x509.Certificate, error) {
+	var (
+		certBytes []byte
+		err       error
+	)
+	if certBytes, err = x509.CreateCertificate(rand.Reader, template, parent, pub, priv); err != nil {
+		return nil, err
+	}
+
+	return x509.ParseCertificate(certBytes)
 }

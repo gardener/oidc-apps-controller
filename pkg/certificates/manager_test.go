@@ -14,15 +14,15 @@ func TestUpdateCABundles(t *testing.T) {
 	c := certManager{}
 	var err error
 
-	// Generate CA certificate
+	// Generate CA bundle
 	c.ca, err = generateCACert(tmp, ops)
 	assert.Nil(t, err)
 
-	// Generate TLS certificate
-	c.tls, err = generateTLSCert(tmp, []string{"test"}, c.ca)
+	// Generate TLS bundle
+	c.tls, err = generateTLSCert(tmp, ops, []string{"test"}, c.ca)
 	assert.Nil(t, err)
 
-	// Generate another CA certificate
+	// Generate another CA bundle
 	caCert, err := generateCACert(tmp, ops)
 	assert.Nil(t, err)
 
@@ -33,7 +33,7 @@ func TestUpdateCABundles(t *testing.T) {
 	}
 	pemBytes := pem.EncodeToMemory(pemBlock)
 
-	// Add the second CA certificate to the CA bundle
+	// Add the second CA bundle to the CA bundle
 	caBundle, err := c.updateCABundles("test", pemBytes)
 	assert.Nil(t, err)
 	assert.True(t, len(caBundle) > len(pemBytes))
@@ -59,5 +59,97 @@ func TestUpdateCABundles(t *testing.T) {
 	assert.Equal(t, 2, len(foundSerials))
 	assert.Contains(t, foundSerials, *c.ca.cert.SerialNumber)
 	assert.Contains(t, foundSerials, *caCert.cert.SerialNumber)
+
+}
+
+func TestRemoveCABundles(t *testing.T) {
+	ops := realCertOps{}
+	c := certManager{}
+	var err error
+
+	// Generate CA bundle
+	c.ca, err = generateCACert(tmp, ops)
+	assert.Nil(t, err)
+
+	// Generate another CA bundle
+	caCert, err := generateCACert(tmp, ops)
+	assert.Nil(t, err)
+
+	// Encode the DER bytes to PEM format
+	pemBlock := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caCert.cert.Raw,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Add the second CA bundle to the cert Manager
+	caBundle, err := c.updateCABundles("test", pemBytes)
+	assert.Nil(t, err)
+	assert.True(t, len(caBundle) > len(pemBytes))
+
+	// Let's remove the added CA certificate
+	removed, err := c.removeCABundle("test", pemBytes)
+	assert.Nil(t, err)
+	assert.True(t, len(caBundle) > len(removed))
+
+	foundSerials := []string{}
+
+	// Loop through the CA bundle and find the serial numbers of the two CA certificates
+	for len(removed) > 0 {
+		var block *pem.Block
+		block, removed = pem.Decode(removed)
+		// no pem block is found
+		assert.NotNil(t, block)
+
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+
+		crt, err := x509.ParseCertificate(block.Bytes)
+		assert.Nil(t, err)
+
+		foundSerials = append(
+			foundSerials, crt.SerialNumber.String(),
+		)
+	}
+	assert.Equal(t, 1, len(foundSerials))
+	// The first CA certificate part of the manager should be gone
+	assert.NotContains(t, foundSerials, c.ca.cert.SerialNumber.String())
+	// The second CA certificate should still be present
+	assert.Contains(t, foundSerials, caCert.cert.SerialNumber.String())
+
+}
+
+func TestSaveAndLoadCABundle(t *testing.T) {
+	ops := realCertOps{}
+	c := certManager{}
+	var err error
+
+	// Generate CA bundle
+	c.ca, err = generateCACert(tmp, ops)
+	assert.Nil(t, err)
+	err = writeBundle(tmp, c.ca)
+	assert.Nil(t, err)
+	loaded, err := loadCAFromDisk(tmp)
+	assert.Nil(t, err)
+	assert.Equal(t, c.ca.cert.SerialNumber, loaded.cert.SerialNumber)
+
+}
+
+func TestSaveAndLoadTLSBundle(t *testing.T) {
+	ops := realCertOps{}
+	c := certManager{}
+	var err error
+
+	// Generate CA bundle
+	c.ca, err = generateCACert(tmp, ops)
+	assert.Nil(t, err)
+	c.tls, err = generateTLSCert(tmp, ops, []string{"test"}, c.ca)
+	assert.Nil(t, err)
+	err = writeBundle(tmp, c.tls)
+	assert.Nil(t, err)
+	loaded, err := loadTLSFromDisk(tmp)
+	assert.Nil(t, err)
+	assert.Equal(t, c.tls.cert.SerialNumber, loaded.cert.SerialNumber)
 
 }
