@@ -54,7 +54,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	default:
 		cfg = newOAuth2Config(
 			withClientId(extConfig.GetClientID(object)),
-			withClientSecret(extConfig.GetClientID(object)),
+			withClientSecret(extConfig.GetClientSecret(object)),
 			withScope(extConfig.GetScope(object)),
 			withRedirectUrl(extConfig.GetRedirectUrl(object)),
 			withOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
