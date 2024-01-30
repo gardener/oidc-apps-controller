@@ -33,11 +33,12 @@ import (
 )
 
 const (
-	tlsCertValidity           = time.Hour * time.Duration(24)   // 24 hours
-	tlsCertRotation           = time.Hour * time.Duration(1)    // Rotate 1 hour before expire
-	caCertValidity            = time.Hour * time.Duration(168)  // 1w
-	caCertRotation            = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
-	ticker                    = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
+	tlsCertValidity = time.Hour * time.Duration(24)   // 24 hours
+	tlsCertRotation = time.Hour * time.Duration(1)    // Rotate 1 hour before expire
+	caCertValidity  = time.Hour * time.Duration(168)  // 1w
+	caCertRotation  = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
+	ticker          = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
+
 	deploymentsWebhookSuffix  = "-deployments.gardener.cloud"
 	statefulSetsWebhookSuffix = "-statefulsets.gardener.cloud"
 	podsWebhookSuffix         = "-pods.gardener.cloud"
@@ -145,6 +146,9 @@ func (c *certManager) Start(ctx context.Context) error {
 	return nil
 }
 
+// setupWebhooksCABundles is invoked during runnable initialization and before the controller manager Start method is called.
+// The purpose is to generate an initial set of CA nad TLS certificates bundle and to update the webhook CABundle resource
+// Since the client.Client is not present at this moment, we need to construct a new client.
 func (c *certManager) setupWebhooksCABundles(config *rest.Config, objectKey types.NamespacedName) error {
 	cl, err := client.New(config, client.Options{})
 	if err != nil {
@@ -174,6 +178,9 @@ func (c *certManager) setupWebhooksCABundles(config *rest.Config, objectKey type
 	})
 }
 
+// updateWebhookConfiguration is invoked when runnable (certManager) is running.
+// At this moment the client.Client is present, and we can use it to update the webhook CABundle resource without
+// creating a new client.
 func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 
 	webhook := &v1.MutatingWebhookConfiguration{}
@@ -200,6 +207,7 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 
 }
 
+// rotateTLSCert is a loops over ticker and checks if the TLS bundle is expired.
 func (c *certManager) rotateTLSCert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	tlsTicker := time.NewTicker(ticker)
@@ -233,6 +241,7 @@ OuterLoop:
 	}
 }
 
+// rotateCACert is a loops over ticker and checks if the CA bundle is expired.
 func (c *certManager) rotateCACert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	caTicker := time.NewTicker(ticker)
