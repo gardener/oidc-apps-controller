@@ -154,7 +154,9 @@ func GetOIDCAppsControllerConfig() *OIDCAppsControllerConfig {
 
 // Match accepts a client.Object and verifies if is a target defined in the controller configuration
 func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
-
+	if c == nil || c.Targets == nil || len(c.Targets) == 0 {
+		return false
+	}
 	for _, t := range c.Targets {
 		if c.targetMatchesLabels(t, o) {
 			return true
