@@ -23,11 +23,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
-
-	"github.com/go-logr/logr"
 )
 
-func getTotalHash(l logr.Logger, watchedDir string) string {
+func getTotalHash(watchedDir string) string {
 
 	// Contains folder file names as keys and corresponding hashes as values
 	filesMap := map[string]string{}
@@ -38,7 +36,7 @@ func getTotalHash(l logr.Logger, watchedDir string) string {
 
 	dir, err := os.ReadDir(watchedDir)
 	if err != nil {
-		l.Error(err, "Error reading directory", "directory", watchedDir)
+		_log.Error(err, "Error reading directory", "directory", watchedDir)
 		return ""
 	}
 
@@ -47,7 +45,7 @@ func getTotalHash(l logr.Logger, watchedDir string) string {
 		go func(filePath string) {
 			mapMutex.Lock()
 			defer mapMutex.Unlock()
-			if s := getFileSha256(l, filePath); s != "" {
+			if s := getFileSha256(filePath); s != "" {
 				filesMap[filePath] = s
 			}
 			wg.Done()
@@ -74,11 +72,11 @@ func getTotalHash(l logr.Logger, watchedDir string) string {
 	return hash
 }
 
-func getFileSha256(l logr.Logger, filePath string) string {
+func getFileSha256(filePath string) string {
 
 	stat, err := os.Stat(filePath)
 	if err != nil {
-		l.Error(err, "cannot stat file path", "path", filePath)
+		_log.Error(err, "cannot stat file path", "path", filePath)
 		return ""
 	}
 
@@ -90,15 +88,15 @@ func getFileSha256(l logr.Logger, filePath string) string {
 	f, err := os.Open(filePath)
 	defer func() {
 		if err = f.Close(); err != nil {
-			l.Error(err, "error closing file", "path", filePath)
+			_log.Error(err, "error closing file", "path", filePath)
 		}
 	}()
 	if err != nil {
-		l.Error(err, "error opening file", "path", filePath)
+		_log.Error(err, "error opening file", "path", filePath)
 		return ""
 	}
 	if _, err = io.Copy(hash, f); err != nil {
-		l.Error(err, "error reading file", "path", filePath)
+		_log.Error(err, "error reading file", "path", filePath)
 		return ""
 	}
 

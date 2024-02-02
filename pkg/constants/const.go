@@ -48,8 +48,10 @@ const (
 	//KubeRbacProxyVolumeName is the volume name of the kube-rbac-proxy configuration
 	KubeRbacProxyVolumeName = "kube-rbac-proxy"
 
-	//GARDEN_KUBECONFIG is an environment variable pointing at the target Garden Runtime Cluster
+	//GARDEN_KUBECONFIG is an environment variable pointing at the default extension access token, if the custom one is not provided
 	GARDEN_KUBECONFIG = "GARDEN_KUBECONFIG"
+	//GARDEN_ACCESS_TOKEN is an environment variable pointing at a custom access token
+	GARDEN_ACCESS_TOKEN = "GARDEN_ACCESS_TOKEN"
 	//GARDEN_NAMESPACE is the default k8s namespace containing seed workloads
 	GARDEN_NAMESPACE = "garden"
 	//GARDEN_DOMAIN_NAME is the default domain name of the seed cluster, where the extension is running

@@ -48,6 +48,10 @@ spec:
             - name: IMAGEVECTOR_OVERWRITE
               value: /charts_overwrite/images_overwrite.yaml
             {{- end }}
+            {{- if .Values.gardener }}
+            - name: GARDEN_ACCESS_TOKEN
+              value: "/var/run/secrets/gardener.cloud/garden/oidc-apps-access-token"
+            {{- end }}
           args:
           - "--config=/etc/controller.yaml"
           - "--use-cert-manager={{ .Values.certificate.create }}"
@@ -89,6 +93,10 @@ spec:
               mountPath: /charts_overwrite/
               readOnly: true
             {{- end }}
+            {{- if .Values.gardener }}
+            - name: oidc-apps-access-token
+              mountPath: /var/run/secrets/gardener.cloud/garden/oidc-apps-access-token
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -127,4 +135,9 @@ spec:
           configMap:
             name: {{ include "oidc-apps-extension.fullname" . }}-imagevector-overwrite
             defaultMode: 420
+        {{- end }}
+        {{- if .Values.gardener }}
+        - name: oidc-apps-access-token
+          secret:
+            secretName: oidc-apps-access-token
         {{- end }}

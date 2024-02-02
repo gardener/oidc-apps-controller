@@ -124,15 +124,27 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		return secret, nil
 	}
 
-	d := filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
-	kcfg, err := os.ReadFile(filepath.Join(d, "kubeconfig"))
+	var (
+		path        string
+		kcfg, token []byte
+		err         error
+	)
+	path = filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
+	kcfg, err = os.ReadFile(filepath.Join(path, "kubeconfig"))
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
 	if err != nil {
 		return corev1.Secret{}, fmt.Errorf("Error creating kubeconfig secret: %w", err)
 	}
-	token, err := os.ReadFile(filepath.Join(d, "token"))
+
+	// Token is fetched from either the GARDEN_ACCESS_TOKEN environment variable if present, or from the GARDEN_KUBECONFIG
+
+	if os.Getenv("GARDEN_ACCESS_TOKEN") != "" {
+		path = os.Getenv("GARDEN_ACCESS_TOKEN")
+	}
+
+	token, err = os.ReadFile(filepath.Join(path, "token"))
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, nil
 	}

@@ -18,17 +18,15 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"path/filepath"
 	"time"
 
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
-	"github.com/go-logr/logr"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 )
@@ -36,35 +34,37 @@ import (
 var _ manager.Runnable = &gardenerAccessTokenNotifier{}
 
 type gardenerAccessTokenNotifier struct {
-	tokenPath string
-	pathHash  string
-	client    client.Client
-	log       logr.Logger
+	kubeconfigPath string
+	tokenPath      string
+	hashes         map[string]string
+	client         client.Client
 }
 
+var _log = logf.Log.WithName("gardener-access-token-notifier")
+
 // NewGardenerAccessTokenNotifier is a controller-runtime runnable used to propagate gardener access tokens to the targets
-func NewGardenerAccessTokenNotifier(c client.Client, path string) manager.Runnable {
+func NewGardenerAccessTokenNotifier(c client.Client, kubeconfigPath, tokenPath string) manager.Runnable {
+
+	_log.Info("Creating notifier", "kubeconfig", kubeconfigPath, "token", tokenPath)
 	return &gardenerAccessTokenNotifier{
-		tokenPath: path,
-		client:    c,
+		kubeconfigPath: kubeconfigPath,
+		tokenPath:      tokenPath,
+		client:         c,
+		hashes: map[string]string{
+			"kubeconfig": getFileSha256(kubeconfigPath),
+			"token":      getFileSha256(tokenPath),
+		},
 	}
 }
 
 // Start implements the controller-runtime runnable interface
 func (g *gardenerAccessTokenNotifier) Start(ctx context.Context) error {
-	g.log = log.FromContext(ctx).WithName("gardener access token")
-	g.pathHash = getTotalHash(g.log, g.tokenPath)
-
-	g.log.Info("Starting notifier", "path", g.tokenPath)
+	_log.Info("Starting notifier", "kubeconfig", g.kubeconfigPath, "token", g.tokenPath)
 	hashChan := g.startCalculateHashPath(ctx)
-	g.pathHash = <-hashChan
+
 	go func(ctx context.Context) {
-		for current := range hashChan {
-			if g.pathHash == current {
-				continue
-			}
+		for range hashChan {
 			g.updateSecrets(ctx)
-			g.pathHash = current
 		}
 	}(ctx)
 
@@ -82,9 +82,20 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 		for {
 			select {
 			case <-ticker.C:
-				hashPathChan <- getTotalHash(g.log, g.tokenPath)
+				kubeconfigHash := getFileSha256(g.kubeconfigPath)
+				if kubeconfigHash != g.hashes["kubeconfig"] {
+					g.hashes["kubeconfig"] = kubeconfigHash
+					hashPathChan <- kubeconfigHash
+					continue
+				}
+				tokenHash := getFileSha256(g.tokenPath)
+				if tokenHash != g.hashes["token"] {
+					g.hashes["token"] = tokenHash
+					hashPathChan <- tokenHash
+				}
 			case <-ctx.Done():
 				ticker.Stop()
+				close(hashPathChan)
 				return
 			}
 		}
@@ -94,22 +105,22 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 
 func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
-	tokenBytes, err := os.ReadFile(filepath.Join(g.tokenPath, "token"))
+	tokenBytes, err := os.ReadFile(g.tokenPath)
 	if err != nil {
-		g.log.Error(err, "error reading access token")
+		_log.Error(err, "error reading access token")
 		return
 	}
 	tokenBytes = bytes.TrimSpace(tokenBytes)
-	kubeConfigBytes, err := os.ReadFile(filepath.Join(g.tokenPath, "kubeconfig"))
+	kubeConfigBytes, err := os.ReadFile(g.kubeconfigPath)
 	if err != nil {
-		g.log.Error(err, "error reading kubeconfig")
+		_log.Error(err, "error reading kubeconfig")
 		return
 	}
 	kubeConfigBytes = bytes.TrimSpace(kubeConfigBytes)
 
 	kubeConfig := clientcmdv1.Config{}
 	if err = yaml.Unmarshal(kubeConfigBytes, &kubeConfig); err != nil {
-		g.log.Error(err, "error unmarshaling kubeconfig")
+		_log.Error(err, "error unmarshaling kubeconfig")
 	}
 
 	for i, n := range kubeConfig.AuthInfos {
@@ -122,16 +133,16 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 	kubeconfigBytes, err := yaml.Marshal(kubeConfig)
 	if err != nil {
-		g.log.Error(err, "error marshaling kubeconfig")
+		_log.Error(err, "error marshaling kubeconfig")
 	}
 
-	kubeConfigList := &v1.SecretList{}
+	kubeConfigList := &corev1.SecretList{}
 	if err = g.client.List(ctx, kubeConfigList,
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{oidc_apps_controller.LabelKey: "kubeconfig"}),
 		},
 	); err != nil {
-		g.log.Error(err, "error fetching kubeconfig secretes")
+		_log.Error(err, "error fetching kubeconfig secretes")
 		return
 	}
 	for _, secret := range kubeConfigList.Items {
@@ -139,7 +150,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 		//Check if there is a difference between the target secret and the current kubeconfig
 		if targetKubeconfig, ok := secret.Data["kubeconfig"]; ok {
 			if bytes.Equal(targetKubeconfig, kubeconfigBytes) {
-				g.log.V(9).Info("No kubeconfig change in the target secret, skipping",
+				_log.V(9).Info("No kubeconfig change in the target secret, skipping",
 					"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 				)
 				continue
@@ -148,11 +159,11 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 		secret.StringData = map[string]string{"kubeconfig": string(kubeconfigBytes)}
 		if err := g.client.Update(ctx, &secret); err != nil {
-			g.log.Error(err, "cannot update kubeconfig secret",
+			_log.Error(err, "cannot update kubeconfig secret",
 				"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 			)
 		}
-		g.log.Info("Secret is updated",
+		_log.Info("Secret is updated",
 			"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 		)
 	}

@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oidc-apps-subjectaccessreviews
+  annotations:
+    authorization.gardener.cloud/extensions-serviceaccount-selector: '{"matchLabels":{"oidc-apps.gardener.cloud/controller":"true"}}'
+  labels:
+    authorization.gardener.cloud/custom-extensions-permissions: "true"
+rules:
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create

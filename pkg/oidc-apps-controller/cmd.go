@@ -357,7 +357,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOpti
 			Namespace: os.Getenv(constants.NAMESPACE),
 			Name:      o.webhookName,
 		}
-		certManager, err := certificates.New(_log, o.webhookCertsDir, webhookKey, mgr.GetClient(), mgr.GetConfig())
+		certManager, err := certificates.New(o.webhookCertsDir, webhookKey, mgr.GetClient(), mgr.GetConfig())
 		if err != nil {
 			return err
 		}
@@ -368,11 +368,18 @@ func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOpti
 }
 
 func addGardenAcceessTokenManager(mgr manager.Manager) error {
-	// Add garden-secret-notifier if the environment variable is present
-	if os.Getenv(constants.GARDEN_KUBECONFIG) != "" {
+	// Add garden-secret-notifier if the GARDEN environment variables are present
+	if os.Getenv(constants.GARDEN_KUBECONFIG) != "" || os.Getenv(constants.GARDEN_ACCESS_TOKEN) != "" {
+		kubeconfigPath := filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
+		tokenPath := os.Getenv(constants.GARDEN_ACCESS_TOKEN)
+		if tokenPath == "" {
+			tokenPath = filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
+		}
+
 		accessTokenNotifier := notifiers.NewGardenerAccessTokenNotifier(
 			mgr.GetClient(),
-			filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG)),
+			filepath.Join(kubeconfigPath, "kubeconfig"),
+			filepath.Join(tokenPath, "token"),
 		)
 		return mgr.Add(accessTokenNotifier)
 	}
