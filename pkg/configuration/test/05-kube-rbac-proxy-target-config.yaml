@@ -3,8 +3,7 @@ configuration:
     kubeConfigStr: Imt1YmVjb25maWci
     kubeSecretRef:
       name: "kubeconfig-secret"
-    oidcCABundle: |
-      ...
+    oidcCABundle: Li4uCg==
     oidcCASecretRef:
       name: "oidcca"
 
@@ -12,14 +11,12 @@ targets:
   - name: service
     labelSelector:
       matchExpressions:
-        - {key: "app", operator: "In", values: ["service"]}
+        - { key: "app", operator: "In", values: ["service"] }
     configuration:
       kubeRbacProxy:
         kubeConfigStr: bXktb3RoZXIta3ViZS1jb25maWcK
         kubeSecretRef:
           name: "kubeconfig-secret-target"
-        oidcCABundle: |
-          ...
-          ...
+        oidcCABundle: Li4uCi4uLgo=
         oidcCASecretRef:
           name: "oidc-ca-target"

@@ -28,7 +28,7 @@ configuration:
     kubeSecretRef: {} # Ignored if kubeConfig is present
     # If niether of those is provided the kube-rbac-proxy uses the target pod's service account
 
-    # A trusted CA bundle in pem format used to verify the server identity of OIDC
+    # A base64 encoded trusted CA bundle in pem format used to verify the server identity of OIDC
     oidcCABundle: ""
     # A secret with ca.crt key container the trusted CA bundle
     # Type corev1.SecretReference https://github.com/kubernetes/api/blob/v0.28.2/core/v1/types.go#L1014

@@ -3,8 +3,7 @@ configuration:
     kubeConfigStr: Imt1YmVjb25maWci
     kubeSecretRef:
       name: "kubeconfig-secret"
-    oidcCABundle: |
-      ...
+    oidcCABundle: Li4uCg==
     oidcCASecretRef:
       name: "oidcca"
 

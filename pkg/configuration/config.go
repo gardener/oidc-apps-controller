@@ -16,6 +16,7 @@ package configuration
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"strings"
 	"sync"
@@ -276,18 +277,30 @@ func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) str
 func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string {
 
 	oidcCABundle := ""
+	var decodedBytes []byte
+	var err error
+
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
 		t.Configuration.KubeRbacProxy != nil &&
 		t.Configuration.KubeRbacProxy.OidcCABundle != "" {
-		return t.Configuration.KubeRbacProxy.OidcCABundle
+
+		if decodedBytes, err = base64.StdEncoding.DecodeString(t.Configuration.KubeRbacProxy.OidcCABundle); err != nil {
+			c.log.Error(err, "failed to decode oidc ca bundle")
+			return ""
+		}
+		return string(decodedBytes)
 	}
 	if c.Configuration.KubeRbacProxy != nil &&
 		c.Configuration.KubeRbacProxy.OidcCABundle != "" {
 		oidcCABundle = c.Configuration.KubeRbacProxy.OidcCABundle
 	}
 
-	return oidcCABundle
+	if decodedBytes, err = base64.StdEncoding.DecodeString(oidcCABundle); err != nil {
+		c.log.Error(err, "failed to decode oidc ca bundle")
+		return ""
+	}
+	return string(decodedBytes)
 }
 
 // GetClientID returns the OIDC Provider client_id for the given workload target
