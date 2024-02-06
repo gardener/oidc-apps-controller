@@ -29,7 +29,7 @@ GOIMPORTS                  := $(TOOLS_BIN_DIR)/goimports
 GOIMPORTSREVISER           := $(TOOLS_BIN_DIR)/goimports-reviser
 GO_ADD_LICENSE             := $(TOOLS_BIN_DIR)/addlicense
 MOCKGEN                    := $(TOOLS_BIN_DIR)/mockgen
-SETUP_ENVTEST		   := $(TOOLS_BIN_DIR)/setup-envtest
+SETUP_ENVTEST		       := $(TOOLS_BIN_DIR)/setup-envtest
 
 # default tool versions
 GOLANGCI_LINT_VERSION ?= v1.55.2
@@ -91,7 +91,7 @@ $(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERS
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go build -o $(GOIMPORTS) golang.org/x/tools/cmd/goimports
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 $(GOIMPORTSREVISER): $(call tool_version_file,$(GOIMPORTSREVISER),$(GOIMPORTSREVISER_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTSREVISER_VERSION)
@@ -103,5 +103,5 @@ $(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/golang/mock/mockgen@$(MOCKGEN_VERSION)
 
 $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
-	@GOBIN=$(abspath $(TOOLS_BIN_DIR)) go build -o $(SETUP_ENVTEST) sigs.k8s.io/controller-runtime/tools/setup-envtest
+	@GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
 	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -p path --bin-dir $(TOOLS_BIN_DIR)
