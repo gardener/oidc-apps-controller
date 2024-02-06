@@ -73,13 +73,13 @@ generate:
 	@go generate $(REPO_ROOT)/charts/... $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
-format: $(GOIMPORTSREVISER)
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
 	@GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
 		$(REPO_ROOT)/hack/format.sh ./cmd ./pkg
 
 .PHONY: test
-test:
+test: $(MOCKGEN)
 	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
