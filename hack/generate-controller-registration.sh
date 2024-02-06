@@ -65,10 +65,7 @@ providerConfig:
         clientId: "... OIDC client ID ..."
         scope: "openid email groups"
       kubeRbacProxy:
-        oidcCABundle: |
-          -----BEGIN CERTIFICATE-----
-          ...
-          -----END CERTIFICATE-----
+        oidcCABundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg== # base64 encoded OIDC CA bundle
     targets:
       - name: "shoot--plutono"
         namespaceSelector:

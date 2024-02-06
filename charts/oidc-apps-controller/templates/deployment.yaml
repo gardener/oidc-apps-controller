@@ -51,7 +51,7 @@ spec:
             {{- if .Values.gardener }}
             - name: GARDEN_ACCESS_TOKEN
               value: "/var/run/secrets/gardener.cloud/garden/oidc-apps-access-token"
-            {{- if and (hasKey .Values.gardener.seed) (hasKey .Values.gardener.seed.spec) (hasKey .Values.gardener.seed.spec.ingress) (isset .Values.gardener.seed.spec.ingress.domain)}}
+            {{- if and (hasKey .Values.gardener.seed) (hasKey .Values.gardener.seed.spec) (hasKey .Values.gardener.seed.spec.ingress) (isset .Values.gardener.seed.spec.ingress.domain) }}
             - name: GARDEN_SEED_DOMAIN_NAME
               value: "{{ .Values.gardener.seed.spec.ingress.domain }}"
             {{- end }}
