@@ -168,6 +168,11 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 
 // GetHost return the domain name for a given workload target
 func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
+
+	if len(os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)) > 0 {
+		return os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
+	}
+
 	t := c.fetchTarget(object)
 
 	domain := c.Configuration.DomainName
@@ -177,14 +182,6 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 	}
 	if t.Ingress != nil && t.Ingress.Host != "" {
 		prefix, domain, _ = strings.Cut(t.Ingress.Host, ".")
-	}
-
-	// If we run in gardener seed environment the domain name is not fetched from the configuration
-	// but from the kube-apiserver ingress in the garden namespace
-	// This is a workaround until we have a proper solution for the propagating seed specific configurations
-	// for the extension controllers
-	if domain == "" && (len(os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)) > 0) {
-		domain = os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
 	}
 
 	if domain == "" {
@@ -305,7 +302,13 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 // GetClientID returns the OIDC Provider client_id for the given workload target
 func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
+
+	if len(os.Getenv(oidc_apps_controller.GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID)) > 0 {
+		return os.Getenv(oidc_apps_controller.GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID)
+	}
+
 	t := c.fetchTarget(object)
+
 	if t.Configuration != nil &&
 		t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.ClientId != "" {
@@ -316,6 +319,7 @@ func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
 		c.Configuration.Oauth2Proxy.ClientId != "" {
 		return c.Configuration.Oauth2Proxy.ClientId
 	}
+
 	return ""
 }
 

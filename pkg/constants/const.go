@@ -56,4 +56,6 @@ const (
 	GARDEN_NAMESPACE = "garden"
 	//GARDEN_SEED_DOMAIN_NAME is the default domain name of the seed cluster, where the extension is running
 	GARDEN_SEED_DOMAIN_NAME = "GARDEN_SEED_DOMAIN_NAME"
+	//GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID is the oidc clientId for the seed cluster, where the extension is running
+	GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID = "GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID"
 )

@@ -17,6 +17,7 @@ package configuration
 import (
 	_ "embed"
 	"encoding/base64"
+	"os"
 	"reflect"
 	"testing"
 
@@ -685,6 +686,53 @@ func TestKubeRbacProxyKubeConfig(t *testing.T) {
 	}
 	if _, err = yaml.Marshal(kubeConfig); err != nil {
 		t.Error(err)
+	}
+
+}
+
+//go:embed test/07-garden-extension-config.yaml
+var gardenConfig string
+
+func TestGardenConfig(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+
+	if err := yaml.Unmarshal([]byte(gardenConfig), &extensionConfig); err != nil {
+		t.Errorf("error unmarshalling configuration: %v", err)
+	}
+
+	os.Setenv("GARDEN_SEED_DOMAIN_NAME", "seed.domain.org")
+	os.Setenv("GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID", "seed-client-id")
+
+	// Create a fake client
+	builder := fake.NewClientBuilder()
+	builder.WithObjects(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "default",
+			Labels: map[string]string{"kubernetes.io/metadata.name": "default"},
+		},
+	})
+	extensionConfig.client = builder.Build()
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "service",
+			Namespace: "default",
+			Labels:    map[string]string{"app": "service"},
+		},
+	}
+
+	domain := extensionConfig.GetHost(deployment)
+	if domain != "seed.domain.org" {
+		t.Error("getting domain is not as expected: ",
+			"expected", "seed.domain.org",
+			"got", domain)
+	}
+
+	clientId := extensionConfig.GetClientID(deployment)
+	if clientId != "seed-client-id" {
+		t.Error("getting clientId is not as expected: ",
+			"expected", "seed-client-id",
+			"got", clientId)
 	}
 
 }
