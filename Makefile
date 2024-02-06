@@ -21,6 +21,8 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    ?= $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(BINARY))
 PLATFORM                    := linux/amd64,linux/arm64
+ENVTEST_K8S_VERSION         ?= 1.26.1
+
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -49,7 +51,7 @@ docker-images:
 #####################################################################
 
 .PHONY: build
-build: verify
+build: format check
 	@mkdir -p $(BIN)
 	@go mod tidy
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) GOBIN=$(BIN) \
@@ -81,12 +83,18 @@ test:
 	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
+.PHONY: test-e2e
+test-e2e: $(SETUP_ENVTEST)
+	@KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -i \
+	--bin-dir $(abspath $(TOOLS_BIN_DIR)) -p path)" \
+	go test $(REPO_ROOT)/test/... -v -timeout 10m
+
 .PHONY: test-clean
 test-clean:
-	@rm -f $(REPO_ROOT)/test.*
+
 
 .PHONY: verify
-verify: format check test
+verify: format check test test-e2e
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)

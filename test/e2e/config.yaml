@@ -1,0 +1,11 @@
+configuration:
+  oauth2Proxy:
+  kubeRbacProxy:
+targets:
+  - name: "nginx"
+    labelSelector:
+      matchLabels:
+        app: nginx
+    ingress:
+      enabled: false
+      ingressClassName: "nginx"
