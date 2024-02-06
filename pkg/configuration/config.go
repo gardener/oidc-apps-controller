@@ -169,13 +169,13 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 // GetHost return the domain name for a given workload target
 func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 
+	t := c.fetchTarget(object)
+	domain := c.Configuration.DomainName
+
 	if len(os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)) > 0 {
-		return os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
+		domain = os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
 	}
 
-	t := c.fetchTarget(object)
-
-	domain := c.Configuration.DomainName
 	prefix := object.GetName() + "-" + object.GetNamespace()
 	if t.Ingress != nil && t.Ingress.HostPrefix != "" {
 		prefix = t.Ingress.HostPrefix

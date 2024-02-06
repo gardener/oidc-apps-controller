@@ -725,11 +725,11 @@ func TestGardenConfig(t *testing.T) {
 		},
 	}
 
-	domain := extensionConfig.GetHost(deployment)
-	if domain != "seed.domain.org" {
+	host := extensionConfig.GetHost(deployment)
+	if host != "service-default.seed.domain.org" {
 		t.Error("getting domain is not as expected: ",
-			"expected", "seed.domain.org",
-			"got", domain)
+			"expected", "service-default.seed.domain.org",
+			"got", host)
 	}
 
 	clientId := extensionConfig.GetClientID(deployment)
