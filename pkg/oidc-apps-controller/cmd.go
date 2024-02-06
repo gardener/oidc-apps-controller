@@ -61,7 +61,7 @@ var _log = logf.Log
 
 // RunController is the entry point for initialzing and starting the controller-runtime manager
 func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
-	_log.V(9).Info("Starting oidc-apps-controller")
+	printGardenEnvVars()
 
 	// Initialize a scheme which will contain the API definitions
 	sch := scheme.Scheme
@@ -160,6 +160,14 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	// Start the manager
 	return mgr.Start(ctx)
+}
+
+func printGardenEnvVars() {
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, "GARDEN") {
+			_log.Info(fmt.Sprintf("ENV: %s", v))
+		}
+	}
 }
 
 func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
