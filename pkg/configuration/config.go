@@ -183,8 +183,8 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 	// but from the kube-apiserver ingress in the garden namespace
 	// This is a workaround until we have a proper solution for the propagating seed specific configurations
 	// for the extension controllers
-	if domain == "" && (len(os.Getenv(oidc_apps_controller.GARDEN_DOMAIN_NAME)) > 0) {
-		domain = os.Getenv(oidc_apps_controller.GARDEN_DOMAIN_NAME)
+	if domain == "" && (len(os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)) > 0) {
+		domain = os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
 	}
 
 	if domain == "" {

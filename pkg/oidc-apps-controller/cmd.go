@@ -110,7 +110,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	// Set domain name if we are running in a gardener cluster
-	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 && os.Getenv(constants.GARDEN_DOMAIN_NAME) == "" {
+	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 && os.Getenv(constants.GARDEN_SEED_DOMAIN_NAME) == "" {
 		if err := setGardenDomainNameEnvVar(ctx, mgr.GetConfig()); err != nil {
 			return fmt.Errorf("could not set the garden domain name: %w", err)
 		}
@@ -174,10 +174,10 @@ func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
 	if len(ingress.Spec.Rules) > 0 {
 		_, h, ok := strings.Cut(ingress.Spec.Rules[0].Host, ".")
 		if ok {
-			if err := os.Setenv(constants.GARDEN_DOMAIN_NAME, h); err != nil {
+			if err := os.Setenv(constants.GARDEN_SEED_DOMAIN_NAME, h); err != nil {
 				return fmt.Errorf("could not set the garden domain name: %w", err)
 			}
-			_log.Info("Set domain name env variable", constants.GARDEN_DOMAIN_NAME, h)
+			_log.Info("Set domain name env variable", constants.GARDEN_SEED_DOMAIN_NAME, h)
 		}
 	}
 	return nil
