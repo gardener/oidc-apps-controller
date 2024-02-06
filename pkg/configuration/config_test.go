@@ -700,8 +700,12 @@ func TestGardenConfig(t *testing.T) {
 		t.Errorf("error unmarshalling configuration: %v", err)
 	}
 
-	os.Setenv("GARDEN_SEED_DOMAIN_NAME", "seed.domain.org")
-	os.Setenv("GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID", "seed-client-id")
+	if err := os.Setenv("GARDEN_SEED_DOMAIN_NAME", "seed.domain.org"); err != nil {
+		t.Error(err)
+	}
+	if err := os.Setenv("GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID", "seed-client-id"); err != nil {
+		t.Error(err)
+	}
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
