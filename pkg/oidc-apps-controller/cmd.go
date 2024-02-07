@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
 	"sync"
 	"time"
@@ -348,11 +349,32 @@ func addStatefulSetController(mgr manager.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&networkingv1.Ingress{},
-			handler.EnqueueRequestForOwner(
-				mgr.GetScheme(),
-				mgr.GetRESTMapper(),
-				&appsv1.StatefulSet{},
-			),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				ingress := obj.(*networkingv1.Ingress)
+				c := mgr.GetClient()
+				for _, o := range ingress.GetOwnerReferences() {
+					pod := &corev1.Pod{}
+					if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: ingress.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+						_log.Error(err, "could not get pod", "name", o.Name, "namespace", ingress.Namespace)
+					}
+					if len(pod.Name) == 0 {
+						continue
+					}
+
+					for _, r := range pod.GetOwnerReferences() {
+						statefulset := &appsv1.StatefulSet{}
+						if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+							_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+						}
+						if len(statefulset.Name) == 0 {
+							continue
+						}
+						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+					}
+				}
+
+				return nil
+			}),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
