@@ -99,5 +99,18 @@ Create the name of the cluster role to use
 {{- end }}
 {{- end }}
 
+{{/*
+Returns a clientId by seed name
+*/}}
+{{- define "oidc-apps-extension.fetchClientIdBySeedIdentifier" }}
+  {{- $namev := .name }}
+  {{- $id := "" }}
+  {{- range .seeds }}
+    {{- if eq .name $namev }}
+      {{- $id = .clientId }}
+    {{- end }}
+  {{- end }}
+  {{- printf "%s" $id }}
+{{- end }}
 
 

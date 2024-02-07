@@ -149,3 +149,10 @@ targets:
       # Optional target oidc configuration.
       # It overwrites the cluster wide {{configuration}}
       configuration:
+
+# In case of Gardener there can be a mapping between seed names and oidc client ids
+seeds:
+    # Seed name shall match the seed identifier
+  - name: ""
+    # clientId shall be the oidc client id configured at the oidc provider
+    clientId: ""
