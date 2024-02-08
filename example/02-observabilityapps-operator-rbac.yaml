@@ -1,0 +1,25 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gardener.cloud:system:observabilityapps-operators
+rules:
+  - apiGroups: ["core.gardener.cloud"]
+    resources:
+      - observabilityapps/plutono
+      - observabilityapps/prometheus
+      - observabilityapps/aggregate-prometheus
+    verbs: ["get", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gardener.cloud:system:observabilityapps-operators
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gardener.cloud:system:observabilityapps-operators
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: k8s-dev-seed-observability
