@@ -70,7 +70,15 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	}
 	host, domain, found := strings.Cut(hostPrefix, ".")
 	if found {
-		host = fmt.Sprintf("%s-%s.%s", pod.GetName(), pod.GetNamespace(), domain)
+		// In some envorinments, the pod index is added as a label: apps.kubernetes.io/pod-index
+		podIndex, present := patch.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
+		if present {
+			l := strings.Split(podIndex, "-")
+			host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
+		} else {
+
+			host = fmt.Sprintf("%s.%s", host, domain)
+		}
 	}
 	_log.Info(fmt.Sprintf("host: %s", host))
 

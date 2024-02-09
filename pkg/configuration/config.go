@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -178,7 +179,7 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 
 	prefix := object.GetName() + "-" + object.GetNamespace()
 	if t.Ingress != nil && t.Ingress.HostPrefix != "" {
-		prefix = t.Ingress.HostPrefix
+		prefix = t.Ingress.HostPrefix + "-" + rand.GenerateSha256(object.GetName()+"-"+object.GetNamespace())
 	}
 	if t.Ingress != nil && t.Ingress.Host != "" {
 		prefix, domain, _ = strings.Cut(t.Ingress.Host, ".")

@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -252,9 +253,15 @@ func TestGetTargetHost(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetHost(deployment) != "my-service.domain.org" {
+	z := strings.SplitN(extensionConfig.GetHost(deployment), ".", 2)
+	if len(z) != 2 || z[1] != "domain.org" {
 		t.Error("getting target host is not as expected",
-			"expected: ", "my-service.domain.org",
+			"expected: ", "my-service-[hostPrefix].domain.org.domain.org",
+			"got", extensionConfig.GetHost(deployment))
+	}
+	if !strings.HasPrefix(z[0], "my-service-") {
+		t.Error("getting target host is not as expected",
+			"expected: ", "my-service-[hostPrefix].domain.org.domain.org",
 			"got", extensionConfig.GetHost(deployment))
 	}
 }

@@ -374,7 +374,14 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			// There shall be an ingress for each statefulset pod
 			host, domain, found := strings.Cut(hostPrefix, ".")
 			if found {
-				host = fmt.Sprintf("%s-%s.%s", pod.GetName(), pod.GetNamespace(), domain)
+				// In some envorinments, the pod index is added as a label: apps.kubernetes.io/pod-index
+				podIndex, present := pod.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
+				if present {
+					l := strings.Split(podIndex, "-")
+					host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
+				} else {
+					host = fmt.Sprintf("%s.%s", host, domain)
+				}
 			}
 			_log.V(9).Info("Set", "host", host)
 			oauth2Ingress, err = createIngress(host, &pod)
