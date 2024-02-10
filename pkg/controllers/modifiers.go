@@ -146,7 +146,6 @@ func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, obje
 // reconcileDeployementDependencies is the function responsible for managing authentication & authorization dependencies.
 // It reconciles the needed secrets, ingresses and services.
 func reconcileDeployementDependencies(ctx context.Context, c client.Client, object *v1.Deployment) error {
-	_log := log.FromContext(ctx)
 
 	// Service for the oauth2-proxy sidecar
 	var oauth2Service corev1.Service
@@ -166,9 +165,6 @@ func reconcileDeployementDependencies(ctx context.Context, c client.Client, obje
 	// Optional secret with kubeconfig the rbac-proxy sidecar
 	var kubeConfig corev1.Secret
 
-	// Designates if dependent configuration is modified hence the deployment shall be restarted to load it
-	var shallUpdate bool
-
 	var (
 		mutateFn = func() error { return nil }
 		err      error
@@ -183,18 +179,6 @@ func reconcileDeployementDependencies(ctx context.Context, c client.Client, obje
 		}
 		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn); err != nil {
 			return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
-		}
-
-		// Shell update the deployment when the checksum of the secret changes
-		current, found := object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
-		if !found || current != oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] {
-			shallUpdate = true
-			annotations := object.GetAnnotations()
-			if len(annotations) == 0 {
-				annotations = make(map[string]string, 1)
-			}
-			annotations[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] = oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
-			object.SetAnnotations(annotations)
 		}
 
 		if oauth2Service, err = createOauth2Service(object); err != nil {
@@ -255,14 +239,6 @@ func reconcileDeployementDependencies(ctx context.Context, c client.Client, obje
 			return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 		}
 
-		if shallUpdate {
-			_log.Info("shall update", "checksum", object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey])
-			if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				return c.Update(ctx, object)
-			}); err != nil {
-				return fmt.Errorf("failed to update object: %w", err)
-			}
-		}
 	}
 
 	return nil
@@ -297,9 +273,6 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	// Optional secret with kubeconfig the rbac-proxy sidecar
 	var kubeConfig corev1.Secret
 
-	// Designates if dependent configuration is modified hence the statefulset shall be restarted to load it
-	var shallUpdate bool
-
 	var (
 		mutateFn = func() error { return nil }
 		err      error
@@ -316,17 +289,6 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 		}
 
-		// Shell update the statefulset when the checksum of the secret changes
-		current, found := object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
-		if !found || current != oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] {
-			shallUpdate = true
-			annotations := object.GetAnnotations()
-			if len(annotations) == 0 {
-				annotations = make(map[string]string, 1)
-			}
-			annotations[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] = oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
-			object.SetAnnotations(annotations)
-		}
 		// List the Pods
 		podList := &corev1.PodList{}
 		labelSelector := client.MatchingLabels(object.Spec.Selector.MatchLabels)
@@ -413,15 +375,6 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			}
 		}
 
-		if shallUpdate {
-			_log.Info("shall update", "checksum", object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey])
-
-			if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				return c.Update(ctx, object)
-			}); err != nil {
-				return fmt.Errorf("failed to update object: %w", err)
-			}
-		}
 	}
 
 	return nil

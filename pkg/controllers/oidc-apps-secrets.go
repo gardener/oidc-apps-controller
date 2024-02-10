@@ -23,6 +23,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,32 +43,26 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	var cfg string
 	switch extConfig.GetClientSecret(object) {
 	case "":
-		cfg = newOAuth2Config(
-			withClientId(extConfig.GetClientID(object)),
-			withClientSecretFile("/dev/null"),
-			withScope(extConfig.GetScope(object)),
-			withRedirectUrl(extConfig.GetRedirectUrl(object)),
-			withOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
-			enableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			enableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
-		).parse()
+		cfg = configuration.NewOAuth2Config(
+			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientSecretFile("/dev/null"),
+			configuration.WithScope(extConfig.GetScope(object)),
+			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
+			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object))).Parse()
 	default:
-		cfg = newOAuth2Config(
-			withClientId(extConfig.GetClientID(object)),
-			withClientSecret(extConfig.GetClientSecret(object)),
-			withScope(extConfig.GetScope(object)),
-			withRedirectUrl(extConfig.GetRedirectUrl(object)),
-			withOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
-			enableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			enableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
-		).parse()
+		cfg = configuration.NewOAuth2Config(
+			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientSecret(extConfig.GetClientSecret(object)),
+			configuration.WithScope(extConfig.GetScope(object)),
+			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
+			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object))).Parse()
 	}
 
-	var checksum string
-	var err error
-	if checksum, err = getHash(cfg); err != nil {
-		return corev1.Secret{}, fmt.Errorf("failed to get hash: %w", err)
-	}
+	checksum := rand.GenerateFullSha256(cfg)
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "oauth2-proxy-" + suffix,
@@ -86,10 +81,10 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 	}
 
 	// TODO: add configurable resource, subresource
-	cfg := newResourceAttributes(
-		withNamespace(targetNamespace),
-		withSubresource(object.GetName()),
-	).parse()
+	cfg := configuration.NewResourceAttributes(
+		configuration.WithNamespace(targetNamespace),
+		configuration.WithSubresource(object.GetName()),
+	).Parse()
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "resource-attributes-" + suffix,

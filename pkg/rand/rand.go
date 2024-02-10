@@ -52,3 +52,12 @@ func GenerateSha256(key string) string {
 	}
 	return s
 }
+
+// GenerateFullSha256 returns a sha256 hash of a given string
+func GenerateFullSha256(key string) string {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, strings.NewReader(key)); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}

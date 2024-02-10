@@ -25,7 +25,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/imagevector"
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -41,12 +41,44 @@ var oidcInitCheck string
 func addAnnotations(object client.Object) {
 	annotations := object.GetAnnotations()
 	if len(annotations) == 0 {
-		annotations = make(map[string]string, 2)
+		annotations = make(map[string]string, 5)
 	}
-	annotations[oidc_apps_controller.AnnotationKey] = object.GetName()
-	annotations[oidc_apps_controller.AnnotationHostKey] = configuration.GetOIDCAppsControllerConfig().GetHost(object)
-	annotations[oidc_apps_controller.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
+	annotations[constants.AnnotationKey] = object.GetName()
+	annotations[constants.AnnotationHostKey] = configuration.GetOIDCAppsControllerConfig().GetHost(object)
+	annotations[constants.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
+	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
+	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
 	object.SetAnnotations(annotations)
+}
+
+func get2ProxySecretChecksum(object client.Object) string {
+	extConfig := configuration.GetOIDCAppsControllerConfig()
+	var cfg string
+	switch extConfig.GetClientSecret(object) {
+	case "":
+		cfg = configuration.NewOAuth2Config(
+			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientSecretFile("/dev/null"),
+			configuration.WithScope(extConfig.GetScope(object)),
+			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
+			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
+		).Parse()
+	default:
+		cfg = configuration.NewOAuth2Config(
+			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientSecret(extConfig.GetClientSecret(object)),
+			configuration.WithScope(extConfig.GetScope(object)),
+			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
+			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
+		).Parse()
+	}
+
+	return rand.GenerateFullSha256(cfg)
+
 }
 
 // Add gardener specific labels to the target pods.
@@ -57,8 +89,8 @@ func addPodLabels(object *corev1.PodTemplateSpec, lbls map[string]string) {
 	if len(labels) == 0 {
 		labels = make(map[string]string, 2)
 	}
-	labels[oidc_apps_controller.GardenerPublicLabelsKey] = "allowed"
-	labels[oidc_apps_controller.GardenerPrivateLabelsKey] = "allowed"
+	labels[constants.GardenerPublicLabelsKey] = "allowed"
+	labels[constants.GardenerPrivateLabelsKey] = "allowed"
 	if len(lbls) == 0 {
 		object.SetLabels(labels)
 		return
@@ -252,10 +284,10 @@ func fetchTargetSuffix(object client.Object) string {
 	if len(objectAnnotations) == 0 {
 		objectAnnotations = make(map[string]string, 1)
 	}
-	suffix, ok := objectAnnotations[oidc_apps_controller.AnnotationSuffixKey]
+	suffix, ok := objectAnnotations[constants.AnnotationSuffixKey]
 	if !ok {
 		suffix = rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
-		objectAnnotations[oidc_apps_controller.AnnotationSuffixKey] = suffix
+		objectAnnotations[constants.AnnotationSuffixKey] = suffix
 		object.SetAnnotations(objectAnnotations)
 	}
 	return suffix
@@ -317,7 +349,7 @@ func getInitContainer(oidcIssuerUrl string) corev1.Container {
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
-				Name:      oidc_apps_controller.KubeRbacProxyVolumeName,
+				Name:      constants.KubeRbacProxyVolumeName,
 				ReadOnly:  true,
 				MountPath: "/etc/kube-rbac-proxy",
 			},
@@ -354,7 +386,7 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, target clie
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
-				Name:      oidc_apps_controller.KubeRbacProxyVolumeName,
+				Name:      constants.KubeRbacProxyVolumeName,
 				ReadOnly:  true,
 				MountPath: "/etc/kube-rbac-proxy",
 			},
@@ -409,7 +441,7 @@ func getOIDCProxyContainer() corev1.Container {
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
-				Name:      oidc_apps_controller.Oauth2VolumeName,
+				Name:      constants.Oauth2VolumeName,
 				ReadOnly:  true,
 				MountPath: "/etc/oauth2-proxy.cfg",
 				SubPath:   "oauth2-proxy.cfg",

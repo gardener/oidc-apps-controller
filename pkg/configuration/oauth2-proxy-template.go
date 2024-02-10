@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controllers
+package configuration
 
 import (
 	"bufio"
@@ -25,7 +25,7 @@ import (
 var oauth2 string
 
 type configParser interface {
-	parse() string
+	Parse() string
 }
 
 type optOauth2 func(*oauth2Config)
@@ -41,7 +41,8 @@ type oauth2Config struct {
 	insecureOidcSkipIssuerVerification bool
 }
 
-func (o oauth2Config) parse() string {
+// Parse returns the parsed oauth2 config
+func (o *oauth2Config) Parse() string {
 	var builder strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(oauth2))
 	for scanner.Scan() {
@@ -94,7 +95,8 @@ func (o oauth2Config) parse() string {
 	return strings.TrimSuffix(b, "\n")
 }
 
-func newOAuth2Config(opts ...optOauth2) configParser {
+// NewOAuth2Config returns a new oauth2 config
+func NewOAuth2Config(opts ...optOauth2) configParser {
 	cfg := oauth2Config{}
 	for _, o := range opts {
 		o(&cfg)
@@ -102,48 +104,57 @@ func newOAuth2Config(opts ...optOauth2) configParser {
 	return &cfg
 }
 
-func withClientId(id string) optOauth2 {
+// WithClientId sets the client id
+func WithClientId(id string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.clientID = id
 	}
 }
 
-func withRedirectUrl(url string) optOauth2 {
+// WithRedirectUrl sets the redirect url
+func WithRedirectUrl(url string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.redirectUrl = url
 	}
 }
 
-func withScope(scope string) optOauth2 {
+// WithScope sets the scope
+func WithScope(scope string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.scope = scope
 	}
 }
-func withClientSecret(path string) optOauth2 {
+
+// WithClientSecret sets the client secret
+func WithClientSecret(path string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.clientSecret = path
 	}
 }
 
-func withClientSecretFile(path string) optOauth2 {
+// WithClientSecretFile sets the client secret file
+func WithClientSecretFile(path string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.clientSecretFile = path
 	}
 }
 
-func withOidcIssuerUrl(url string) optOauth2 {
+// WithOidcIssuerUrl sets the oidc issuer url
+func WithOidcIssuerUrl(url string) optOauth2 {
 	return func(o *oauth2Config) {
 		o.oidcIssuerUrl = url
 	}
 }
 
-func enableSslInsecureSkipVerify(b bool) optOauth2 {
+// EnableSslInsecureSkipVerify sets the ssl insecure skip verify
+func EnableSslInsecureSkipVerify(b bool) optOauth2 {
 	return func(o *oauth2Config) {
 		o.sslInsecureSkipVerify = b
 	}
 }
 
-func enableInsecureOidcSkipIssuerVerification(b bool) optOauth2 {
+// EnableInsecureOidcSkipIssuerVerification sets the insecure oidc skip issuer verification
+func EnableInsecureOidcSkipIssuerVerification(b bool) optOauth2 {
 	return func(o *oauth2Config) {
 		o.insecureOidcSkipIssuerVerification = b
 	}

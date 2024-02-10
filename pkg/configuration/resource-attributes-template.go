@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controllers
+package configuration
 
 import (
 	_ "embed"
@@ -41,7 +41,7 @@ type ResourceAttributes struct {
 	Namespace   string `yaml:"namespace"`
 }
 
-func (r *root) parse() string {
+func (r *root) Parse() string {
 	var parsed []byte
 	parsed, _ = yaml.Marshal(*r)
 	return string(parsed)
@@ -49,7 +49,8 @@ func (r *root) parse() string {
 
 type optRAttributes func(*ResourceAttributes)
 
-func newResourceAttributes(opt ...optRAttributes) configParser {
+// NewResourceAttributes returns a new configParser for the ResourceAttributes
+func NewResourceAttributes(opt ...optRAttributes) configParser {
 	root := &root{
 		Authorization: Authorization{
 			ResourceAttributes: ResourceAttributes{
@@ -68,13 +69,15 @@ func newResourceAttributes(opt ...optRAttributes) configParser {
 	return root
 }
 
-func withNamespace(namespace string) optRAttributes {
+// WithNamespace sets the namespace for the ResourceAttributes
+func WithNamespace(namespace string) optRAttributes {
 	return func(r *ResourceAttributes) {
 		r.Namespace = namespace
 	}
 }
 
-func withSubresource(subresource string) optRAttributes {
+// WithSubresource sets the subresource for the ResourceAttributes
+func WithSubresource(subresource string) optRAttributes {
 	return func(r *ResourceAttributes) {
 		r.Subresource = subresource
 	}

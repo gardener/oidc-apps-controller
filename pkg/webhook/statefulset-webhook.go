@@ -20,7 +20,7 @@ import (
 	"net/http"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -80,28 +80,28 @@ func (s *StatefulSetMutator) Handle(ctx context.Context, req webhook.AdmissionRe
 	// Add required annotations to pod spec template
 	addPodAnnotations(&patch.Spec.Template,
 		map[string]string{
-			oidc_apps_controller.AnnotationHostKey: configuration.GetOIDCAppsControllerConfig().GetHost(patch),
+			constants.AnnotationHostKey: configuration.GetOIDCAppsControllerConfig().GetHost(patch),
 		},
 	)
 
 	// Add required labels to pod spec template
 	addPodLabels(&patch.Spec.Template,
 		map[string]string{
-			oidc_apps_controller.LabelKey: "pod",
+			constants.LabelKey: "pod",
 		},
 	)
 
 	// Add the oauth2-proxy volume
 	// TODO: handle scaling statefulset pods
 	addSecretSourceVolume(
-		oidc_apps_controller.Oauth2VolumeName,
+		constants.Oauth2VolumeName,
 		"oauth2-proxy-"+suffix,
 		&patch.Spec.Template.Spec,
 	)
 
 	// Add the resource-attribute secret volume for the kube-rbac-proxy
 	addProjectedSecretSourceVolume(
-		oidc_apps_controller.KubeRbacProxyVolumeName,
+		constants.KubeRbacProxyVolumeName,
 		"resource-attributes-"+suffix,
 		&patch.Spec.Template.Spec,
 	)
@@ -109,7 +109,7 @@ func (s *StatefulSetMutator) Handle(ctx context.Context, req webhook.AdmissionRe
 	// Add an optional kubeconfig secret for the kube-rbac-proxy
 	if shallAddKubeConfigSecretName(patch) {
 		addProjectedSecretSourceVolume(
-			oidc_apps_controller.KubeRbacProxyVolumeName,
+			constants.KubeRbacProxyVolumeName,
 			fetchKubconfigSecretName(suffix, patch),
 			&patch.Spec.Template.Spec,
 		)
@@ -118,7 +118,7 @@ func (s *StatefulSetMutator) Handle(ctx context.Context, req webhook.AdmissionRe
 	// Add an optional oidc ca secret for the kube-rbac-proxy
 	if shallAddOidcCaSecretName(patch) {
 		addProjectedSecretSourceVolume(
-			oidc_apps_controller.KubeRbacProxyVolumeName,
+			constants.KubeRbacProxyVolumeName,
 			fetchOidcCASecretName(suffix, patch),
 			&patch.Spec.Template.Spec,
 		)

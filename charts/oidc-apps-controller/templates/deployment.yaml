@@ -64,6 +64,7 @@ spec:
             {{- end }}
             {{- end }}
           args:
+          - "--zap-devel=true"
           - "--config=/etc/controller.yaml"
           - "--use-cert-manager={{ .Values.certificate.create }}"
           - "--webhook-certs-dir=/etc/webhook"

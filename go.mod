@@ -26,7 +26,6 @@ require (
 	github.com/google/pprof v0.0.0-20211214055906-6f57359322fd // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20240201105228-4000e996a202 // indirect
 )
 
 require (
