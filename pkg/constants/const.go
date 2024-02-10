@@ -23,6 +23,10 @@ const (
 	AnnotationKey = "oidc-application-controller/component"
 	//AnnotationSuffixKey holds the name suffix of the mounted confguration secrets
 	AnnotationSuffixKey = "oidc-application-controller/suffix"
+	//AnnotationOauth2SecertCehcksumKey holds the checksum of the ouath2 proxy confguration secret
+	AnnotationOauth2SecertCehcksumKey = "oidc-application-controller/oauth2-secret-checksum"
+	//AnnotationResourcesAttributesSecertCehcksumKey holds the checksum of the resource attributes confguration secret
+	AnnotationResourcesAttributesSecertCehcksumKey = "oidc-application-controller/resourceattr-secret-checksum"
 	//DeploymentWebHookPath is the context path of the mutating webhook for deployments
 	DeploymentWebHookPath = "/oidc-mutate-v1-deployment"
 	//StatefulsetWebHookPath is the context path of the mutating webhook for statefusets

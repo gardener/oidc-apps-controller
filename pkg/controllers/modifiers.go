@@ -166,115 +166,102 @@ func reconcileDeployementDependencies(ctx context.Context, c client.Client, obje
 	// Optional secret with kubeconfig the rbac-proxy sidecar
 	var kubeConfig corev1.Secret
 
+	// Designates if dependent configuration is modified hence the deployment shall be restarted to load it
+	var shallUpdate bool
+
 	var (
 		mutateFn = func() error { return nil }
-		op       controllerutil.OperationResult
-		checksum string
 		err      error
 	)
 	if object.GetDeletionTimestamp() == nil {
 
-		oauth2Secret, err = createOauth2Secret(object)
-		if err != nil {
-			return err
+		if oauth2Secret, err = createOauth2Secret(object); err != nil {
+			return fmt.Errorf("failed to create oauth2 secret: %w", err)
 		}
-		if err := controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
-			return err
+		if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
+			return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 		}
-		if len(object.Spec.Template.Annotations) == 0 {
-			object.Spec.Template.Annotations = make(map[string]string, 1)
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 		}
-		if checksum, err = getHash(oauth2Secret.String()); err != nil {
-			return err
-		}
-		object.Spec.Template.Annotations["checksum/secret-oauth2-proxy"] = checksum
 
-		oauth2Service, err = createOauth2Service(object)
-		if err != nil {
-			return err
+		// Shell update the deployment when the checksum of the secret changes
+		current, found := object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
+		if !found || current != oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] {
+			shallUpdate = true
+			annotations := object.GetAnnotations()
+			if len(annotations) == 0 {
+				annotations = make(map[string]string, 1)
+			}
+			annotations[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] = oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
+			object.SetAnnotations(annotations)
+		}
+
+		if oauth2Service, err = createOauth2Service(object); err != nil {
+			return fmt.Errorf("failed to create oauth2 service: %w", err)
 		}
 		if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
-			return err
+			return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
+		}
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 		}
 
 		ns := fetchResourceAttributesNamespace(ctx, c, object)
-		rbacSecret, err = createResourceAttributesSecret(object, ns)
-		if err != nil {
-			return err
+		if rbacSecret, err = createResourceAttributesSecret(object, ns); err != nil {
+			return fmt.Errorf("failed to create resource attributes secret: %w", err)
 		}
 		if err := controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
-			return err
+			return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
+		}
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update resource attributes secret secret: %w", err)
 		}
 
 		// kubeconfig secret is optionally added to the kube-rbac-proxy
-		kubeConfig, err = createKubeconfigSecret(object)
-		if err == nil {
+		if kubeConfig, err = createKubeconfigSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
+			return fmt.Errorf("failed to create kubeconfig secret: %w", err)
+		}
+		if !errors.Is(err, errSecretDoesNotExist) {
 			if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
-				_log.Error(err, "Failed to set owner reference to kubeconfig secret")
+				return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 			}
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn)
-			if err != nil {
-				return err
-			} else {
-				_log.Info(string(op))
-			}
-		}
-		if err != nil && !errors.Is(err, errSecretDoesNotExist) {
-			return err
-		}
-		// kube-rbac-proxy does not provide configuration for kubeconfig
-		oidcCABundleSecret, err = createOidcCaBundleSecret(object)
-		if err != nil {
-			return err
-		}
-		if oidcCABundleSecret.Name != "" {
-			if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
-				_log.Error(err, "Failed to set owner reference to oidc ca bundle secret")
-			}
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn)
-			if err != nil {
-				return err
-			} else {
-				_log.Info(string(op))
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update kubeconfig secret: %w", err)
 			}
 		}
 
-		oauth2Ingress, err = createIngress(object.GetAnnotations()[oidc_apps_controller.AnnotationHostKey], object)
-		if err != nil {
-			return err
+		// oidc ca bundle secret is mandatory for the rbac-proxy
+		if oidcCABundleSecret, err = createOidcCaBundleSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
+			return fmt.Errorf("failed to create oidc ca bundle secret: %w", err)
+		}
+		if !errors.Is(err, errSecretDoesNotExist) {
+			if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
+				return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
+			}
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update oidc ca: %w", err)
+			}
+		}
+
+		if oauth2Ingress, err = createIngress(object.GetAnnotations()[oidc_apps_controller.AnnotationHostKey], object); err != nil {
+			return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 		}
 		if err = controllerutil.SetOwnerReference(object, &oauth2Ingress,
 			c.Scheme()); err != nil {
-			return err
+			return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
+		}
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 		}
 
-		//TODO: check update operation
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn)
-		if err != nil {
-			return err
-		} else {
-			_log.Info(string(op))
-		}
-
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn)
-		if err != nil {
-			return err
-		} else {
-			_log.Info(string(op))
-		}
-
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn)
-		if err != nil {
-			return err
-		} else {
-			_log.Info(string(op))
-		}
-
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn)
-		if err != nil {
-			return err
-		} else {
-			_log.Info(string(op))
+		if shallUpdate {
+			_log.Info("shall update", "checksum", object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey])
+			if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return c.Update(ctx, object)
+			}); err != nil {
+				return fmt.Errorf("failed to update object: %w", err)
+			}
 		}
 	}
 
@@ -310,42 +297,41 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	// Optional secret with kubeconfig the rbac-proxy sidecar
 	var kubeConfig corev1.Secret
 
+	// Designates if dependent configuration is modified hence the statefulset shall be restarted to load it
+	var shallUpdate bool
+
 	var (
 		mutateFn = func() error { return nil }
-		op       controllerutil.OperationResult
-		checksum string
 		err      error
 	)
 	if object.GetDeletionTimestamp() == nil {
 
-		oauth2Secret, err = createOauth2Secret(object)
-		if err != nil {
-			return err
+		if oauth2Secret, err = createOauth2Secret(object); err != nil {
+			return fmt.Errorf("failed to create oauth2 secret: %w", err)
 		}
 		if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
-			return err
+			return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 		}
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn)
-		if err != nil {
-			_log.Error(err, "update oauth2 secret")
-			return err
-		} else {
-			_log.Info(string(op))
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 		}
 
-		if len(object.Spec.Template.Annotations) == 0 {
-			object.Spec.Template.Annotations = make(map[string]string, 1)
+		// Shell update the statefulset when the checksum of the secret changes
+		current, found := object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
+		if !found || current != oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] {
+			shallUpdate = true
+			annotations := object.GetAnnotations()
+			if len(annotations) == 0 {
+				annotations = make(map[string]string, 1)
+			}
+			annotations[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] = oauth2Secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
+			object.SetAnnotations(annotations)
 		}
-		if checksum, err = getHash(oauth2Secret.String()); err != nil {
-			return err
-		}
-		object.Spec.Template.Annotations["checksum/secret-oauth2-proxy"] = checksum
-
 		// List the Pods
 		podList := &corev1.PodList{}
 		labelSelector := client.MatchingLabels(object.Spec.Selector.MatchLabels)
 		if err := c.List(ctx, podList, labelSelector, client.InNamespace(object.GetNamespace())); err != nil {
-			return err
+			return fmt.Errorf("failed to list pods: %w", err)
 		}
 		hostPrefix := object.GetAnnotations()[oidc_apps_controller.AnnotationHostKey]
 		suffix := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
@@ -355,20 +341,14 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			}
 			pod.Annotations[oidc_apps_controller.AnnotationSuffixKey] = suffix
 
-			oauth2Service, err = createOauth2Service(&pod)
-			if err != nil {
-				return err
+			if oauth2Service, err = createOauth2Service(&pod); err != nil {
+				return fmt.Errorf("failed to create oauth2 service: %w", err)
 			}
 			if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
-				return err
+				return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 			}
-
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn)
-			if err != nil {
-				_log.Error(err, "update oauth2 service")
-				return err
-			} else {
-				_log.Info(string(op))
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 			}
 
 			// There shall be an ingress for each statefulset pod
@@ -384,79 +364,65 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 				}
 			}
 			_log.V(9).Info("Set", "host", host)
-			oauth2Ingress, err = createIngress(host, &pod)
-			if err != nil {
-				return err
+			if oauth2Ingress, err = createIngress(host, &pod); err != nil {
+				return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 			}
-			if err := controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
-				return err
+			if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
+				return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
 			}
-
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn)
-			if err != nil {
-				_log.Error(err, "update oauth2 ingress")
-				return err
-			} else {
-				_log.Info(string(op))
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 			}
 
 		}
 
 		ns := fetchResourceAttributesNamespace(ctx, c, object)
-		rbacSecret, err = createResourceAttributesSecret(object, ns)
-		if err != nil {
-			return err
+		if rbacSecret, err = createResourceAttributesSecret(object, ns); err != nil {
+			return fmt.Errorf("failed to create resource attributes secret: %w", err)
 		}
-		if err := controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
-			return err
+		if err = controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
+			return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
+		}
+		if _, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn); err != nil {
+			return fmt.Errorf("failed to create or update resource attributes secret: %w", err)
 		}
 
 		// kubeconfig secret is optionally added to the kube-rbac-proxy
-		kubeConfig, err = createKubeconfigSecret(object)
-		if err == nil {
+		if kubeConfig, err = createKubeconfigSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
+			return fmt.Errorf("failed to create kubeconfig secret: %w", err)
+		}
+		if !errors.Is(err, errSecretDoesNotExist) {
 			if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
-				_log.Error(err, "Failed to set owner reference to kubeconfig secret")
+				return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 			}
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn)
-			if err != nil {
-				_log.Error(err, "update kubeconfig secret")
-				return err
-			} else {
-				_log.Info(string(op))
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update kubeconfig secret: %w", err)
 			}
 		}
-		if err != nil && !errors.Is(err, errSecretDoesNotExist) {
-			return err
+
+		// oidc ca bundle secret is mandatory for the rbac-proxy
+		if oidcCABundleSecret, err = createOidcCaBundleSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
+			return fmt.Errorf("failed to create oidc ca bundle secret: %w", err)
 		}
-		// kube-rbac-proxy does not provide configuration for kubeconfig
-		oidcCABundleSecret, err = createOidcCaBundleSecret(object)
-		if err != nil {
-			return err
-		}
-		if oidcCABundleSecret.Name != "" {
+		if !errors.Is(err, errSecretDoesNotExist) {
 			if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
-				_log.Error(err, "Failed to set owner reference to oidc ca bundle secret")
+				return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
 			}
-			op, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn)
-			if err != nil {
-				_log.Error(err, "update oidcCABundleSecret secret")
-				return err
-			} else {
-				_log.Info(string(op))
+			if _, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn); err != nil {
+				return fmt.Errorf("failed to create or update oidc ca: %w", err)
 			}
 		}
 
-		op, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn)
-		if err != nil {
-			_log.Error(err, "update rbacSecret secret")
-			return err
-		} else {
-			_log.Info(string(op))
-		}
+		if shallUpdate {
+			_log.Info("shall update", "checksum", object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey])
 
+			if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return c.Update(ctx, object)
+			}); err != nil {
+				return fmt.Errorf("failed to update object: %w", err)
+			}
+		}
 	}
-
-	/**/
 
 	return nil
 }
@@ -467,8 +433,7 @@ func triggerGenerationIncrease(ctx context.Context, c client.Client, object clie
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return c.Update(ctx, object)
 	}); err != nil {
-		log.FromContext(ctx).Error(err, "failed to increase the generation")
-		return err
+		return fmt.Errorf("failed to update object: %w", err)
 	}
 	return nil
 }

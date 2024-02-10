@@ -63,11 +63,17 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 		).parse()
 	}
 
+	var checksum string
+	var err error
+	if checksum, err = getHash(cfg); err != nil {
+		return corev1.Secret{}, fmt.Errorf("failed to get hash: %w", err)
+	}
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oauth2-proxy-" + suffix,
-			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
+			Name:        "oauth2-proxy-" + suffix,
+			Namespace:   object.GetNamespace(),
+			Annotations: map[string]string{oidc_apps_controller.AnnotationOauth2SecertCehcksumKey: checksum},
+			Labels:      map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
 		},
 		StringData: map[string]string{"oauth2-proxy.cfg": cfg},
 	}, nil
@@ -174,16 +180,14 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		return corev1.Secret{}, fmt.Errorf("Error marshaling kubeconfig: %v", err)
 	}
 
-	secret := corev1.Secret{
+	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubeconfig-" + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{oidc_apps_controller.LabelKey: "kubeconfig"},
 		},
 		StringData: map[string]string{"kubeconfig": string(k)},
-	}
-
-	return secret, nil
+	}, nil
 }
 
 func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
@@ -205,5 +209,5 @@ func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 		return secret, nil
 	}
 
-	return corev1.Secret{}, nil
+	return corev1.Secret{}, errSecretDoesNotExist
 }
