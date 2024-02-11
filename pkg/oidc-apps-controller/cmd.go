@@ -200,7 +200,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 				Funcs: predicate.Funcs{
 					CreateFunc: func(e event.CreateEvent) bool {
 						if extensionConfig.Match(e.Object) {
-							_log.V(9).Info("create", "event", e.Object)
+							_log.V(9).Info("create event", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
@@ -208,7 +208,8 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 					},
 					DeleteFunc: func(e event.DeleteEvent) bool {
 						if extensionConfig.Match(e.Object) {
-							_log.V(9).Info("delete", "event", e.Object)
+							_log.V(9).Info("delete event", "name", e.Object.GetName(), "namespace",
+								e.Object.GetNamespace())
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
@@ -216,7 +217,8 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 					},
 					UpdateFunc: func(e event.UpdateEvent) bool {
 						if extensionConfig.Match(e.ObjectNew) {
-							_log.V(9).Info("update", "event", e.ObjectNew)
+							_log.V(9).Info("update event", "name", e.ObjectNew.GetName(), "namespace",
+								e.ObjectNew.GetNamespace())
 							return true
 						}
 						_, found := e.ObjectNew.GetLabels()[constants.LabelKey]
@@ -224,7 +226,8 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 					},
 					GenericFunc: func(e event.GenericEvent) bool {
 						if extensionConfig.Match(e.Object) {
-							_log.V(9).Info("generic", "event", e.Object)
+							_log.V(9).Info("generic event", "name", e.Object.GetName(), "namespace",
+								e.Object.GetNamespace())
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
