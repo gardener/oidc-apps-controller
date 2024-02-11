@@ -65,12 +65,12 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	// then we trigger an update of the resource
 	annotations := reconciledDeployment.GetAnnotations()
 	if len(annotations) == 0 {
-		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
+		_log.Info("Reconciled deployment is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
 		return reconcile.Result{}, triggerGenerationIncrease(ctx, d.Client, reconciledDeployment)
 	}
 	if _, found := annotations[oidc_apps_controller.AnnotationTargetKey]; !found {
-		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
+		_log.Info("Reconciled deployment is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
 		return reconcile.Result{}, triggerGenerationIncrease(ctx, d.Client, reconciledDeployment)
 	}
@@ -106,7 +106,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 		return reconcile.Result{}, nil
 	}
 
-	if err := reconcileDeployementDependencies(ctx, d.Client, reconciledDeployment); err != nil {
+	if err := reconcileDeploymentDependencies(ctx, d.Client, reconciledDeployment); err != nil {
 		return reconcile.Result{}, err
 	}
 
