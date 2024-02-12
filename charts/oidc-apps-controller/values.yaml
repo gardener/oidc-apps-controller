@@ -1,10 +1,10 @@
 # Default values for oidc-apps-extension.
 
 image:
-  repository: eu.gcr.io/gardener-project/gardener/oidc-apps-controller
+  repository: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/oidc-apps-controller
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.0.1"
+  tag: "v0.1.3"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -152,7 +152,7 @@ targets:
 
 # In case of Gardener there can be a mapping between seed names and oidc client ids
 seeds:
-    # Seed name shall match the seed identifier
+  # Seed name shall match the seed identifier
   - name: ""
     # clientId shall be the oidc client id configured at the oidc provider
     clientId: ""
