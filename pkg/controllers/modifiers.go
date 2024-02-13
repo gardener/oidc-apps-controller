@@ -401,3 +401,14 @@ func triggerGenerationIncrease(ctx context.Context, c client.Client, object clie
 	}
 	return nil
 }
+
+func ensureValidNameLength(name string) string {
+	if len(name) <= 63 {
+		return name
+	}
+	n := strings.Split(name, "-")
+	if len(n) <= 3 {
+		return name[:63]
+	}
+	return strings.Join(n[len(n)-3:], "-")
+}
