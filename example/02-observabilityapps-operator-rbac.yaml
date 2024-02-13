@@ -4,7 +4,7 @@ kind: ClusterRole
 metadata:
   name: gardener.cloud:system:observabilityapps-operators
 rules:
-  - apiGroups: ["core.gardener.cloud"]
+  - apiGroups: ["authorization.extensions.gardener.cloud"]
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus

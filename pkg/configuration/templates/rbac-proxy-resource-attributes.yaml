@@ -1,6 +1,6 @@
 authorization:
   resourceAttributes:
-    apiGroup: core.gardener.cloud
+    apiGroup: authorization.extensions.gardener.cloud
     apiVersion: v1alpha1
     resource: observabilityapps
     subresource: "..."

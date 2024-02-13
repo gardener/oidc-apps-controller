@@ -8,7 +8,7 @@ metadata:
     rbac.gardener.cloud/aggregate-to-project-admin: "true"
     rbac.gardener.cloud/aggregate-to-project-viewer: "true"
 rules:
-  - apiGroups: ["core.gardener.cloud"]
+  - apiGroups: ["authorization.extensions.gardener.cloud"]
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus
