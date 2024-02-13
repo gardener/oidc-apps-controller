@@ -51,16 +51,12 @@ spec:
             {{- if .Values.gardener }}
             - name: GARDEN_ACCESS_TOKEN
               value: "/var/run/secrets/gardener.cloud/garden/oidc-apps-access-token"
-            {{- if and (.Values.gardener.seed) (.Values.gardener.seed.spec) (.Values.gardener.seed.spec.ingress) (.Values.gardener.seed.spec.ingress.domain) }}
             - name: GARDEN_SEED_DOMAIN_NAME
               value: "{{ .Values.gardener.seed.spec.ingress.domain }}"
-            {{- end }}
-            {{- if and (.Values.gardener.seed) (.Values.gardener.seed.name) (.Values.seeds) }}
-            {{- $cliendId := include "oidc-apps-extension.fetchClientIdBySeedIdentifier" (dict "name" .Values.gardener.seed.name "seeds" .Values.seeds) }}
-            {{- if $cliendId }}
+            {{- $clientId := include "oidc-apps-extension.fetchClientIdBySeedIdentifier" . }}
+            {{- if $clientId }}
             - name: GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID
-              value: {{ $cliendId }}
-            {{- end }}
+              value: {{ $clientId }}
             {{- end }}
             {{- end }}
           args:
