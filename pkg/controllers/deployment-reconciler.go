@@ -21,9 +21,7 @@ import (
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -67,22 +65,23 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	if len(annotations) == 0 {
 		_log.Info("Reconciled deployment is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
-		return reconcile.Result{}, triggerGenerationIncrease(ctx, d.Client, reconciledDeployment)
+		return reconcile.Result{}, nil
 	}
 	if _, found := annotations[oidc_apps_controller.AnnotationTargetKey]; !found {
 		_log.Info("Reconciled deployment is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
-		return reconcile.Result{}, triggerGenerationIncrease(ctx, d.Client, reconciledDeployment)
+		return reconcile.Result{}, nil
 	}
 
 	// add a finalizer
-	if !controllerutil.ContainsFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer) && !reconciledDeployment.
-		GetDeletionTimestamp().IsZero() {
-		controllerutil.AddFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer)
-		if err := d.Client.Update(ctx, reconciledDeployment); err != nil {
-			return reconcile.Result{}, err
-		}
-	}
+	/*
+		if !controllerutil.ContainsFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer) && !reconciledDeployment.
+			GetDeletionTimestamp().IsZero() {
+			controllerutil.AddFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer)
+			if err := d.Client.Update(ctx, reconciledDeployment); err != nil {
+				return reconcile.Result{}, err
+			}
+		}*/
 
 	// Check for deletion & handle cleanup of the dependencies
 	if !reconciledDeployment.GetDeletionTimestamp().IsZero() {
@@ -90,19 +89,22 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 		if err := deleteOwnedResources(ctx, d.Client, reconciledDeployment); err != nil {
 			return reconcile.Result{}, err
 		}
-		_log.V(9).Info("Remove finalizer")
 
-		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err := d.Client.Get(ctx, request.NamespacedName, reconciledDeployment); client.IgnoreNotFound(
-				err) != nil {
-				return err
-			}
-			controllerutil.RemoveFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer)
-			return d.Client.Update(ctx, reconciledDeployment)
-		}); err != nil {
-			_log.Error(err, "Error removing finalizer")
-			return reconcile.Result{}, nil
-		}
+		/*
+			_log.V(9).Info("Remove finalizer")
+				if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					if err := d.Client.Get(ctx, request.NamespacedName, reconciledDeployment); client.IgnoreNotFound(
+						err) != nil {
+						return err
+					}
+					controllerutil.RemoveFinalizer(reconciledDeployment, oidc_apps_controller.Finalizer)
+					return d.Client.Update(ctx, reconciledDeployment)
+				}); err != nil {
+					_log.Error(err, "Error removing finalizer")
+					return reconcile.Result{}, nil
+				}
+		*/
+
 		return reconcile.Result{}, nil
 	}
 

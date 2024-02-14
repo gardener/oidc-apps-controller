@@ -21,9 +21,7 @@ import (
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -67,21 +65,12 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 	if len(annotations) == 0 {
 		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
-		return reconcile.Result{}, triggerGenerationIncrease(ctx, s.Client, reconciledStatefulSet)
+		return reconcile.Result{}, nil
 	}
 	if _, found := annotations[oidc_apps_controller.AnnotationTargetKey]; !found {
 		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
 			"re-triggering the admission controller...")
-		return reconcile.Result{}, triggerGenerationIncrease(ctx, s.Client, reconciledStatefulSet)
-	}
-
-	// add a finalizer
-	if !controllerutil.ContainsFinalizer(reconciledStatefulSet, oidc_apps_controller.Finalizer) && !reconciledStatefulSet.
-		GetDeletionTimestamp().IsZero() {
-		controllerutil.AddFinalizer(reconciledStatefulSet, oidc_apps_controller.Finalizer)
-		if err := s.Client.Update(ctx, reconciledStatefulSet); err != nil {
-			return reconcile.Result{}, err
-		}
+		return reconcile.Result{}, nil
 	}
 
 	// Check for deletion & handle cleanup of the dependencies
@@ -89,19 +78,6 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 		_log.V(9).Info("Remove owned resources")
 		if err := deleteOwnedResources(ctx, s.Client, reconciledStatefulSet); err != nil {
 			return reconcile.Result{}, err
-		}
-		_log.V(9).Info("Remove finalizer")
-
-		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err := s.Client.Get(ctx, request.NamespacedName, reconciledStatefulSet); client.IgnoreNotFound(
-				err) != nil {
-				return err
-			}
-			controllerutil.RemoveFinalizer(reconciledStatefulSet, oidc_apps_controller.Finalizer)
-			return s.Client.Update(ctx, reconciledStatefulSet)
-		}); err != nil {
-			_log.Error(err, "Error removing finalizer")
-			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, nil
 	}

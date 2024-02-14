@@ -32,11 +32,12 @@ func createIngress(host string, object client.Object) (networkingv1.Ingress, err
 		return networkingv1.Ingress{}, fmt.Errorf("missing suffix annotation")
 	}
 	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
+
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 
 	return networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ensureValidNameLength(object.GetName() + "-" + suffix),
+			Name:      "ingress" + "-" + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
 		},
@@ -59,7 +60,7 @@ func createIngress(host string, object client.Object) (networkingv1.Ingress, err
 									PathType: ptr.To(networkingv1.PathTypePrefix),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: ensureValidNameLength(object.GetName() + "-oauth2-service-" + suffix),
+											Name: "oauth2-service" + "-" + suffix,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},

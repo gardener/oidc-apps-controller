@@ -18,11 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 	"os"
 	"strings"
-	"time"
-
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -31,19 +29,10 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-var objectRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 1 * time.Second,
-	Factor:   1.0,
-	Jitter:   0.5,
-}
 
 func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList,
 	error) {
@@ -247,8 +236,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 	}
 
-	// Update the deployment when the checksum of the secret changes
-	return updateWhenOauth2SecretDiffer(ctx, c, object, &oauth2Secret)
+	return nil
 }
 
 func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *v1.StatefulSet) error {
@@ -323,7 +311,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			}
 		}
 		// Create or update the oauth2 ingress setting the owner reference
-		if oauth2Ingress, err = createIngress(host, &pod); err != nil {
+		if oauth2Ingress, err = createIngress(host, object); err != nil {
 			return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 		}
 		if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
@@ -372,43 +360,5 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 	}
 
-	// Update the statefulset when the checksum of the secret changes
-	return updateWhenOauth2SecretDiffer(ctx, c, object, &oauth2Secret)
-}
-
-func updateWhenOauth2SecretDiffer(ctx context.Context, c client.Client, object client.Object, secret *corev1.Secret) error {
-	// Shall update the deployment when the checksum of the secret changes
-	current, found := object.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey]
-	if !found || current != secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey] {
-		log.FromContext(ctx).Info("Found different checksum",
-			"object", object.GetName(),
-			"current", current,
-			"secret", secret.GetAnnotations()[oidc_apps_controller.AnnotationOauth2SecertCehcksumKey])
-		return triggerGenerationIncrease(ctx, c, object)
-	}
 	return nil
-}
-
-func triggerGenerationIncrease(ctx context.Context, c client.Client, object client.Object) error {
-	_log := log.FromContext(ctx)
-	_log.Info("Triggering generation increase", "object", object.GetName())
-	if err := retry.RetryOnConflict(objectRetry, func() error {
-		gen := object.GetGeneration()
-		object.SetGeneration(gen + 1)
-		return c.Update(ctx, object)
-	}); err != nil {
-		return fmt.Errorf("failed to update object: %w", err)
-	}
-	return nil
-}
-
-func ensureValidNameLength(name string) string {
-	if len(name) <= 63 {
-		return name
-	}
-	n := strings.Split(name, "-")
-	if len(n) <= 3 {
-		return name[:63]
-	}
-	return strings.Join(n[len(n)-3:], "-")
 }

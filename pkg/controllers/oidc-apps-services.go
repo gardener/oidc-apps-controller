@@ -33,7 +33,7 @@ func createOauth2Service(object client.Object) (corev1.Service, error) {
 
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ensureValidNameLength(object.GetName() + "-oauth2-service-" + suffix),
+			Name:      "oauth2-service-" + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
 		},
