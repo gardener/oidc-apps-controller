@@ -18,9 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 	"os"
+	"strconv"
 	"strings"
+
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -176,7 +178,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	// Create or update the oauth2 service setting the owner reference
-	if oauth2Service, err = createOauth2Service(object); err != nil {
+	if oauth2Service, err = createOauth2Service("", object); err != nil {
 		return fmt.Errorf("failed to create oauth2 service: %w", err)
 	}
 	if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
@@ -225,7 +227,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	// Create or update the oauth2 ingress setting the owner reference
-	if oauth2Ingress, err = createIngress(object.GetAnnotations()[oidc_apps_controller.AnnotationHostKey], object); err != nil {
+	if oauth2Ingress, err = createIngress(object.GetAnnotations()[oidc_apps_controller.AnnotationHostKey], "",
+		object); err != nil {
 		return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 	}
 	if err = controllerutil.SetOwnerReference(object, &oauth2Ingress,
@@ -287,8 +290,20 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 		pod.Annotations[oidc_apps_controller.AnnotationSuffixKey] = suffix
 
+		var podIndex string
+		host, domain, found := strings.Cut(hostPrefix, ".")
+		if found {
+			// In some environments, the pod index is added as a label: apps.kubernetes.io/pod-index
+			if idx, present := pod.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]; present {
+				l := strings.Split(idx, "-")
+				host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
+				podIndex = l[len(l)-1]
+			} else {
+				host = fmt.Sprintf("%s.%s", host, domain)
+			}
+		}
 		// Create or update the oauth2 service setting the owner reference
-		if oauth2Service, err = createOauth2Service(&pod); err != nil {
+		if oauth2Service, err = createOauth2Service(podIndex, &pod); err != nil {
 			return fmt.Errorf("failed to create oauth2 service: %w", err)
 		}
 		if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
@@ -299,19 +314,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 
 		// Create or update the oauth2 ingress setting the owner reference
-		host, domain, found := strings.Cut(hostPrefix, ".")
-		if found {
-			// In some environments, the pod index is added as a label: apps.kubernetes.io/pod-index
-			podIndex, present := pod.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
-			if present {
-				l := strings.Split(podIndex, "-")
-				host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
-			} else {
-				host = fmt.Sprintf("%s.%s", host, domain)
-			}
-		}
-		// Create or update the oauth2 ingress setting the owner reference
-		if oauth2Ingress, err = createIngress(host, object); err != nil {
+		if oauth2Ingress, err = createIngress(host, podIndex, object); err != nil {
 			return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 		}
 		if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
@@ -361,4 +364,19 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	}
 
 	return nil
+}
+
+func addOptionalIndex(idx string) string {
+	if idx == "-" {
+		return ""
+	}
+	idxStr, ok := strings.CutSuffix(idx, "-")
+	if !ok {
+		return ""
+	}
+	i, err := strconv.ParseInt(idxStr, 0, 32)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%d-", i)
 }

@@ -16,7 +16,6 @@ package controllers
 
 import (
 	"fmt"
-
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
@@ -26,18 +25,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func createIngress(host string, object client.Object) (networkingv1.Ingress, error) {
+func createIngress(host string, index string, object client.Object) (networkingv1.Ingress, error) {
 	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
 	if !ok {
 		return networkingv1.Ingress{}, fmt.Errorf("missing suffix annotation")
 	}
 	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
-
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 
 	return networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress" + "-" + suffix,
+			Name:      "ingress-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
 		},
@@ -60,7 +58,7 @@ func createIngress(host string, object client.Object) (networkingv1.Ingress, err
 									PathType: ptr.To(networkingv1.PathTypePrefix),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: "oauth2-service" + "-" + suffix,
+											Name: "oauth2-service-" + addOptionalIndex(index+"-") + suffix,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},

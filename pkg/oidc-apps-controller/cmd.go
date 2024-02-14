@@ -344,11 +344,32 @@ func addStatefulSetController(mgr manager.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Service{},
-			handler.EnqueueRequestForOwner(
-				mgr.GetScheme(),
-				mgr.GetRESTMapper(),
-				&appsv1.StatefulSet{},
-			),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				service := obj.(*corev1.Service)
+				c := mgr.GetClient()
+				for _, o := range service.GetOwnerReferences() {
+					pod := &corev1.Pod{}
+					if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: service.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+						_log.Error(err, "could not get pod", "name", o.Name, "namespace", service.Namespace)
+					}
+					if len(pod.Name) == 0 {
+						continue
+					}
+
+					for _, r := range pod.GetOwnerReferences() {
+						statefulset := &appsv1.StatefulSet{}
+						if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+							_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+						}
+						if len(statefulset.Name) == 0 {
+							continue
+						}
+						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+					}
+				}
+
+				return nil
+			}),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&networkingv1.Ingress{},

@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func createOauth2Service(object client.Object) (corev1.Service, error) {
+func createOauth2Service(index string, object client.Object) (corev1.Service, error) {
 	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
 	if !ok {
 		return corev1.Service{}, fmt.Errorf("missing suffix annotation")
@@ -33,7 +33,7 @@ func createOauth2Service(object client.Object) (corev1.Service, error) {
 
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oauth2-service-" + suffix,
+			Name:      "oauth2-service-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
 		},
