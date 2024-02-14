@@ -10,6 +10,9 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# Default replicas count for the oidc-apps-controller deployment
+replicas: 2
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -161,10 +164,10 @@ clients:
 
 
 gardener:
-  seed:
-    name: foo
-    annotations:
-      odic-apps.extensions.gardener.cloud/client-name: app1
-    spec:
-      ingress:
-        domain: foo.example.com
+  # seed:
+  #   name: foo
+  #   annotations:
+  #     odic-apps.extensions.gardener.cloud/client-name: app1
+  #   spec:
+  #     ingress:
+  #       domain: foo.example.com
