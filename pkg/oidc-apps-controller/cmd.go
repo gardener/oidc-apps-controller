@@ -492,28 +492,11 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 	})
 
 	webhookServer.Register(
-		constants.DeploymentWebHookPath,
-		&webhook.Admission{Handler: &oidcappswebhook.DeploymentMutator{
-			Client:          mgr.GetClient(),
-			Decoder:         admission.NewDecoder(scheme.Scheme),
-			ImagePullSecret: o.registrySecret,
-		}},
-	)
-
-	webhookServer.Register(
-		constants.StatefulsetWebHookPath,
-		&webhook.Admission{Handler: &oidcappswebhook.StatefulSetMutator{
-			Client:          mgr.GetClient(),
-			Decoder:         admission.NewDecoder(scheme.Scheme),
-			ImagePullSecret: o.registrySecret,
-		}},
-	)
-
-	webhookServer.Register(
 		constants.PodWebHookPath,
 		&webhook.Admission{Handler: &oidcappswebhook.PodMutator{
-			Client:  mgr.GetClient(),
-			Decoder: admission.NewDecoder(scheme.Scheme),
+			Client:          mgr.GetClient(),
+			Decoder:         admission.NewDecoder(scheme.Scheme),
+			ImagePullSecret: o.registrySecret,
 		}},
 	)
 

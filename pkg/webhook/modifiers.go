@@ -84,33 +84,33 @@ func get2ProxySecretChecksum(object client.Object) string {
 // Add gardener specific labels to the target pods.
 // Those are needed to construct the correct k8s network policies.
 // TODO: add configurable labels in the helm chart
-func addPodLabels(object *corev1.PodTemplateSpec, lbls map[string]string) {
-	labels := object.GetLabels()
+func addPodLabels(pod *corev1.Pod, lbls map[string]string) {
+	labels := pod.GetLabels()
 	if len(labels) == 0 {
 		labels = make(map[string]string, 2)
 	}
 	labels[constants.GardenerPublicLabelsKey] = "allowed"
 	labels[constants.GardenerPrivateLabelsKey] = "allowed"
 	if len(lbls) == 0 {
-		object.SetLabels(labels)
+		pod.SetLabels(labels)
 		return
 	}
 	maps.Copy(labels, lbls)
-	object.SetLabels(labels)
+	pod.SetLabels(labels)
 }
 
-func addPodAnnotations(object *corev1.PodTemplateSpec, ann map[string]string) {
-	annotations := object.GetAnnotations()
+func addPodAnnotations(pod *corev1.Pod, ann map[string]string) {
+	annotations := pod.GetAnnotations()
 	if len(annotations) == 0 {
 		annotations = make(map[string]string, 1)
 	}
 
 	if len(ann) == 0 {
-		object.SetAnnotations(annotations)
+		pod.SetAnnotations(annotations)
 		return
 	}
 	maps.Copy(annotations, ann)
-	object.SetAnnotations(annotations)
+	pod.SetAnnotations(annotations)
 }
 
 func addImagePullSecret(secretName string, podSpec *corev1.PodSpec) {
@@ -357,9 +357,34 @@ func getInitContainer(oidcIssuerUrl string) corev1.Container {
 	}
 }
 
-func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, target client.Object) corev1.Container {
+func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod) corev1.Container {
 
 	image, _ := imagevector.ImageVector().FindImage("kube-rbac-proxy-watcher")
+
+	volumeMounts := []corev1.VolumeMount{
+		{
+			Name:      constants.KubeRbacProxyVolumeName,
+			ReadOnly:  true,
+			MountPath: "/etc/kube-rbac-proxy",
+		},
+	}
+
+	// Add the service account token volume mount
+	for _, v := range pod.Spec.Volumes {
+		if v.Projected != nil && v.Projected.Sources != nil {
+			for _, s := range v.Projected.Sources {
+				if s.ServiceAccountToken != nil {
+					serviceAccountVolumeMount := corev1.VolumeMount{
+						Name:      v.Name,
+						ReadOnly:  true,
+						MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
+					}
+					volumeMounts = append(volumeMounts, serviceAccountVolumeMount)
+					break
+				}
+			}
+		}
+	}
 
 	container := corev1.Container{
 		Name:            "kube-rbac-proxy",
@@ -384,22 +409,16 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, target clie
 				"memory": resource.MustParse("50Mi"),
 			},
 		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      constants.KubeRbacProxyVolumeName,
-				ReadOnly:  true,
-				MountPath: "/etc/kube-rbac-proxy",
-			},
-		},
+		VolumeMounts: volumeMounts,
 	}
 
-	if shallAddKubeConfigSecretName(target) {
+	if shallAddKubeConfigSecretName(pod) {
 		// Add volume mount and start parameter if the secret name is provided
 		container.Args = append(container.Args, "--kubeconfig=/etc/kube-rbac-proxy/kubeconfig")
 	}
 
 	// TODO: There is a bug https://github.com/brancz/kube-rbac-proxy/issues/259
-	if shallAddOidcCaSecretName(target) {
+	if shallAddOidcCaSecretName(pod) {
 		// Add volume mount and start parameter if the secret name is provided
 		container.Args = append(container.Args, "--oidc-ca-file=/etc/kube-rbac-proxy/ca.crt")
 	}

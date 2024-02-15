@@ -21,8 +21,10 @@ import (
 	"slices"
 	"strings"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,8 +38,9 @@ var _ admission.Handler = &PodMutator{}
 
 // PodMutator is a handler modifying the resource definitions of the pod targets
 type PodMutator struct {
-	Client  client.Client
-	Decoder *webhook.AdmissionDecoder
+	Client          client.Client
+	Decoder         *webhook.AdmissionDecoder
+	ImagePullSecret string
 }
 
 // Handle provides interface implementation for the PodMutator
@@ -62,41 +65,110 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		return webhook.Allowed("delete")
 	}
 
-	patch := pod.DeepCopy()
+	// Simply return it the pod is not part of the described targets
 
-	hostPrefix, ok := patch.GetAnnotations()[oidc_apps_controller.AnnotationHostKey]
-	if !ok {
-		return webhook.Errored(http.StatusBadRequest, fmt.Errorf("cannot find host annotation"))
+	target, owner := isTarget(ctx, p.Client, pod)
+	if !target {
+		return webhook.Allowed("not a target")
 	}
-	host, domain, found := strings.Cut(hostPrefix, ".")
-	if found {
-		// In some envorinments, the pod index is added as a label: apps.kubernetes.io/pod-index
-		podIndex, present := patch.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
-		if present {
+
+	patch := pod.DeepCopy()
+	clientId := configuration.GetOIDCAppsControllerConfig().GetClientID(owner)
+	issuerUrl := configuration.GetOIDCAppsControllerConfig().GetOidcIssuerUrl(owner)
+	upstream := configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(owner)
+	upstreamUrl := fetchUpstreamUrl(upstream, patch.Spec)
+	suffix := fetchTargetSuffix(owner)
+
+	// Add the OIDC annotation to the deployment template
+	addAnnotations(patch)
+
+	// Add required annotations to pod spec template
+	addPodAnnotations(patch,
+		map[string]string{
+			constants.AnnotationHostKey: configuration.GetOIDCAppsControllerConfig().GetHost(owner),
+		},
+	)
+
+	// Add required labels to pod spec template
+	addPodLabels(patch,
+		map[string]string{
+			constants.LabelKey: "pod",
+		},
+	)
+
+	// Add the oauth2-proxy volume
+	// TODO: handle scaling statefulset pods
+	addSecretSourceVolume(
+		constants.Oauth2VolumeName,
+		"oauth2-proxy-"+suffix,
+		&patch.Spec,
+	)
+
+	// Add the resource-attribute secret volume for the kube-rbac-proxy
+	addProjectedSecretSourceVolume(
+		constants.KubeRbacProxyVolumeName,
+		"resource-attributes-"+suffix,
+		&patch.Spec,
+	)
+
+	// Add an optional kubeconfig secret for the kube-rbac-proxy
+	if shallAddKubeConfigSecretName(patch) {
+		addProjectedSecretSourceVolume(
+			constants.KubeRbacProxyVolumeName,
+			fetchKubconfigSecretName(suffix, patch),
+			&patch.Spec,
+		)
+	}
+
+	// Add an optional oidc ca secret for the kube-rbac-proxy
+	if shallAddOidcCaSecretName(patch) {
+		addProjectedSecretSourceVolume(
+			constants.KubeRbacProxyVolumeName,
+			fetchOidcCASecretName(suffix, patch),
+			&patch.Spec,
+		)
+	}
+
+	// Add OIDC Apps init container to deployment.
+	addInitContainer("oidc-init", &patch.Spec, getInitContainer(issuerUrl))
+
+	// Add the OAUTH2 proxy sidecar to the pod template
+	addProxyContainer("oauth2-proxy", &patch.Spec, getOIDCProxyContainer())
+
+	// Add the kube-rbac-proxy sidecar to the pod template
+	addProxyContainer("kube-rbac-proxy", &patch.Spec, getKubeRbacProxyContainer(clientId, issuerUrl, upstreamUrl, patch))
+
+	// Add image pull secret if the proxy container images are served from private registry
+	if len(p.ImagePullSecret) > 0 {
+		addImagePullSecret(p.ImagePullSecret, &patch.Spec)
+	}
+
+	podIndex, present := patch.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
+	if present {
+		hostPrefix := configuration.GetOIDCAppsControllerConfig().GetHost(owner)
+		host, domain, found := strings.Cut(hostPrefix, ".")
+		if found {
 			l := strings.Split(podIndex, "-")
 			host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
-		} else {
-
-			host = fmt.Sprintf("%s.%s", host, domain)
 		}
-	}
-	_log.Info(fmt.Sprintf("host: %s", host))
+		_log.Info(fmt.Sprintf("host: %s", host))
 
-	for idx, container := range patch.Spec.Containers {
-		if container.Name != "oauth2-proxy" {
-			continue
-		}
-		// Remove the argument if present
-		for i, arg := range container.Args {
-			if strings.HasPrefix(arg, "--redirect-url") {
-				slices.Delete(patch.Spec.Containers[idx].Args, i, i+1)
+		for idx, container := range patch.Spec.Containers {
+			if container.Name != "oauth2-proxy" {
+				continue
 			}
+			// Remove the argument if present
+			for i, arg := range container.Args {
+				if strings.HasPrefix(arg, "--redirect-url") {
+					slices.Delete(patch.Spec.Containers[idx].Args, i, i+1)
+				}
+			}
+			// Add the correct argument
+			patch.Spec.Containers[idx].Args = append(patch.Spec.Containers[idx].Args,
+				fmt.Sprintf("--redirect-url=https://%s/oauth2/callback", host),
+			)
+			break
 		}
-		// Add the correct argument
-		patch.Spec.Containers[idx].Args = append(patch.Spec.Containers[idx].Args,
-			fmt.Sprintf("--redirect-url=https://%s/oauth2/callback", host),
-		)
-		break
 	}
 
 	original, err := json.Marshal(pod)
@@ -109,4 +181,42 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		_log.Info("Unable to marshal pod")
 	}
 	return admission.PatchResponseFromRaw(original, patched)
+}
+
+func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, client.Object) {
+	//1. Identify the workload
+	owners := pod.GetOwnerReferences()
+	if len(owners) == 0 {
+		return false, nil
+	}
+
+	for _, o := range owners {
+		if o.Kind == "StatefulSet" {
+			statefulset := &appsv1.StatefulSet{}
+			if err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()},
+				statefulset); err != nil {
+				log.FromContext(ctx).Error(err, "unable to get statefulset for object", "object", pod)
+				return false, nil
+			}
+			return configuration.GetOIDCAppsControllerConfig().Match(statefulset), statefulset
+		}
+
+		if o.Kind == "ReplicaSet" {
+			replicaset := &appsv1.ReplicaSet{}
+			if err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()}, replicaset); err != nil {
+				log.FromContext(ctx).Error(err, "unable to get replicaset for object", "object", pod)
+				return false, nil
+			}
+			deployment := &appsv1.Deployment{}
+			if err := c.Get(ctx, client.ObjectKey{Name: replicaset.GetOwnerReferences()[0].Name,
+				Namespace: pod.GetNamespace()},
+				deployment); err != nil {
+				log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", pod)
+				return false, nil
+			}
+			return configuration.GetOIDCAppsControllerConfig().Match(deployment), deployment
+
+		}
+	}
+	return false, nil
 }

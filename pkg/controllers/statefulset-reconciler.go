@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,42 +33,22 @@ type StatefulSetReconciler struct {
 // Reconcile creates the auth & zutz secrets mounted to the target statefulset
 func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 
-	_log := log.FromContext(ctx)
-
 	reconciledStatefulSet := &appsv1.StatefulSet{}
+
 	if err := s.Client.Get(ctx, request.NamespacedName, reconciledStatefulSet); client.IgnoreNotFound(err) != nil {
 		return reconcile.Result{}, err
 	}
+	_log := log.FromContext(ctx).WithValues("resourceVersion", reconciledStatefulSet.GetResourceVersion())
 
-	// Skip resource without an identity
 	if reconciledStatefulSet.GetName() == "" && reconciledStatefulSet.GetNamespace() == "" {
 		_log.V(9).Info("Reconciled statefulset is empty, returning ...")
 		return reconcile.Result{}, nil
 	}
-	_log = _log.WithValues(
-		"resourceVersion", reconciledStatefulSet.GetResourceVersion(),
-		"generation", reconciledStatefulSet.GetGeneration(),
-	)
+
 	_log.V(9).Info("handling statefulset reconcile request")
 
-	if reconciledStatefulSet.GetLabels() != nil {
-		if !configuration.GetOIDCAppsControllerConfig().Match(reconciledStatefulSet) {
-			_log.V(9).Info("Reconciled statefulset is not an oidc-application-controller target, returning ...")
-			return reconcile.Result{}, nil
-		}
-	}
-
-	// In case the deployment is an OIDC target but has not been modified by the oidc admission controller
-	// then we trigger an update of the resource
-	annotations := reconciledStatefulSet.GetAnnotations()
-	if len(annotations) == 0 {
-		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
-			"re-triggering the admission controller...")
-		return reconcile.Result{}, nil
-	}
-	if _, found := annotations[oidc_apps_controller.AnnotationTargetKey]; !found {
-		_log.Info("Reconciled statefulset is not annotated with the oidc-application-controller annotations, " +
-			"re-triggering the admission controller...")
+	if !configuration.GetOIDCAppsControllerConfig().Match(reconciledStatefulSet) {
+		_log.V(9).Info("Reconciled statefulset is not an oidc-application-controller target, returning ...")
 		return reconcile.Result{}, nil
 	}
 
@@ -86,9 +65,6 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 		return reconcile.Result{}, err
 	}
 
-	if _log.GetV() == 9 {
-		logOwnedResources(ctx, s.Client, reconciledStatefulSet)
-	}
 	return reconcile.Result{}, nil
 
 }

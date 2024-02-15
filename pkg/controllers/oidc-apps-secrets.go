@@ -35,10 +35,8 @@ import (
 var errSecretDoesNotExist = errors.New("secret does not exist")
 
 func createOauth2Secret(object client.Object) (corev1.Secret, error) {
-	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
-	if !ok {
-		return corev1.Secret{}, fmt.Errorf("missing suffix annotation")
-	}
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+
 	extConfig := configuration.GetOIDCAppsControllerConfig()
 	var cfg string
 	switch extConfig.GetClientSecret(object) {
@@ -75,10 +73,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 }
 
 func createResourceAttributesSecret(object client.Object, targetNamespace string) (corev1.Secret, error) {
-	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
-	if !ok {
-		return corev1.Secret{}, fmt.Errorf("missing suffix annotation")
-	}
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 
 	// TODO: add configurable resource, subresource
 	cfg := configuration.NewResourceAttributes(
@@ -96,10 +91,7 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 }
 
 func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
-	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
-	if !ok {
-		return corev1.Secret{}, fmt.Errorf("missing suffix annotation")
-	}
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 
 	kubeConfigStr := configuration.GetOIDCAppsControllerConfig().GetKubeConfigStr(object)
 	if len(kubeConfigStr) > 0 {
@@ -186,10 +178,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 }
 
 func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
-	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
-	if !ok {
-		return corev1.Secret{}, fmt.Errorf("missing suffix annotation")
-	}
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	oidcCABundle := configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object)
 	if len(oidcCABundle) > 0 {
 		// TODO: verify the oidcCABundle str, it shall be CA certificates in PEM format

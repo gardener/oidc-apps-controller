@@ -12,32 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e
+package test
 
 import (
 	_ "embed"
-	"os"
-	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
-func TestSute(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "E2E Suite")
-}
-
-//go:embed config.yaml
-var configFile string
-
-var _log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
-
-var _ = BeforeSuite(func() {
-	tmpDir := GinkgoT().TempDir()
-	err := os.WriteFile(filepath.Join(tmpDir, "config.yaml"), []byte(configFile), 0444)
-	Expect(err).NotTo(HaveOccurred())
-	DeferCleanup(os.RemoveAll, tmpDir)
+var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
+	Context("when a pod belongs to a target", func() {
+		It("there shall be a auth & authz proxies in the pod templates spec", func() {})
+		When("the pod is created with a service account with token", func() {
+			It("there shall be a volume mount in the pod template spec", func() {})
+		})
+		When("there is a kubeconfig secret", func() {
+			It("there shall be a kubeconfig volume in the pod templates spec", func() {})
+		})
+	})
+	Context("when a pod does not belong to a target", func() {
+		It("there shall be no ", func() {})
+	})
 })

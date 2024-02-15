@@ -10,7 +10,7 @@ rules:
     resources: [ "services","secrets","events" ]
     verbs: [ "*" ]
   - apiGroups: [ "apps" ]
-    resources: [ "deployments","statefulsets" ]
+    resources: [ "deployments","statefulsets", "replicasets" ]
     verbs: [ "*" ]
   - apiGroups: [ "networking.k8s.io" ]
     resources: [ "ingresses" ]

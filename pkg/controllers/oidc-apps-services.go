@@ -15,9 +15,10 @@
 package controllers
 
 import (
-	"fmt"
+	"strings"
 
 	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,11 +26,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func createOauth2Service(index string, object client.Object) (corev1.Service, error) {
-	suffix, ok := object.GetAnnotations()[oidc_apps_controller.AnnotationSuffixKey]
-	if !ok {
-		return corev1.Service{}, fmt.Errorf("missing suffix annotation")
-	}
+func createOauth2Service(object client.Object) (corev1.Service, error) {
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	index := fetchStrIndexIfPresent(object)
 
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -49,4 +48,13 @@ func createOauth2Service(index string, object client.Object) (corev1.Service, er
 			Selector: object.GetLabels(),
 		},
 	}, nil
+}
+
+func fetchStrIndexIfPresent(object client.Object) string {
+	idx, present := object.GetLabels()["statefulset.kubernetes.io/pod-name"]
+	if present {
+		l := strings.Split(idx, "-")
+		return l[len(l)-1]
+	}
+	return ""
 }
