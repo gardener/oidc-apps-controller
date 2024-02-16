@@ -153,20 +153,11 @@ targets:
       # It overwrites the cluster wide {{configuration}}
       configuration:
 
-# In case of Gardener there can be a mapping between seed names and oidc client ids
+# In case of Gardener, seeds must configure which client ID to be used the client name.
+# They use the annotation key `oidc-apps.extensions.gardener.cloud/client-name`
+# where the value is the logical name of the client.
 clients:
-  # Seed name shall match the seed identifier
-  # - name: app1
-  # clientId shall be the oidc client id configured at the oidc provider
-  #  clientId: 10365f8c-d9ba-44f9-8e85-741e8cc01f9c
+  # - name: app1 # Logical name of the client.
+  #   clientId: 10365f8c-d9ba-44f9-8e85-741e8cc01f9c # clientId shall be the oidc client id configured at the oidc provider
   # - name: app2
   #   clientId : 98a36b69-6592-463a-b605-d4c563f8b016
-
-gardener:
-  # seed:
-  #   name: foo
-  #   annotations:
-  #     odic-apps.extensions.gardener.cloud/client-name: app1
-  #   spec:
-  #     ingress:
-  #       domain: foo.example.com
