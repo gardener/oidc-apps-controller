@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"strconv"
 	"strings"
@@ -365,4 +366,50 @@ func addOptionalIndex(idx string) string {
 		return ""
 	}
 	return fmt.Sprintf("%d-", i)
+}
+
+func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object) bool {
+	_log := log.FromContext(ctx)
+	podList := &corev1.PodList{}
+	if err := c.List(ctx, podList, client.InNamespace(object.GetNamespace())); err != nil {
+		_log.Error(err, "unable to list pods", "namespace", object.GetNamespace())
+		return false
+	}
+
+	for _, pod := range podList.Items {
+		if !isOidcAppPod(pod) {
+			continue
+		}
+
+		for _, ref := range pod.GetOwnerReferences() {
+			switch ref.Kind {
+			case "StatefulSet":
+				if ref.UID == object.GetUID() {
+					return true
+				}
+			case "ReplicaSet":
+				rs := &v1.ReplicaSet{}
+				if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: object.GetNamespace()}, rs); client.IgnoreNotFound(err) != nil {
+					log.FromContext(ctx).Error(err, "cannot get replicaset", "name", ref.Name)
+					return false
+				}
+				for _, d := range rs.OwnerReferences {
+					if d.Kind == "Deployment" && d.UID == object.GetUID() {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func isOidcAppPod(pod corev1.Pod) bool {
+	for _, c := range pod.Spec.Containers {
+		if c.Name == constants.ContainerNameOauth2Proxy || c.Name == constants.ContainerNameKubeRbacProxy {
+			return true
+		}
+	}
+	return false
 }

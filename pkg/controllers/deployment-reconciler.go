@@ -54,6 +54,10 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 		}
 	}
 
+	if !hasOidcAppsPods(ctx, d.Client, reconciledDeployment) {
+		return reconcile.Result{}, nil
+	}
+
 	// Check for deletion & handle cleanup of the dependencies
 	if !reconciledDeployment.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")

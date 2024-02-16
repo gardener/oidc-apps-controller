@@ -52,6 +52,10 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 		return reconcile.Result{}, nil
 	}
 
+	if !hasOidcAppsPods(ctx, s.Client, reconciledStatefulSet) {
+		return reconcile.Result{}, nil
+	}
+
 	// Check for deletion & handle cleanup of the dependencies
 	if !reconciledStatefulSet.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")
