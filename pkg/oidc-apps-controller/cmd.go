@@ -318,6 +318,39 @@ func addDeploymentController(mgr manager.Manager) error {
 				&appsv1.Deployment{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(
+			&corev1.Pod{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				pod := obj.(*corev1.Pod)
+				if !isOidcAppPod(pod) {
+					return nil
+				}
+				c := mgr.GetClient()
+				for _, r := range pod.GetOwnerReferences() {
+					if r.Kind != "ReplicaSet" {
+						continue
+					}
+					rs := &appsv1.ReplicaSet{}
+					if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, rs); client.IgnoreNotFound(err) != nil {
+						_log.Error(err, "could not get replicaset", "name", r.Name, "namespace", pod.Namespace)
+					}
+
+					for _, d := range rs.GetOwnerReferences() {
+						if d.Kind != "Deployment" {
+							continue
+						}
+						deployment := &appsv1.Deployment{}
+						if err := c.Get(ctx, types.NamespacedName{Name: d.Name, Namespace: rs.Namespace}, deployment); client.IgnoreNotFound(err) != nil {
+							_log.Error(err, "could not get deployment", "name", d.Name, "namespace", rs.Namespace)
+						}
+						_log.V(9).Info("enqueue deployment", "name", deployment.Name, "namespace", deployment.Namespace)
+						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}}}
+					}
+				}
+
+				return nil
+			}),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
 }
 
@@ -348,6 +381,9 @@ func addStatefulSetController(mgr manager.Manager) error {
 				service := obj.(*corev1.Service)
 				c := mgr.GetClient()
 				for _, o := range service.GetOwnerReferences() {
+					if o.Kind != "Pod" {
+						continue
+					}
 					pod := &corev1.Pod{}
 					if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: service.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 						_log.Error(err, "could not get pod", "name", o.Name, "namespace", service.Namespace)
@@ -357,13 +393,14 @@ func addStatefulSetController(mgr manager.Manager) error {
 					}
 
 					for _, r := range pod.GetOwnerReferences() {
+						if r.Kind != "StatefulSet" {
+							continue
+						}
 						statefulset := &appsv1.StatefulSet{}
 						if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
 							_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
 						}
-						if len(statefulset.Name) == 0 {
-							continue
-						}
+						_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
 						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
 					}
 				}
@@ -377,6 +414,9 @@ func addStatefulSetController(mgr manager.Manager) error {
 				ingress := obj.(*networkingv1.Ingress)
 				c := mgr.GetClient()
 				for _, o := range ingress.GetOwnerReferences() {
+					if o.Kind != "Pod" {
+						continue
+					}
 					pod := &corev1.Pod{}
 					if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: ingress.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 						_log.Error(err, "could not get pod", "name", o.Name, "namespace", ingress.Namespace)
@@ -386,17 +426,18 @@ func addStatefulSetController(mgr manager.Manager) error {
 					}
 
 					for _, r := range pod.GetOwnerReferences() {
+						if r.Kind != "StatefulSet" {
+							continue
+						}
 						statefulset := &appsv1.StatefulSet{}
 						if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
 							_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
 						}
-						if len(statefulset.Name) == 0 {
-							continue
-						}
+						_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace",
+							statefulset.Namespace)
 						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
 					}
 				}
-
 				return nil
 			}),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
@@ -503,4 +544,14 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 	// Add the server to the manager
 	return mgr.Add(webhookServer)
 
+}
+
+func isOidcAppPod(pod *corev1.Pod) bool {
+	for _, c := range pod.Spec.Containers {
+		if c.Name == constants.ContainerNameOauth2Proxy || c.Name == constants.ContainerNameKubeRbacProxy {
+			_log.V(9).Info("oidc-apps enabled pod", "pod", pod.Name)
+			return true
+		}
+	}
+	return false
 }
