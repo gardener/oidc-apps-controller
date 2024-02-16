@@ -103,7 +103,7 @@ Create the name of the cluster role to use
 Returns a clientId by seed name
 */}}
 {{- define "oidc-apps-extension.fetchClientIdBySeedIdentifier" }}
-  {{- $clientName := get .Values.gardener.seed.annotations "odic-apps.extensions.gardener.cloud/client-name" }}
+  {{- $clientName := get .Values.gardener.seed.annotations "oidc-apps.extensions.gardener.cloud/client-name" }}
   {{- $clientID := "" }}
   {{- range .Values.clients }}
     {{- if eq .name $clientName }}
