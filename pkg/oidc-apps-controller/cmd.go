@@ -139,7 +139,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		return fmt.Errorf("could not initialize webhook certificate manager: %w", err)
 	}
 
-	if err := addGardenAcceessTokenManager(mgr); err != nil {
+	if err := addGardenAccessTokenNotifier(mgr); err != nil {
 		return fmt.Errorf("could not initialize gardener access token manager: %w", err)
 	}
 
@@ -421,7 +421,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOpti
 	return nil
 }
 
-func addGardenAcceessTokenManager(mgr manager.Manager) error {
+func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 	// Add garden-secret-notifier if the GARDEN environment variables are present
 	if os.Getenv(constants.GARDEN_KUBECONFIG) != "" || os.Getenv(constants.GARDEN_ACCESS_TOKEN) != "" {
 		kubeconfigPath := filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
