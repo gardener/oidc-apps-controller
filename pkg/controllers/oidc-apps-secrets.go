@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -63,10 +63,10 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	checksum := rand.GenerateFullSha256(cfg)
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "oauth2-proxy-" + suffix,
+			Name:        constants.SecretNameOauth2Proxy + "-" + suffix,
 			Namespace:   object.GetNamespace(),
-			Annotations: map[string]string{oidc_apps_controller.AnnotationOauth2SecertCehcksumKey: checksum},
-			Labels:      map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
+			Annotations: map[string]string{constants.AnnotationOauth2SecertCehcksumKey: checksum},
+			Labels:      map[string]string{constants.LabelKey: "oauth2"},
 		},
 		StringData: map[string]string{"oauth2-proxy.cfg": cfg},
 	}, nil
@@ -82,9 +82,9 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 	).Parse()
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "resource-attributes-" + suffix,
+			Name:      constants.SecretNameResourceAttributes + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "rbac"},
+			Labels:    map[string]string{constants.LabelKey: "rbac"},
 		},
 		StringData: map[string]string{"config-file.yaml": cfg},
 	}, nil
@@ -108,9 +108,9 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 
 		secret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubeconfig-" + suffix,
+				Name:      constants.SecretNameKubeconfig + "-" + suffix,
 				Namespace: object.GetNamespace(),
-				Labels:    map[string]string{oidc_apps_controller.LabelKey: "kubeconfig"},
+				Labels:    map[string]string{constants.LabelKey: "kubeconfig"},
 			},
 			StringData: map[string]string{"kubeconfig": string(kubeconfig)},
 		}
@@ -171,7 +171,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubeconfig-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "kubeconfig"},
+			Labels:    map[string]string{constants.LabelKey: "kubeconfig"},
 		},
 		StringData: map[string]string{"kubeconfig": string(k)},
 	}, nil
@@ -184,9 +184,9 @@ func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 		// TODO: verify the oidcCABundle str, it shall be CA certificates in PEM format
 		secret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "oidcca-" + suffix,
+				Name:      constants.SecretNameOidcCa + "-" + suffix,
 				Namespace: object.GetNamespace(),
-				Labels:    map[string]string{oidc_apps_controller.LabelKey: "oidcca"},
+				Labels:    map[string]string{constants.LabelKey: "oidcca"},
 			},
 			StringData: map[string]string{"ca.crt": oidcCABundle},
 		}

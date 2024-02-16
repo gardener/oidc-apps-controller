@@ -17,7 +17,7 @@ package controllers
 import (
 	"context"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -60,7 +60,7 @@ func (n *NamespaceReconciler) Reconcile(ctx context.Context, request reconcile.R
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      originalSecret.Name,
 			Namespace: request.Name,
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: IMAGEPULLSECRET},
+			Labels:    map[string]string{constants.LabelKey: IMAGEPULLSECRET},
 		},
 		Data: originalSecret.Data,
 		Type: originalSecret.Type,

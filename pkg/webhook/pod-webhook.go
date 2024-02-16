@@ -100,14 +100,14 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	// TODO: handle scaling statefulset pods
 	addSecretSourceVolume(
 		constants.Oauth2VolumeName,
-		"oauth2-proxy-"+suffix,
+		constants.SecretNameOauth2Proxy+"-"+suffix,
 		&patch.Spec,
 	)
 
 	// Add the resource-attribute secret volume for the kube-rbac-proxy
 	addProjectedSecretSourceVolume(
 		constants.KubeRbacProxyVolumeName,
-		"resource-attributes-"+suffix,
+		constants.SecretNameResourceAttributes+"-"+suffix,
 		&patch.Spec,
 	)
 
@@ -130,13 +130,13 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	}
 
 	// Add OIDC Apps init container to deployment.
-	addInitContainer("oidc-init", &patch.Spec, getInitContainer(issuerUrl))
+	addInitContainer(constants.ContainerNameOidcInit, &patch.Spec, getInitContainer(issuerUrl))
 
 	// Add the OAUTH2 proxy sidecar to the pod template
-	addProxyContainer("oauth2-proxy", &patch.Spec, getOIDCProxyContainer())
+	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer())
 
 	// Add the kube-rbac-proxy sidecar to the pod template
-	addProxyContainer("kube-rbac-proxy", &patch.Spec, getKubeRbacProxyContainer(clientId, issuerUrl, upstreamUrl, patch))
+	addProxyContainer(constants.ContainerNameKubeRbacProxy, &patch.Spec, getKubeRbacProxyContainer(clientId, issuerUrl, upstreamUrl, patch))
 
 	// Add image pull secret if the proxy container images are served from private registry
 	if len(p.ImagePullSecret) > 0 {

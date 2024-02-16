@@ -17,7 +17,7 @@ package controllers
 import (
 	"strings"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,9 +32,9 @@ func createOauth2Service(object client.Object) (corev1.Service, error) {
 
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oauth2-service-" + addOptionalIndex(index+"-") + suffix,
+			Name:      constants.ServiceNameOauth2Service + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: "oauth2"},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{

@@ -17,7 +17,7 @@ package controllers
 import (
 	"context"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -57,7 +57,7 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(
 				map[string]string{
-					oidc_apps_controller.LabelKey: IMAGEPULLSECRET,
+					constants.LabelKey: IMAGEPULLSECRET,
 				},
 			),
 		},

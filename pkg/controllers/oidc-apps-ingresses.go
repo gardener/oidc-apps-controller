@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,9 +37,9 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 
 	return networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress-" + suffix,
+			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: "oauth2"},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -60,7 +60,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 									PathType: ptr.To(networkingv1.PathTypePrefix),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: "oauth2-service-" + suffix,
+											Name: constants.ServiceNameOauth2Service + suffix,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},
@@ -80,7 +80,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	suffix := rand.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
 	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
-	hostPrefix, ok := pod.GetAnnotations()[oidc_apps_controller.AnnotationHostKey]
+	hostPrefix, ok := pod.GetAnnotations()[constants.AnnotationHostKey]
 	if !ok {
 		return networkingv1.Ingress{}, fmt.Errorf("host annotation not found in pod %s/%s", pod.GetNamespace(), pod.GetName())
 	}
@@ -89,9 +89,9 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 
 	return networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress-" + addOptionalIndex(index+"-") + suffix,
+			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{oidc_apps_controller.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: "oauth2"},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -112,7 +112,8 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 									PathType: ptr.To(networkingv1.PathTypePrefix),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: "oauth2-service-" + addOptionalIndex(index+"-") + suffix,
+											Name: constants.ServiceNameOauth2Service + "-" + addOptionalIndex(
+												index+"-") + suffix,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},

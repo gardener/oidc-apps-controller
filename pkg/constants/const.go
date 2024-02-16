@@ -25,22 +25,34 @@ const (
 	AnnotationSuffixKey = "oidc-application-controller/suffix"
 	//AnnotationOauth2SecertCehcksumKey holds the checksum of the ouath2 proxy confguration secret
 	AnnotationOauth2SecertCehcksumKey = "oidc-application-controller/oauth2-secret-checksum"
-	//AnnotationResourcesAttributesSecertCehcksumKey holds the checksum of the resource attributes confguration secret
-	AnnotationResourcesAttributesSecertCehcksumKey = "oidc-application-controller/resourceattr-secret-checksum"
 	//DeploymentWebHookPath is the context path of the mutating webhook for deployments
 	DeploymentWebHookPath = "/oidc-mutate-v1-deployment"
-	//StatefulsetWebHookPath is the context path of the mutating webhook for statefusets
-	StatefulsetWebHookPath = "/oidc-mutate-v1-statefulset"
 	//PodWebHookPath is the context path of the mutating webhook for pods
 	PodWebHookPath = "/oidc-mutate-v1-pod"
 	//NAMESPACE is the name of the required environment variable
 	NAMESPACE = "NAMESPACE"
 
+	//ContainerNameOidcInit is the name of the init container
+	ContainerNameOidcInit = "oidc-init"
+	//ContainerNameOauth2Proxy is the name of the oauth2-proxy container
+	ContainerNameOauth2Proxy = "oauth2-proxy"
+	//ContainerNameKubeRbacProxy is the name of the kube-rbac-proxy container
+	ContainerNameKubeRbacProxy = "kube-rbac-proxy"
+	//SecretNameOauth2Proxy is the name of the kube-rbac-proxy container
+	SecretNameOauth2Proxy = "oauth2-proxy"
+	//SecretNameResourceAttributes is the name of the resource attributes secret
+	SecretNameResourceAttributes = "resource-attributes"
+	//SecretNameKubeconfig is the name of the kubeconfig secret
+	SecretNameKubeconfig = "kubeconfig"
+	//SecretNameOidcCa is the name of the oidc ca secret
+	SecretNameOidcCa = "oidc-ca"
+	//ServiceNameOauth2Service is the name of the oauth2 service
+	ServiceNameOauth2Service = "oauth2-service"
+	//IngressName is the name of the oauth2 ingress
+	IngressName = "oauth2-ingress"
+
 	//LabelKey is the annotation added to each enhanced deployment or statefulset
 	LabelKey = "oidc-application-controller/component"
-
-	//Finalizer is the finalzer name added to the target workload
-	Finalizer = "oidc-application-controller/finalizer"
 
 	//GardenerPublicLabelsKey is a label used by the gardener network policy controller to manage access to public networks
 	GardenerPublicLabelsKey = "networking.gardener.cloud/to-public-networks"

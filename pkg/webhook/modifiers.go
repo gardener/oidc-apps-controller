@@ -268,12 +268,12 @@ func fetchKubconfigSecretName(suffix string, object client.Object) string {
 	}
 
 	// In case of gardener mounted kubeconfig, the name of the secret is as below
-	return "kubeconfig-" + suffix
+	return constants.SecretNameKubeconfig + "-" + suffix
 }
 
 func fetchOidcCASecretName(suffix string, object client.Object) string {
 	if configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object) != "" {
-		return "oidcca-" + suffix
+		return constants.SecretNameOidcCa + "-" + suffix
 	}
 
 	return configuration.GetOIDCAppsControllerConfig().GetOidcCASecretName(object)

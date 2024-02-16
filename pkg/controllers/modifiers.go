@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -39,7 +39,7 @@ import (
 func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList,
 	error) {
 	oidcService := &corev1.ServiceList{}
-	oidcLabelSelector, _ := labels.Parse(oidc_apps_controller.LabelKey)
+	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcService,
 		client.InNamespace(object.GetNamespace()),
@@ -63,7 +63,7 @@ func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.O
 func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Object) (*networkingv1.IngressList,
 	error) {
 	oidcIngress := &networkingv1.IngressList{}
-	oidcLabelSelector, _ := labels.Parse(oidc_apps_controller.LabelKey)
+	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcIngress,
 		client.InNamespace(object.GetNamespace()),
@@ -86,7 +86,7 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Object) (*corev1.SecretList,
 	error) {
 	oidcSecrets := &corev1.SecretList{}
-	oidcLabelSelector, _ := labels.Parse(oidc_apps_controller.LabelKey)
+	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcSecrets,
 		client.InNamespace(object.GetNamespace()),
@@ -110,12 +110,12 @@ func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Ob
 func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, object client.Object) string {
 	_log := log.FromContext(ctx)
 	// In the case when we are not running on a gardener seed cluster, just return the target namespace
-	if os.Getenv(oidc_apps_controller.GARDEN_KUBECONFIG) == "" {
+	if os.Getenv(constants.GARDEN_KUBECONFIG) == "" {
 		return object.GetNamespace()
 	}
 	// In the case the target is in the garden namespace, then we shall not set a namespace.
 	// The goal is the kick in only the gardener operators access which should have cluster scoped access
-	if object.GetNamespace() == oidc_apps_controller.GARDEN_NAMESPACE {
+	if object.GetNamespace() == constants.GARDEN_NAMESPACE {
 		return ""
 	}
 	// In other cases, fetch the cluster resources and set the project namespace
@@ -283,7 +283,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 	for _, pod := range podList.Items {
 		log.FromContext(ctx).V(9).Info("Reconciling pod", "pod", pod.GetName(), "annotations", pod.GetAnnotations())
-		_, found := pod.GetAnnotations()[oidc_apps_controller.AnnotationHostKey]
+		_, found := pod.GetAnnotations()[constants.AnnotationHostKey]
 		if !found {
 			continue
 		}
