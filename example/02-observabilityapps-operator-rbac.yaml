@@ -8,7 +8,9 @@ rules:
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus
+      - observabilityapps/seed-prometheus
       - observabilityapps/aggregate-prometheus
+      - observabilityapps/prometheus-cache
     verbs: ["get", "create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -22,4 +24,4 @@ roleRef:
 subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: Group
-    name: k8s-dev-seed-observability
+    name: gardener-operator

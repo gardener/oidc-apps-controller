@@ -1,0 +1,18 @@
+{
+  "CN": "dexidp",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "O": "docker:provider-local:dex"
+  }
+  ],
+  "hosts": [
+    "dex",
+    "dexidp",
+    "127.0.0.1",
+    "localhost"
+  ]
+}

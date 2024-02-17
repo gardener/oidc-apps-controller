@@ -1,0 +1,70 @@
+logger:
+  level: info
+  format: json
+
+issuer: https://dexidp:5556 # That is important to be resolved to localhost
+
+storage:
+  type: sqlite3
+  config:
+    file: /var/dex/dex.db
+
+web:
+  https: 0.0.0.0:5556
+  tlsCert: /etc/dex/certs/dex.pem
+  tlsKey: /etc/dex/certs/dex-key.pem
+
+oauth2:
+  skipApprovalScreen: true
+
+connectors:
+  - type: ldap
+    name: OpenLDAP
+    id: ldap
+    config:
+      host: ldap:389
+      insecureNoSSL: true
+
+      # This would normally be a read-only user.
+      bindDN: "cn=readonly,dc=local"
+      bindPW: "readonly"
+
+      usernamePrompt: Email Address
+
+      userSearch:
+        baseDN: dc=local
+        filter: "(objectClass=person)"
+        username: mail
+        # "DN" (case sensitive) is a special attribute name. It indicates that
+        # this value should be taken from the entity's DN not an attribute on
+        # the entity.
+        idAttr: DN
+        emailAttr: mail
+        nameAttr: cn
+
+      groupSearch:
+        baseDN: ou=Groups,dc=local
+        filter: "(objectClass=groupOfNames)"
+
+        userMatchers:
+          # A user is a member of a group when their DN matches
+          # the value of a "member" attribute on the group entity.
+          - userAttr: DN
+            groupAttr: member
+
+        # The group name should be the "cn" value.
+        nameAttr: cn
+
+staticClients:
+  - id: "local"
+    redirectURIs:
+      - "https://plutono-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://seed-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://pr-404698-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://pl-b5e187.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+    name: "oauth2-proxy"
+    public: true
+
+enablePasswordDB: false

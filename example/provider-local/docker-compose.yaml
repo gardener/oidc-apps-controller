@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  ldap:
+    restart: unless-stopped
+    container_name: ldap
+    image: osixia/openldap:1.5.0
+    environment:
+      - LDAP_TLS=false
+      - LDAP_ENABLE_PORT_389=true
+      - LDAP_TLS_VERIFY_CLIENT=never
+      - LDAP_ORGANISATION=Local Setup
+      - LDAP_DOMAIN=local
+      - LDAP_READONLY_USER=true
+      - KEEP_EXISTING_CONFIG=false
+      - LDAP_REMOVE_CONFIG_AFTER_SETUP=true
+    command: --copy-service --dont-touch-etc-hosts --loglevel info
+    volumes:
+      - ./configs/local.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/local.ldif
+      - ldap:/var/lib/ldap
+    ports:
+      - 389:389
+    networks:
+      - kind
+
+  dexidp:
+    restart: unless-stopped
+    container_name: dexidp
+    image: ghcr.io/dexidp/dex:v2.37.0-distroless
+    command:
+      - /usr/local/bin/dex
+      - serve
+      - /etc/dex/cfg/config.yaml
+    volumes:
+      - ./certs/dex.pem:/etc/dex/certs/dex.pem
+      - ./certs/dex-key.pem:/etc/dex/certs/dex-key.pem
+      - ./configs/dex-config.yaml:/etc/dex/cfg/config.yaml
+      - sqlite3:/var/dex
+    ports:
+      - 5556:5556
+    networks:
+      - kind
+    depends_on:
+      - ldap
+
+networks:
+  kind:
+    name: kind
+    external: true
+
+volumes:
+  ldap:
+  sqlite3:

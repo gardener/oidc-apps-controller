@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: gardener.cloud:system:observabilityapps
+  name: gardener.cloud:system:observabilityapps-projects
   labels:
     rbac.gardener.cloud/aggregate-to-project-member: "true"
     rbac.gardener.cloud/aggregate-to-project-admin: "true"

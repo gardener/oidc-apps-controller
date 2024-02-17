@@ -1,0 +1,41 @@
+# Local organization
+dn: ou=People, dc=local
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Groups, dc=local
+objectClass: organizationalUnit
+ou: Groups
+
+# User definitions
+dn: cn=developer, ou=People, dc=local
+objectClass: person
+objectClass: inetOrgPerson
+sn: Smith
+gn: James
+cn: developer
+mail: project-viewer@gardener.local
+userpassword: # TODO: Add project-viewer password here, plaintext or hashed with slappasswd
+
+dn: cn=operator, ou=People, dc=local
+objectClass: person
+objectClass: inetOrgPerson
+sn: Merry
+gn: Jones
+cn: operator
+mail: operator@gardener.local
+userpassword: # TODO: Add operator password here, plaintext or hashed with slappasswd
+
+# Group definitions
+dn: cn=developer, ou=Groups, dc=local
+objectClass: top
+objectClass: groupOfNames
+cn: developer
+member: cn=developer, ou=People, dc=local
+
+# Group definitions
+dn: cn=gardener-operator, ou=Groups, dc=local
+objectClass: top
+objectClass: groupOfNames
+cn: gardener-operator
+member: cn=operator, ou=People, dc=local
