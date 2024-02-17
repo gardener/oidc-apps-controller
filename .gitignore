@@ -1,4 +1,5 @@
 bin/
+certs/
 
 *.coverprofile
 *.out
@@ -9,6 +10,7 @@ bin/
 *~
 
 TODO
+local.ldif
 
 # Virtual go & fuse
 .virtualgo
