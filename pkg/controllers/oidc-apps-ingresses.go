@@ -60,7 +60,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 									PathType: ptr.To(networkingv1.PathTypePrefix),
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: constants.ServiceNameOauth2Service + suffix,
+											Name: constants.ServiceNameOauth2Service + "-" + suffix,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},
