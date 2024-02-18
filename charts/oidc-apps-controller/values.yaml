@@ -61,15 +61,21 @@ resources:
     memory: 256Mi
   requests:
     cpu: 100m
-    memory: 64Mi
+    memory: 128Mi
 
 vpa:
   enabled: false
-  minAllowed:
-    cpu: 100m
-    memory: 64Mi
-  updatePolicy:
-    updateMode: "Auto"
+  # updatePolicy:
+  #   updateMode: "Auto"
+  #   evictionRequirements:
+  #     - resources: ["cpu", "memory"]
+  #       changeRequirement: TargetHigherThanRequests
+  # minAllowed:
+  #   cpu: 50m
+  #   memory: 64Mi
+  # maxAllowed:
+  #   cpu: 200m
+  #   memory: 256Mi
 
 nodeSelector: {}
 tolerations: []

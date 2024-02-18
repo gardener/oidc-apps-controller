@@ -11,15 +11,19 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "oidc-apps-extension.fullname" . }}
-  updatePolicy:
-    updateMode: {{ .Values.vpa.updatePolicy.updateMode }}
-  {{- with .Values.vpa.minAllowed }}
+  {{- with .Values.vpa.updatePolicy }}
+  updatePolicy: {{ toYaml . | nindent 4 }}
+  {{- end }}
   resourcePolicy:
     containerPolicies:
       - containerName: {{ $.Chart.Name }}
         controlledResources:
           - cpu
           - memory
+        {{- with .Values.vpa.minAllowed }}
         minAllowed: {{ toYaml . | nindent 10 }}
-  {{- end }}
+        {{- end }}
+        {{- with .Values.vpa.maxAllowed }}
+        maxAllowed: {{ toYaml . | nindent 10 }}
+        {{- end }}
 {{- end }}
