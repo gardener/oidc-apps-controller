@@ -88,7 +88,7 @@ providerConfig:
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
             name: "ingress-wildcard-cert"
-      - name: "garden-plutono"
+      - name: "garden--plutono"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
@@ -102,7 +102,7 @@ providerConfig:
           tlsSecretRef:
             name: "ingress-wildcard-cert"
             namespace: "garden"
-      - name: "garden-seed-prometheus"
+      - name: "garden--seed-prometheus"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
@@ -116,7 +116,7 @@ providerConfig:
           tlsSecretRef:
             name: "ingress-wildcard-cert"
             namespace: "garden"
-      - name: "garden-aggregate-prometheus"
+      - name: "garden--aggregate-prometheus"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
@@ -130,7 +130,7 @@ providerConfig:
           tlsSecretRef:
             name: "ingress-wildcard-cert"
             namespace: "garden"
-      - name: "garden-prometheus-cache"
+      - name: "garden--prometheus-cache"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
