@@ -19,6 +19,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -168,7 +169,7 @@ func addSecretSourceVolume(name, secretName string, podSpec *corev1.PodSpec) {
 
 func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *corev1.PodSpec) {
 	volume := corev1.Volume{Name: volumeName}
-	appendVolume := true // Assume that there ase no such volume
+	appendVolume := true // Assume that there is no such volume
 	for i, v := range podSpec.Volumes {
 		if v.Name == volumeName {
 			volume = podSpec.Volumes[i] // Fetch the volume if it is present
@@ -357,9 +358,12 @@ func getInitContainer(oidcIssuerUrl string) corev1.Container {
 	}
 }
 
-func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod) corev1.Container {
+func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
 
 	image, _ := imagevector.ImageVector().FindImage("kube-rbac-proxy-watcher")
+	if pod == nil {
+		return corev1.Container{}
+	}
 
 	volumeMounts := []corev1.VolumeMount{
 		{
@@ -386,8 +390,30 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 		}
 	}
 
+	containerResourceRequirements := corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("100m"),
+			"memory": resource.MustParse("100Mi"),
+		},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("100m"),
+			"memory": resource.MustParse("100Mi"),
+		},
+	}
+	for _, c := range pod.Spec.Containers {
+		if c.Name != constants.ContainerNameKubeRbacProxy {
+			continue
+		}
+		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
+			containerResourceRequirements.Limits = c.Resources.Limits
+		}
+		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
+			containerResourceRequirements.Requests = c.Resources.Requests
+		}
+	}
+
 	container := corev1.Container{
-		Name:            "kube-rbac-proxy",
+		Name:            constants.ContainerNameKubeRbacProxy,
 		Image:           image.String(),
 		ImagePullPolicy: "IfNotPresent",
 		Args: []string{"--insecure-listen-address=0.0.0.0:8100",
@@ -399,26 +425,17 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 		Ports: []corev1.ContainerPort{
 			{Name: "rbac", ContainerPort: 8100},
 		},
-		Resources: corev1.ResourceRequirements{
-			Limits: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("100m"),
-				"memory": resource.MustParse("100Mi"),
-			},
-			Requests: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("100m"),
-				"memory": resource.MustParse("50Mi"),
-			},
-		},
+		Resources:    containerResourceRequirements,
 		VolumeMounts: volumeMounts,
 	}
 
-	if shallAddKubeConfigSecretName(pod) {
+	if shallAddKubeConfigSecretName(owner) {
 		// Add volume mount and start parameter if the secret name is provided
 		container.Args = append(container.Args, "--kubeconfig=/etc/kube-rbac-proxy/kubeconfig")
 	}
 
 	// TODO: There is a bug https://github.com/brancz/kube-rbac-proxy/issues/259
-	if shallAddOidcCaSecretName(pod) {
+	if shallAddOidcCaSecretName(owner) {
 		// Add volume mount and start parameter if the secret name is provided
 		container.Args = append(container.Args, "--oidc-ca-file=/etc/kube-rbac-proxy/ca.crt")
 	}
@@ -426,11 +443,37 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 	return container
 }
 
-func getOIDCProxyContainer() corev1.Container {
+func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
 	image, _ := imagevector.ImageVector().FindImage("oauth2-proxy")
 
+	if pod == nil {
+		return corev1.Container{}
+	}
+
+	containerResourceRequirements := corev1.ResourceRequirements{
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("100m"),
+			"memory": resource.MustParse("100Mi"),
+		},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("100m"),
+			"memory": resource.MustParse("100Mi"),
+		},
+	}
+	for _, c := range pod.Containers {
+		if c.Name != constants.ContainerNameOauth2Proxy {
+			continue
+		}
+		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
+			containerResourceRequirements.Limits = c.Resources.Limits
+		}
+		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
+			containerResourceRequirements.Requests = c.Resources.Requests
+		}
+	}
+
 	return corev1.Container{
-		Name:            "oauth2-proxy",
+		Name:            constants.ContainerNameOauth2Proxy,
 		Image:           image.String(),
 		ImagePullPolicy: "IfNotPresent",
 		Args: []string{"--provider=oidc",
@@ -448,16 +491,7 @@ func getOIDCProxyContainer() corev1.Container {
 		Ports: []corev1.ContainerPort{
 			{Name: "oauth2", ContainerPort: 8000},
 		},
-		Resources: corev1.ResourceRequirements{
-			Limits: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("100m"),
-				"memory": resource.MustParse("100Mi"),
-			},
-			Requests: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("100m"),
-				"memory": resource.MustParse("50Mi"),
-			},
-		},
+		Resources: containerResourceRequirements,
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      constants.Oauth2VolumeName,

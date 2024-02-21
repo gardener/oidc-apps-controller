@@ -36,6 +36,10 @@ var _ = BeforeSuite(func() {
 	tmpDir = GinkgoT().TempDir()
 	err := os.WriteFile(filepath.Join(tmpDir, "config.yaml"), []byte(configFile), 0444)
 	Expect(err).NotTo(HaveOccurred())
+	err = os.WriteFile(filepath.Join(tmpDir, "kubeconfig"), []byte("kubeconfig"), 0444)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.WriteFile(filepath.Join(tmpDir, "token"), []byte("token"), 0444)
+	Expect(err).NotTo(HaveOccurred())
 	DeferCleanup(os.RemoveAll, tmpDir)
 })
 

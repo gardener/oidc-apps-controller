@@ -1,8 +1,11 @@
 configuration:
-  oauth2Proxy:
-  kubeRbacProxy:
 targets:
   - name: "nginx"
     labelSelector:
       matchLabels:
         app: nginx
+    configuration:
+      oauth2Proxy:
+        clientID: "test-client-id"
+      kubeRbacProxy:
+        oidcCABundle: Y2VydGlmaWNhdGUK

@@ -112,19 +112,19 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	)
 
 	// Add an optional kubeconfig secret for the kube-rbac-proxy
-	if shallAddKubeConfigSecretName(patch) {
+	if shallAddKubeConfigSecretName(owner) {
 		addProjectedSecretSourceVolume(
 			constants.KubeRbacProxyVolumeName,
-			fetchKubconfigSecretName(suffix, patch),
+			fetchKubconfigSecretName(suffix, owner),
 			&patch.Spec,
 		)
 	}
 
 	// Add an optional oidc ca secret for the kube-rbac-proxy
-	if shallAddOidcCaSecretName(patch) {
+	if shallAddOidcCaSecretName(owner) {
 		addProjectedSecretSourceVolume(
 			constants.KubeRbacProxyVolumeName,
-			fetchOidcCASecretName(suffix, patch),
+			fetchOidcCASecretName(suffix, owner),
 			&patch.Spec,
 		)
 	}
@@ -133,10 +133,11 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	addInitContainer(constants.ContainerNameOidcInit, &patch.Spec, getInitContainer(issuerUrl))
 
 	// Add the OAUTH2 proxy sidecar to the pod template
-	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer())
+	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer(&patch.Spec))
 
 	// Add the kube-rbac-proxy sidecar to the pod template
-	addProxyContainer(constants.ContainerNameKubeRbacProxy, &patch.Spec, getKubeRbacProxyContainer(clientId, issuerUrl, upstreamUrl, patch))
+	addProxyContainer(constants.ContainerNameKubeRbacProxy, &patch.Spec, getKubeRbacProxyContainer(clientId,
+		issuerUrl, upstreamUrl, patch, owner))
 
 	// Add image pull secret if the proxy container images are served from private registry
 	if len(p.ImagePullSecret) > 0 {
