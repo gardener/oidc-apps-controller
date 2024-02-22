@@ -8,9 +8,9 @@ rules:
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus
-      - observabilityapps/seed-prometheus
       - observabilityapps/aggregate-prometheus
       - observabilityapps/prometheus-cache
+      - observabilityapps/prometheus-seed
     verbs: ["get", "create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -84,13 +84,14 @@ providerConfig:
           tlsSecretRef:
             name: "ingress-wildcard-cert"
             namespace: "garden"
-      - name: "garden--seed-prometheus"
+      - name: "garden--prometheus-seed"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
         labelSelector:
           matchLabels:
-            app: seed-prometheus
+            app: prometheus
+            name: seed
         targetPort: 9090
         ingress:
           create: true
