@@ -28,6 +28,8 @@ providerConfig:
   chart: $chart
   values:
     replicas: 1
+    priorityClass:
+      name: gardener-system-100
     clients:
       - name: local
         clientId: local

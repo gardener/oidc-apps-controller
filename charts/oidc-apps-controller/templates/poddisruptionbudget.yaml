@@ -7,8 +7,7 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ include "oidc-apps-extension.fullname" . }}
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+  labels: {{- include "oidc-apps-extension.labels" . | nindent 4 }}
 spec:
   maxUnavailable: 1
   selector:
