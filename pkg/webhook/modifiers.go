@@ -396,8 +396,8 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 			"memory": resource.MustParse("100Mi"),
 		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("100m"),
-			"memory": resource.MustParse("100Mi"),
+			"cpu":    resource.MustParse("50m"),
+			"memory": resource.MustParse("50Mi"),
 		},
 	}
 	for _, c := range pod.Spec.Containers {
@@ -405,10 +405,14 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 			continue
 		}
 		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
-			containerResourceRequirements.Limits = c.Resources.Limits
+			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
+				containerResourceRequirements.Limits = c.Resources.Limits
+			}
 		}
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
-			containerResourceRequirements.Requests = c.Resources.Requests
+			if c.Resources.Requests.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
+				containerResourceRequirements.Requests = c.Resources.Requests
+			}
 		}
 	}
 
@@ -456,8 +460,8 @@ func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
 			"memory": resource.MustParse("100Mi"),
 		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("100m"),
-			"memory": resource.MustParse("100Mi"),
+			"cpu":    resource.MustParse("50m"),
+			"memory": resource.MustParse("50Mi"),
 		},
 	}
 	for _, c := range pod.Containers {
@@ -465,10 +469,14 @@ func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
 			continue
 		}
 		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
-			containerResourceRequirements.Limits = c.Resources.Limits
+			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
+				containerResourceRequirements.Limits = c.Resources.Limits
+			}
 		}
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
-			containerResourceRequirements.Requests = c.Resources.Requests
+			if c.Resources.Requests.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
+				containerResourceRequirements.Requests = c.Resources.Requests
+			}
 		}
 	}
 

@@ -44,7 +44,7 @@ import (
 
 var targetDeployment, nonTargetDeployment *appsv1.Deployment
 var targetReplicaSet, nonTargetReplicaSet *appsv1.ReplicaSet
-var targetPod, targetPodWithServiceAccount, targetPodWithResources, nonTargetPod *corev1.Pod
+var targetPod, targetPodWithServiceAccount, podWithLessResources, podWithMoreResources, nonTargetPod *corev1.Pod
 var podWebhook *webhook.PodMutator
 
 var _ = BeforeEach(func() {
@@ -59,7 +59,7 @@ var _ = BeforeEach(func() {
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(s).
 		WithObjects(targetDeployment, targetReplicaSet, targetPod).
-		WithObjects(targetPodWithResources, targetPodWithServiceAccount).
+		WithObjects(podWithLessResources, podWithMoreResources, targetPodWithServiceAccount).
 		WithObjects(nonTargetDeployment, nonTargetReplicaSet, nonTargetPod).
 		Build()
 
@@ -151,13 +151,13 @@ func initTargetDeployment() {
 		},
 	}
 
-	targetPodWithResources = &corev1.Pod{
+	podWithLessResources = &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "nginx-with-resources",
+			Name:      "nginx-with-less-resources",
 			Namespace: "nginx",
 			UID:       "uid-pod",
 			OwnerReferences: []metav1.OwnerReference{
@@ -184,6 +184,46 @@ func initTargetDeployment() {
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							"cpu":    resource.MustParse("200m"),
 							"memory": resource.MustParse("64Mi"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podWithMoreResources = &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nginx-with-more-resources",
+			Namespace: "nginx",
+			UID:       "uid-pod",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "nginx-rs-0001",
+					UID:        "target-replicaset",
+				},
+			},
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name: "nginx",
+				},
+				{
+					Name: constants.ContainerNameOauth2Proxy,
+					Resources: corev1.ResourceRequirements{
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse("500m"),
+							"memory": resource.MustParse("300Mi"),
+						},
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							"cpu":    resource.MustParse("500m"),
+							"memory": resource.MustParse("300Mi"),
 						},
 					},
 				},
@@ -412,22 +452,45 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				))
 			}) //It
 		}) //When
-		When("there is a container resource defined in the incoming request", func() {
-			It("shall not modify the container resources", func() {
-				pp := patchPod(targetPodWithResources)
+		When("there is a container resource defined in the incoming request which are less than default", func() {
+			It("shall modify the container resources", func() {
+				pp := patchPod(podWithLessResources)
 				_log.Info("patched pod", "patched pod", pp)
 
 				for _, c := range pp.Spec.Containers {
 					switch c.Name {
 					case constants.ContainerNameOauth2Proxy:
-						Expect(c.Resources).To(Equal(targetPodWithResources.Spec.Containers[1].Resources))
+						Expect(c.Resources).To(Equal(corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								"cpu":    resource.MustParse("100m"),
+								"memory": resource.MustParse("100Mi"),
+							},
+							Requests: corev1.ResourceList{
+								"cpu":    resource.MustParse("50m"),
+								"memory": resource.MustParse("50Mi"),
+							},
+							Claims: nil,
+						}))
 					}
 				}
 			})
 		}) //When there is a container resource defined in the incoming request
+		When("there is a container resource defined in the incoming request which are bigger than default", func() {
+			It("shall not modify the container resources", func() {
+				pp := patchPod(podWithMoreResources)
+				_log.Info("patched pod", "patched pod", pp)
+
+				for _, c := range pp.Spec.Containers {
+					switch c.Name {
+					case constants.ContainerNameOauth2Proxy:
+						Expect(c.Resources).To(Equal(podWithMoreResources.Spec.Containers[1].Resources))
+					}
+				}
+			})
+		}) //
 		When("there isn't any container resource defined in the incoming request", func() {
 			It("shall set the default container resources", func() {
-				pp := patchPod(targetPodWithResources)
+				pp := patchPod(podWithLessResources)
 				_log.Info("patched pod", "patched pod", pp)
 
 				for _, c := range pp.Spec.Containers {
@@ -439,8 +502,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								"memory": resource.MustParse("100Mi"),
 							},
 							Requests: map[corev1.ResourceName]resource.Quantity{
-								"cpu":    resource.MustParse("100m"),
-								"memory": resource.MustParse("100Mi"),
+								"cpu":    resource.MustParse("50m"),
+								"memory": resource.MustParse("50Mi"),
 							}}
 						Expect(c.Resources).To(Equal(expected))
 					}
