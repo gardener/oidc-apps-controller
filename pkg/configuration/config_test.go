@@ -747,3 +747,34 @@ func TestGardenConfig(t *testing.T) {
 	}
 
 }
+
+func TestLabelSelectors(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+
+	if err := yaml.Unmarshal([]byte(targetHostWithoutPrefix), &extensionConfig); err != nil {
+		t.Errorf("error unmarshalling configuration: %v", err)
+	}
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "service",
+			Namespace: "default",
+			Labels:    map[string]string{"app": "service"},
+		},
+	}
+	builder := fake.NewClientBuilder()
+	extensionConfig.client = builder.WithObjects(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "default",
+			Labels: map[string]string{"kubernetes.io/metadata.name": "default"},
+		},
+	}).WithObjects(deployment).Build()
+
+	labels := extensionConfig.GetTargetSelectorLabels(deployment)
+	if !reflect.DeepEqual(labels, map[string]string{"app": "service"}) {
+		t.Error("getting target selector labels is not as expected: ",
+			"expected", map[string]string{"app": "service"},
+			"got", labels)
+	}
+
+}

@@ -503,3 +503,14 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 	}
 	return selector.Matches(labels2.Set(o.GetLabels())) && namespaceSelector.Matches(labels2.Set(namespace.GetLabels()))
 }
+
+// GetTargetSelectorLabels returns the label selector for the given target
+func (c *OIDCAppsControllerConfig) GetTargetSelectorLabels(o client.Object) map[string]string {
+	t := c.fetchTarget(o)
+
+	if t.LabelSelector != nil && t.LabelSelector.MatchLabels != nil {
+		return t.LabelSelector.MatchLabels
+	}
+
+	return map[string]string{}
+}

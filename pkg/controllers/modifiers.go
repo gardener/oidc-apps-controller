@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"os"
 	"strconv"
 	"strings"
@@ -179,7 +180,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	// Create or update the oauth2 service setting the owner reference
-	if oauth2Service, err = createOauth2Service(object); err != nil {
+	selectors := configuration.GetOIDCAppsControllerConfig().GetTargetSelectorLabels(object)
+	if oauth2Service, err = createOauth2Service(selectors, object); err != nil {
 		return fmt.Errorf("failed to create oauth2 service: %w", err)
 	}
 	if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
@@ -290,7 +292,11 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 
 		// Create or update the oauth2 service setting the owner reference
-		if oauth2Service, err = createOauth2Service(&pod); err != nil {
+		selectors := configuration.GetOIDCAppsControllerConfig().GetTargetSelectorLabels(&pod)
+		if statefulSetPodNameLabbel, ok := pod.GetLabels()["statefulset.kubernetes.io/pod-name"]; ok {
+			selectors = map[string]string{"statefulset.kubernetes.io/pod-name": statefulSetPodNameLabbel}
+		}
+		if oauth2Service, err = createOauth2Service(selectors, &pod); err != nil {
 			return fmt.Errorf("failed to create oauth2 service: %w", err)
 		}
 		if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {

@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func createOauth2Service(object client.Object) (corev1.Service, error) {
+func createOauth2Service(selectors client.MatchingLabels, object client.Object) (corev1.Service, error) {
 	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	index := fetchStrIndexIfPresent(object)
 
@@ -45,7 +45,7 @@ func createOauth2Service(object client.Object) (corev1.Service, error) {
 					TargetPort: intstr.FromString("oauth2"),
 				},
 			},
-			Selector: object.GetLabels(),
+			Selector: selectors,
 		},
 	}, nil
 }
