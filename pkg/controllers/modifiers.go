@@ -18,11 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
