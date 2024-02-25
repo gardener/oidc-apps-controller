@@ -22,6 +22,8 @@ import (
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 
+	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -55,8 +57,19 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		return webhook.Errored(http.StatusBadRequest, err)
 	}
 
+	// Check if VPA target ref
+	if vpa.Spec.TargetRef == nil {
+		return webhook.Allowed("vpa does not have a target ref")
+	}
+
 	if !configuration.GetOIDCAppsControllerConfig().Match(vpa) {
-		return webhook.Allowed("vpa not matched")
+		matched, err := isTargetRefMatched(ctx, v.Client, vpa.GetNamespace(), vpa.Spec.TargetRef)
+		if err != nil {
+			return webhook.Errored(http.StatusInternalServerError, err)
+		}
+		if !matched {
+			return webhook.Allowed("vpa not matched")
+		}
 	}
 	_log.Info("handling vpa admission request")
 
@@ -99,4 +112,24 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		_log.Info("Unable to marshal vpa")
 	}
 	return admission.PatchResponseFromRaw(original, patched)
+}
+
+func isTargetRefMatched(ctx context.Context, c client.Client, namespace string, ref *autoscalingv1.CrossVersionObjectReference) (bool, error) {
+	switch ref.Kind {
+	case "Deployment":
+		deployment := &appsv1.Deployment{}
+		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, deployment); err != nil {
+			return false, fmt.Errorf("unable to get deployment for object %s", ref.Name)
+		}
+		return configuration.GetOIDCAppsControllerConfig().Match(deployment), nil
+
+	case "StatefulSet":
+		statefulset := &appsv1.StatefulSet{}
+		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, statefulset); err != nil {
+			return false, fmt.Errorf("unable to get statefulset for object %s", ref.Name)
+		}
+		return configuration.GetOIDCAppsControllerConfig().Match(statefulset), nil
+	}
+
+	return false, nil
 }
