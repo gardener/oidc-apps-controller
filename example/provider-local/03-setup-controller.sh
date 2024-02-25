@@ -34,7 +34,7 @@ providerConfig:
       - name: local
         clientId: local
     image:
-      repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name
+      repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name@sha256
       tag: $version
     imagePullPolicy: Always
     webhook:

@@ -39,9 +39,8 @@ const (
 	caCertRotation  = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
 	ticker          = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
 
-	deploymentsWebhookSuffix  = "-deployments.gardener.cloud"
-	statefulSetsWebhookSuffix = "-statefulsets.gardener.cloud"
-	podsWebhookSuffix         = "-pods.gardener.cloud"
+	podsWebhookSuffix = "-pods.gardener.cloud"
+	vpasWebhookSuffix = "-vpas.gardener.cloud"
 )
 
 type certManager struct {
@@ -161,8 +160,7 @@ func (c *certManager) setupWebhooksCABundles(config *rest.Config, objectKey type
 			return err
 		}
 		for i, w := range mutatingWebhook.Webhooks {
-			if w.Name != c.webhookKey.Name+deploymentsWebhookSuffix &&
-				w.Name != c.webhookKey.Name+statefulSetsWebhookSuffix &&
+			if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
 				w.Name != c.webhookKey.Name+podsWebhookSuffix {
 				continue
 			}
@@ -189,8 +187,7 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 			return err
 		}
 		for i, w := range webhook.Webhooks {
-			if w.Name != c.webhookKey.Name+deploymentsWebhookSuffix &&
-				w.Name != c.webhookKey.Name+statefulSetsWebhookSuffix &&
+			if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
 				w.Name != c.webhookKey.Name+podsWebhookSuffix {
 				continue
 			}
@@ -202,6 +199,7 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 			}
 			webhook.Webhooks[i].ClientConfig.CABundle = b
 		}
+		_log.Info("Updating webhook CA bundle", "webhook", c.webhookKey.Name)
 		return c.client.Update(ctx, webhook)
 	})
 
@@ -368,8 +366,7 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
 func (c *certManager) cleanWebhookCABundles(oidcWebhook *v1.MutatingWebhookConfiguration) {
 
 	for i, w := range oidcWebhook.Webhooks {
-		if w.Name != c.webhookKey.Name+deploymentsWebhookSuffix &&
-			w.Name != c.webhookKey.Name+statefulSetsWebhookSuffix &&
+		if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
 			w.Name != c.webhookKey.Name+podsWebhookSuffix {
 			continue
 		}

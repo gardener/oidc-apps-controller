@@ -283,6 +283,12 @@ func initNonTargetDeployment() {
 				},
 			},
 		},
+		Spec: corev1.PodSpec{Containers: []corev1.Container{
+			{
+				Name:  "test",
+				Image: "test",
+			},
+		}},
 	}
 }
 

@@ -1,0 +1,102 @@
+// Copyright 2024 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package webhook
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/json"
+	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+)
+
+// Register the webhook with the server
+var _ admission.Handler = &VPAMutator{}
+
+// VPAMutator is a handler modifying the resource definitions of the vpa targets
+type VPAMutator struct {
+	Client  client.Client
+	Decoder *webhook.AdmissionDecoder
+}
+
+// Handle provides interface implementation for the PodMutator
+func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) webhook.AdmissionResponse {
+	_log := log.FromContext(ctx)
+
+	if v.Decoder == nil {
+		return webhook.Errored(http.StatusInternalServerError,
+			fmt.Errorf("decoder in the admission handler cannot be nil"))
+	}
+
+	vpa := &autoscalerv1.VerticalPodAutoscaler{}
+	if err := v.Decoder.Decode(req, vpa); err != nil {
+		return webhook.Errored(http.StatusBadRequest, err)
+	}
+
+	if !configuration.GetOIDCAppsControllerConfig().Match(vpa) {
+		return webhook.Allowed("vpa not matched")
+	}
+	_log.Info("handling vpa admission request")
+
+	// Simply return if it is a delete operation
+	if !vpa.GetDeletionTimestamp().IsZero() {
+		return webhook.Allowed("delete")
+	}
+
+	patch := vpa.DeepCopy()
+	policies := make([]autoscalerv1.ContainerResourcePolicy, 0)
+	for i, policy := range patch.Spec.ResourcePolicy.ContainerPolicies {
+		if policy.ContainerName != constants.ContainerNameOauth2Proxy &&
+			policy.ContainerName != constants.ContainerNameKubeRbacProxy {
+			policies = append(policies, patch.Spec.ResourcePolicy.ContainerPolicies[i])
+		}
+	}
+	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
+		ContainerName: constants.ContainerNameOauth2Proxy,
+		MinAllowed: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("50m"),
+			corev1.ResourceMemory: resource.MustParse("50Mi"),
+		},
+	})
+	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
+		ContainerName: constants.ContainerNameKubeRbacProxy,
+		MinAllowed: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("50m"),
+			corev1.ResourceMemory: resource.MustParse("50Mi"),
+		},
+	})
+
+	patch.Spec.ResourcePolicy.ContainerPolicies = policies
+	original, err := json.Marshal(vpa)
+	if err != nil {
+		_log.Info("Unable to marshal vpa")
+	}
+
+	patched, err := json.Marshal(patch)
+	if err != nil {
+		_log.Info("Unable to marshal vpa")
+	}
+	return admission.PatchResponseFromRaw(original, patched)
+}

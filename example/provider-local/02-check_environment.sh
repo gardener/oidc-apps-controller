@@ -178,7 +178,7 @@ function check_hosts {
     records=(
         dexidp
         plutono-garden.ingress.local.seed.local.gardener.cloud
-        seed-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
+        prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud
         aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
         pr-404698-0.ingress.local.seed.local.gardener.cloud

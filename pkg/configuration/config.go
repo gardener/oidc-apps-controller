@@ -27,7 +27,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels2 "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -480,7 +480,7 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 		return false
 	}
 	if t.NamespaceSelector.Size() == 0 {
-		return selector.Matches(labels2.Set(o.GetLabels()))
+		return selector.Matches(labels.Set(o.GetLabels()))
 	}
 	// Define the namespace object and fill the Name field.
 	// Use the Get function.
@@ -499,18 +499,18 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 
 	if t.LabelSelector.Size() == 0 {
 		// We don't have a label selector for this target, matching only the namespace selector
-		return namespaceSelector.Matches(labels2.Set(namespace.GetLabels()))
+		return namespaceSelector.Matches(labels.Set(namespace.GetLabels()))
 	}
-	return selector.Matches(labels2.Set(o.GetLabels())) && namespaceSelector.Matches(labels2.Set(namespace.GetLabels()))
+	return selector.Matches(labels.Set(o.GetLabels())) && namespaceSelector.Matches(labels.Set(namespace.GetLabels()))
 }
 
-// GetTargetSelectorLabels returns the label selector for the given target
-func (c *OIDCAppsControllerConfig) GetTargetSelectorLabels(o client.Object) map[string]string {
+// GetTargetLabelSelector returns the label selector for the given target
+func (c *OIDCAppsControllerConfig) GetTargetLabelSelector(o client.Object) *metav1.LabelSelector {
 	t := c.fetchTarget(o)
 
-	if t.LabelSelector != nil && t.LabelSelector.MatchLabels != nil {
-		return t.LabelSelector.MatchLabels
+	if t.LabelSelector != nil {
+		return t.LabelSelector
 	}
 
-	return map[string]string{}
+	return nil
 }

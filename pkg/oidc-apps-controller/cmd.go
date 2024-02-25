@@ -36,9 +36,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/scale/scheme/autoscalingv1"
 	"k8s.io/utils/ptr"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -69,7 +72,12 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	// Add core Kubernetes schemes
 	if err := scheme.AddToScheme(sch); err != nil {
-		return err
+		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
+	}
+
+	// Add autoscaler schemes
+	if err := autoscalerv1.AddToScheme(sch); err != nil {
+		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 	}
 
 	// Add additional scheme in case of running in gardener cluster
@@ -90,8 +98,8 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	cfg := config.GetConfigOrDie()
-	cfg.QPS = float32(100)
-	cfg.Burst = 130
+	cfg.QPS = float32(150)
+	cfg.Burst = 200
 
 	mgr, err := manager.New(cfg,
 		manager.Options{
@@ -538,6 +546,18 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 			Client:          mgr.GetClient(),
 			Decoder:         admission.NewDecoder(scheme.Scheme),
 			ImagePullSecret: o.registrySecret,
+		}},
+	)
+
+	s := runtime.NewScheme()
+	if err := autoscalingv1.AddToScheme(s); err != nil {
+		return err
+	}
+	webhookServer.Register(
+		constants.VpaWebHookPath,
+		&webhook.Admission{Handler: &oidcappswebhook.VPAMutator{
+			Client:  mgr.GetClient(),
+			Decoder: admission.NewDecoder(s),
 		}},
 	)
 

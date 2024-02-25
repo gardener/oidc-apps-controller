@@ -29,6 +29,8 @@ const (
 	DeploymentWebHookPath = "/oidc-mutate-v1-deployment"
 	//PodWebHookPath is the context path of the mutating webhook for pods
 	PodWebHookPath = "/oidc-mutate-v1-pod"
+	//VpaWebHookPath is the context path of the mutating webhook for pods
+	VpaWebHookPath = "/oidc-mutate-v1-vpa"
 	//NAMESPACE is the name of the required environment variable
 	NAMESPACE = "NAMESPACE"
 

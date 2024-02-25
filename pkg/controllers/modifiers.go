@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -180,8 +181,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	// Create or update the oauth2 service setting the owner reference
-	selectors := configuration.GetOIDCAppsControllerConfig().GetTargetSelectorLabels(object)
-	if oauth2Service, err = createOauth2Service(selectors, object); err != nil {
+	selectors := configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(object)
+	if oauth2Service, err = createOauth2Service(selectors.MatchLabels, object); err != nil {
 		return fmt.Errorf("failed to create oauth2 service: %w", err)
 	}
 	if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
@@ -240,7 +241,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 	}
 
-	return nil
+	return patchVpa(ctx, c, object)
 }
 
 func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *v1.StatefulSet) error {
@@ -292,9 +293,12 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 
 		// Create or update the oauth2 service setting the owner reference
-		selectors := configuration.GetOIDCAppsControllerConfig().GetTargetSelectorLabels(&pod)
-		if statefulSetPodNameLabbel, ok := pod.GetLabels()["statefulset.kubernetes.io/pod-name"]; ok {
-			selectors = map[string]string{"statefulset.kubernetes.io/pod-name": statefulSetPodNameLabbel}
+		selectors := client.MatchingLabels{}
+		if configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod) != nil {
+			selectors = configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod).MatchLabels
+		}
+		if statefulSetPodNameLabel, ok := pod.GetLabels()["statefulset.kubernetes.io/pod-name"]; ok {
+			selectors = map[string]string{"statefulset.kubernetes.io/pod-name": statefulSetPodNameLabel}
 		}
 		if oauth2Service, err = createOauth2Service(selectors, &pod); err != nil {
 			return fmt.Errorf("failed to create oauth2 service: %w", err)
@@ -353,6 +357,34 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn); err != nil {
 			return fmt.Errorf("failed to create or update oidc ca: %w", err)
+		}
+	}
+
+	return patchVpa(ctx, c, object)
+}
+
+func patchVpa(ctx context.Context, c client.Client, object client.Object) error {
+	vpa := &autoscalerv1.VerticalPodAutoscalerList{}
+	targetLabels := configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(object)
+
+	listOpts := []client.ListOption{
+		client.MatchingLabels(targetLabels.MatchLabels),
+		client.InNamespace(object.GetNamespace()),
+	}
+	if err := c.List(ctx, vpa, listOpts...); err != nil {
+		return fmt.Errorf("failed to list vpas: %w", err)
+	}
+
+	for i, v := range vpa.Items {
+		containerPolicies := v.Spec.ResourcePolicy.ContainerPolicies
+		for _, policy := range containerPolicies {
+			if policy.ContainerName == constants.ContainerNameOauth2Proxy || policy.ContainerName == constants.ContainerNameKubeRbacProxy {
+				continue
+			}
+			if err := c.Patch(ctx, &vpa.Items[i], client.RawPatch(types.MergePatchType, []byte(`{}`))); err != nil {
+				return fmt.Errorf("failed to patch vpa: %w", err)
+			}
+			log.FromContext(ctx).Info("trigger patch", "vpa", v.GetName())
 		}
 	}
 

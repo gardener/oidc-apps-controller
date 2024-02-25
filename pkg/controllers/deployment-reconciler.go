@@ -71,6 +71,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 		return reconcile.Result{}, err
 	}
 
+	_log.Info("reconciled deployment successfully")
 	return reconcile.Result{}, nil
 
 }

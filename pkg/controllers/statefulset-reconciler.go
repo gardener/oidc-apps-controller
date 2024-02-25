@@ -69,6 +69,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 		return reconcile.Result{}, err
 	}
 
+	_log.Info("reconciled statefulset successfully")
 	return reconcile.Result{}, nil
 
 }

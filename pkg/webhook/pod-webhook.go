@@ -57,9 +57,6 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		return webhook.Errored(http.StatusBadRequest, err)
 	}
 
-	_log.V(9).Info("handling admission request", "resourceVersion", pod.GetResourceVersion(),
-		"generation", pod.GetGeneration())
-
 	// Simply return if it is a delete operation
 	if !pod.GetDeletionTimestamp().IsZero() {
 		return webhook.Allowed("delete")
@@ -71,6 +68,8 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	if !target {
 		return webhook.Allowed("not a target")
 	}
+
+	_log.Info("handling pod admission request")
 
 	patch := pod.DeepCopy()
 	clientId := configuration.GetOIDCAppsControllerConfig().GetClientID(owner)

@@ -25,6 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -770,11 +771,12 @@ func TestLabelSelectors(t *testing.T) {
 		},
 	}).WithObjects(deployment).Build()
 
-	labels := extensionConfig.GetTargetSelectorLabels(deployment)
-	if !reflect.DeepEqual(labels, map[string]string{"app": "service"}) {
-		t.Error("getting target selector labels is not as expected: ",
-			"expected", map[string]string{"app": "service"},
-			"got", labels)
+	selector, err := metav1.LabelSelectorAsSelector(extensionConfig.GetTargetLabelSelector(deployment))
+	if err != nil {
+		t.Error(err)
+	}
+	if !selector.Matches(labels.Set(map[string]string{"app": "service"})) {
+		t.Error("label selector does not match")
 	}
 
 }

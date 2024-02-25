@@ -39,3 +39,28 @@ webhooks:
     admissionReviewVersions:
       - v1
     reinvocationPolicy: IfNeeded
+  - name: {{ include "oidc-apps-extension.fullname" . }}-vpas.gardener.cloud
+    clientConfig:
+      service:
+        name: {{ include "oidc-apps-extension.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: /oidc-mutate-v1-vpa
+        port: {{ .Values.service.port | int }}
+      caBundle:
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [ "autoscaling.k8s.io" ]
+        apiVersions: [ "v1" ]
+        resources: [ "verticalpodautoscalers" ]
+    {{- with .Values.webhook.objectSelector }}
+    objectSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.webhook.namespaceSelector }}
+    namespaceSelector:
+    {{- toYaml . | nindent 6 }}
+    {{- end }}
+    sideEffects: NoneOnDryRun
+    admissionReviewVersions:
+      - v1
+    reinvocationPolicy: IfNeeded
