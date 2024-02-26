@@ -63,11 +63,7 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	}
 
 	if !configuration.GetOIDCAppsControllerConfig().Match(vpa) {
-		matched, err := isTargetRefMatched(ctx, v.Client, vpa.GetNamespace(), vpa.Spec.TargetRef)
-		if err != nil {
-			return webhook.Errored(http.StatusInternalServerError, err)
-		}
-		if !matched {
+		if !isTargetRefMatched(ctx, v.Client, vpa.GetNamespace(), vpa.Spec.TargetRef) {
 			return webhook.Allowed("vpa not matched")
 		}
 	}
@@ -114,22 +110,24 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	return admission.PatchResponseFromRaw(original, patched)
 }
 
-func isTargetRefMatched(ctx context.Context, c client.Client, namespace string, ref *autoscalingv1.CrossVersionObjectReference) (bool, error) {
+func isTargetRefMatched(ctx context.Context, c client.Client, namespace string, ref *autoscalingv1.CrossVersionObjectReference) bool {
 	switch ref.Kind {
 	case "Deployment":
 		deployment := &appsv1.Deployment{}
 		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, deployment); err != nil {
-			return false, fmt.Errorf("unable to get deployment for object %s", ref.Name)
+			log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", ref.Name)
+			return false
 		}
-		return configuration.GetOIDCAppsControllerConfig().Match(deployment), nil
+		return configuration.GetOIDCAppsControllerConfig().Match(deployment)
 
 	case "StatefulSet":
 		statefulset := &appsv1.StatefulSet{}
 		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, statefulset); err != nil {
-			return false, fmt.Errorf("unable to get statefulset for object %s", ref.Name)
+			log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", ref.Name)
+			return false
 		}
-		return configuration.GetOIDCAppsControllerConfig().Match(statefulset), nil
+		return configuration.GetOIDCAppsControllerConfig().Match(statefulset)
 	}
 
-	return false, nil
+	return false
 }

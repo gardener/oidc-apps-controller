@@ -388,6 +388,21 @@ func patchVpa(ctx context.Context, c client.Client, object client.Object) error 
 		}
 	}
 
+	// TODO(nickytd): Remove this block once PR https://github.com/gardener/gardener/pull/9244 is merged
+	if len(vpa.Items) == 0 {
+		prometheusVpa := &autoscalerv1.VerticalPodAutoscaler{}
+		if err := c.Get(ctx, types.NamespacedName{Name: "prometheus-vpa", Namespace: object.GetNamespace()}, prometheusVpa); client.IgnoreNotFound(err) != nil {
+			log.FromContext(ctx).Error(err, "cannot get prometheus-vpa")
+			return nil
+		}
+		if prometheusVpa.GetName() == "prometheus-vpa" {
+			if err := c.Patch(ctx, prometheusVpa, client.RawPatch(types.MergePatchType, []byte(`{}`))); err != nil {
+				return fmt.Errorf("failed to patch vpa: %w", err)
+			}
+			log.FromContext(ctx).Info("trigger patch", "vpa", prometheusVpa.GetName())
+		}
+	}
+
 	return nil
 }
 
