@@ -85,6 +85,7 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 		return nil, err
 	}
 
+	_log.Info("CA certificate generated", "commonName", certTmpl.Subject.CommonName)
 	return b, nil
 }
 
@@ -175,6 +176,7 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 	if err = writeBundle(path, b); err != nil {
 		return nil, err
 	}
+	_log.Info("TLS certificate generated", "commonName", certTmpl.Subject.CommonName)
 	return b, nil
 }
 

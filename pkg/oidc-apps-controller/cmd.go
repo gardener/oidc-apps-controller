@@ -120,7 +120,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	cfg := config.GetConfigOrDie()
-	cfg.QPS = float32(150)
+	cfg.QPS = float32(100)
 	cfg.Burst = 200
 
 	mgr, err := manager.New(cfg,
@@ -479,11 +479,7 @@ func addStatefulSetController(mgr manager.Manager) error {
 func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 
 	if !o.useCertManager {
-		webhookKey := types.NamespacedName{
-			Namespace: os.Getenv(constants.NAMESPACE),
-			Name:      o.webhookName,
-		}
-		certManager, err := certificates.New(o.webhookCertsDir, webhookKey, mgr.GetClient(), mgr.GetConfig())
+		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
 		if err != nil {
 			return err
 		}

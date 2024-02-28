@@ -18,13 +18,16 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"os"
 	"sync"
 	"time"
 
 	v1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,11 +36,12 @@ import (
 )
 
 const (
-	tlsCertValidity = time.Hour * time.Duration(24)   // 24 hours
-	tlsCertRotation = time.Hour * time.Duration(1)    // Rotate 1 hour before expire
-	caCertValidity  = time.Hour * time.Duration(168)  // 1w
-	caCertRotation  = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
-	ticker          = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
+	tlsCertValidity  = time.Hour * time.Duration(24)   // 24 hours
+	tlsCertRotation  = time.Hour * time.Duration(1)    // Rotate 1 hour before expire
+	caCertValidity   = time.Hour * time.Duration(168)  // 1w
+	caCertRotation   = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
+	expirationTicker = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
+	syncTicker       = time.Minute * time.Duration(1)  // Sync the webhook CABundle every minute
 
 	podsWebhookSuffix = "-pods.gardener.cloud"
 	vpasWebhookSuffix = "-vpas.gardener.cloud"
@@ -48,8 +52,8 @@ type certManager struct {
 	certPath string
 	// SAN records for the TLS bundle
 	dnsNames []string
-	// Webhook resource reference
-	webhookKey types.NamespacedName
+	// Webhook name
+	webhookName string
 	// K8S Client for updating the webhook CABundle resource
 	client client.Client
 	// Managed Certificates
@@ -73,21 +77,22 @@ var _log = logf.Log.WithName("certificate-manager")
 
 // New creates a new controller-runtime runnable providing
 // bundle rotation for the service endpoint of the mutating webhook
-func New(certPath string, objectKey types.NamespacedName, c client.Client, config *rest.Config) (manager.Runnable, error) {
+func New(certPath string, name string, namespace string, c client.Client, config *rest.Config) (manager.Runnable,
+	error) {
 
 	runnable := &certManager{
-		certPath:   certPath,
-		client:     c,
-		webhookKey: objectKey,
+		certPath:    certPath,
+		client:      c,
+		webhookName: name,
 	}
 
 	var cancel context.CancelFunc
 	runnable.ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	dnsNames := []string{objectKey.Name}
-	if objectKey.Namespace != "" {
-		prefix := objectKey.Name + "." + objectKey.Namespace
+	dnsNames := []string{name}
+	if namespace != "" {
+		prefix := name + "." + namespace
 		dnsNames = append(dnsNames,
 			prefix,
 			prefix+".svc",
@@ -103,7 +108,7 @@ func New(certPath string, objectKey types.NamespacedName, c client.Client, confi
 		if runnable.ca, err = generateCACert(certPath, realCertOps{}); err != nil {
 			return nil, err
 		}
-		if err = runnable.setupWebhooksCABundles(config, objectKey); err != nil {
+		if err = runnable.setupWebhooksCABundles(runnable.ctx, config); err != nil {
 			return nil, err
 		}
 	}
@@ -115,6 +120,7 @@ func New(certPath string, objectKey types.NamespacedName, c client.Client, confi
 		}
 	}
 
+	_log.Info("Webhook certificate manager is initialized")
 	return runnable, nil
 }
 
@@ -130,10 +136,11 @@ func (c *certManager) Start(ctx context.Context) error {
 	go func() {
 		defer runnableWaitGroup.Done()
 		wg := &sync.WaitGroup{}
-		wg.Add(2)
-		go c.rotateCACert(ctx, wg)  // Start the CA bundle rotation
-		go c.rotateTLSCert(ctx, wg) // Start the TLS bundle rotation
-		<-ctx.Done()                // Waiting for the controller-runtime.Manager to close the context
+		wg.Add(3)
+		go c.syncWebhookCaBundle(ctx, wg) // Start the webhook CA bundle check
+		go c.rotateCACert(ctx, wg)        // Start the CA bundle rotation
+		go c.rotateTLSCert(ctx, wg)       // Start the TLS bundle rotation
+		<-ctx.Done()                      // Waiting for the controller-runtime.Manager to close the context
 		_log.Info("Shutting down the webhook certificate manager")
 		wg.Wait()
 	}()
@@ -148,20 +155,21 @@ func (c *certManager) Start(ctx context.Context) error {
 // setupWebhooksCABundles is invoked during runnable initialization and before the controller manager Start method is called.
 // The purpose is to generate an initial set of CA nad TLS certificates bundle and to update the webhook CABundle resource
 // Since the client.Client is not present at this moment, we need to construct a new client.
-func (c *certManager) setupWebhooksCABundles(config *rest.Config, objectKey types.NamespacedName) error {
-	cl, err := client.New(config, client.Options{})
+func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.Config) error {
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating k8s client: %w", err)
 	}
 
-	mutatingWebhook := &v1.MutatingWebhookConfiguration{}
 	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
-		if err = cl.Get(c.ctx, objectKey, mutatingWebhook); err != nil {
-			return err
+		mutatingWebhook, err := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, c.webhookName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("error getting webhook: %w", err)
 		}
+		_log.Info("Fetched webhook CA bundle", "webhook", c.webhookName, "resourceVersion", mutatingWebhook.GetResourceVersion())
 		for i, w := range mutatingWebhook.Webhooks {
-			if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
-				w.Name != c.webhookKey.Name+podsWebhookSuffix {
+			if w.Name != c.webhookName+vpasWebhookSuffix &&
+				w.Name != c.webhookName+podsWebhookSuffix {
 				continue
 			}
 
@@ -172,7 +180,15 @@ func (c *certManager) setupWebhooksCABundles(config *rest.Config, objectKey type
 			}
 			mutatingWebhook.Webhooks[i].ClientConfig.CABundle = b
 		}
-		return cl.Update(context.Background(), mutatingWebhook)
+		updatedWebhook, err := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Update(context.
+			Background(),
+			mutatingWebhook, metav1.UpdateOptions{})
+		if err == nil {
+			_log.Info("Updated webhook CA bundle", "webhook", updatedWebhook.GetName(), "resourceVersion", updatedWebhook.GetResourceVersion())
+		} else {
+			_log.Info(fmt.Errorf("error updating webhook: %w", err).Error())
+		}
+		return err
 	})
 }
 
@@ -183,12 +199,12 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 
 	webhook := &v1.MutatingWebhookConfiguration{}
 	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
-		if err := c.client.Get(c.ctx, c.webhookKey, webhook); err != nil {
+		if err := c.client.Get(c.ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 			return err
 		}
 		for i, w := range webhook.Webhooks {
-			if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
-				w.Name != c.webhookKey.Name+podsWebhookSuffix {
+			if w.Name != c.webhookName+vpasWebhookSuffix &&
+				w.Name != c.webhookName+podsWebhookSuffix {
 				continue
 			}
 
@@ -199,16 +215,16 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 			}
 			webhook.Webhooks[i].ClientConfig.CABundle = b
 		}
-		_log.Info("Updating webhook CA bundle", "webhook", c.webhookKey.Name)
+		_log.Info("Updating webhook CA bundle", "webhook", c.webhookName)
 		return c.client.Update(ctx, webhook)
 	})
 
 }
 
-// rotateTLSCert is a loops over ticker and checks if the TLS bundle is expired.
+// rotateTLSCert is a loops over expirationTicker and checks if the TLS bundle is expired.
 func (c *certManager) rotateTLSCert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	tlsTicker := time.NewTicker(ticker)
+	tlsTicker := time.NewTicker(expirationTicker)
 	defer tlsTicker.Stop()
 	ops := realCertOps{}
 OuterLoop:
@@ -217,10 +233,7 @@ OuterLoop:
 		case <-tlsTicker.C:
 			expire := time.Now().Add(tlsCertRotation).UTC()
 			if expire.Before(c.tls.cert.NotAfter) {
-				_log.Info("TLS bundle is valid",
-					"serial", c.tls.cert.SerialNumber.String(),
-					"expire", expire,
-					"certificate notAfter", c.tls.cert.NotAfter)
+				_log.Info("TLS bundle is valid", "serial", c.tls.cert.SerialNumber.String(), "expire", expire, "certificate notAfter", c.tls.cert.NotAfter)
 				continue
 			}
 			t, err := generateTLSCert(c.certPath, ops, c.dnsNames, c.ca)
@@ -229,9 +242,7 @@ OuterLoop:
 			}
 			c.tls.key = t.key
 			c.tls.cert = t.cert
-			_log.Info("TLS bundle is rotated",
-				"serial", c.tls.cert.SerialNumber.String(),
-				"certificate notAfter", c.tls.cert.NotAfter)
+			_log.Info("TLS bundle is rotated", "serial", c.tls.cert.SerialNumber.String(), "certificate notAfter", c.tls.cert.NotAfter)
 		case <-ctx.Done():
 			_log.Info("Shutting down the TLS bundle rotation")
 			break OuterLoop
@@ -239,10 +250,10 @@ OuterLoop:
 	}
 }
 
-// rotateCACert is a loops over ticker and checks if the CA bundle is expired.
+// rotateCACert is a loops over expirationTicker and checks if the CA bundle is expired.
 func (c *certManager) rotateCACert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	caTicker := time.NewTicker(ticker)
+	caTicker := time.NewTicker(expirationTicker)
 	defer caTicker.Stop()
 	ops := realCertOps{}
 OuterLoop:
@@ -251,10 +262,7 @@ OuterLoop:
 		case <-caTicker.C:
 			expire := time.Now().Add(caCertRotation).UTC()
 			if expire.Before(c.ca.cert.NotAfter) {
-				_log.Info("CA bundle is valid",
-					"serial", c.ca.cert.SerialNumber.String(),
-					"expire", expire,
-					"certificate notAfter", c.ca.cert.NotAfter)
+				_log.Info("CA bundle is valid", "serial", c.ca.cert.SerialNumber.String(), "expire", expire, "certificate notAfter", c.ca.cert.NotAfter)
 				continue
 			}
 			crt, err := generateCACert(c.certPath, ops)
@@ -263,9 +271,7 @@ OuterLoop:
 			}
 			c.ca.key = crt.key
 			c.ca.cert = crt.cert
-			_log.Info("CA bundle is rotated",
-				"serial", c.ca.cert.SerialNumber.String(),
-				"certificate notAfter", c.ca.cert.NotAfter)
+			_log.Info("CA bundle is rotated", "serial", c.ca.cert.SerialNumber.String(), "certificate notAfter", c.ca.cert.NotAfter)
 
 			if err := c.updateWebhookConfiguration(ctx); err != nil {
 				_log.Error(err, "Error updating webhook CA bundle")
@@ -274,9 +280,7 @@ OuterLoop:
 			t, _ := generateTLSCert(c.certPath, ops, c.dnsNames, c.ca)
 			c.tls.key = t.key
 			c.tls.cert = t.cert
-			_log.Info("TLS bundle is rotated",
-				"serial", c.tls.cert.SerialNumber.String(),
-				"certificate notAfter", c.tls.cert.NotAfter)
+			_log.Info("TLS bundle is rotated", "serial", c.tls.cert.SerialNumber.String(), "certificate notAfter", c.tls.cert.NotAfter)
 		case <-ctx.Done():
 			_log.Info("Shutting down the CA bundle rotation")
 			break OuterLoop
@@ -293,9 +297,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		if block == nil {
-			_log.Info("No bundle is present in the CA Bundle",
-				"webhook", name,
-			)
+			_log.Info("No bundle is present in the CA Bundle", "webhook", name)
 			break
 		}
 
@@ -315,10 +317,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 	for _, ca := range currentCAs {
 		// ca is before now, hence it is expired
 		if ca.NotAfter.Compare(time.Now().UTC()) == -1 {
-			_log.Info("Certificate is expired, skipping from temp storage",
-				"webhook", name,
-				"serial", ca.SerialNumber.String(),
-			)
+			_log.Info("Certificate is expired, skipping from temp storage", "webhook", name, "serial", ca.SerialNumber.String())
 			continue
 		}
 		updatedCAs = append(updatedCAs, ca)
@@ -350,7 +349,7 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
 	webhook := &v1.MutatingWebhookConfiguration{}
 
 	if err := retry.RetryOnConflict(webhookUpdateRetry, func() error {
-		if err := c.client.Get(ctx, c.webhookKey, webhook); err != nil {
+		if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 			return err
 		}
 		c.cleanWebhookCABundles(webhook)
@@ -366,8 +365,8 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
 func (c *certManager) cleanWebhookCABundles(oidcWebhook *v1.MutatingWebhookConfiguration) {
 
 	for i, w := range oidcWebhook.Webhooks {
-		if w.Name != c.webhookKey.Name+vpasWebhookSuffix &&
-			w.Name != c.webhookKey.Name+podsWebhookSuffix {
+		if w.Name != c.webhookName+vpasWebhookSuffix &&
+			w.Name != c.webhookName+podsWebhookSuffix {
 			continue
 		}
 
@@ -387,9 +386,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		if block == nil {
-			_log.Info("No bundle is present in the CA Bundle",
-				"webhook", name,
-			)
+			_log.Info("No certificate is present in the CA Bundle", "webhook", name)
 			break
 		}
 
@@ -417,9 +414,60 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 		caBundleSlice = append(caBundleSlice, pem.EncodeToMemory(block)...)
 
 	}
-	_log.Info("Certificate CA Bundle length",
-		"webhook", name,
-		"length", len(currentCAs),
-	)
+	_log.Info("Certificate CA Bundle length", "webhook", name, "length", len(currentCAs))
 	return caBundleSlice, nil
+}
+
+func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	caTicker := time.NewTicker(syncTicker)
+	defer caTicker.Stop()
+
+	for {
+		select {
+		case <-caTicker.C:
+			webhook := &v1.MutatingWebhookConfiguration{}
+			if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
+				_log.Error(err, "Error fetching webhook")
+			}
+			for _, w := range webhook.Webhooks {
+				_log.V(9).Info("CA Bundle", "webhook", w.Name, "size", len(w.ClientConfig.CABundle))
+				if !caBundleFound(w.ClientConfig.CABundle, c.ca.cert) {
+					if err := c.updateWebhookConfiguration(ctx); err != nil {
+						_log.Error(err, "Error updating webhook CA bundle")
+					}
+				} else {
+					_log.V(9).Info("Webhook CA bundle is in sync", "webhook", w.Name)
+				}
+			}
+		case <-ctx.Done():
+			_log.Info("Shutting down the CA bundle checker")
+			return
+		}
+	}
+}
+
+func caBundleFound(caBundle []byte, cert *x509.Certificate) bool {
+
+	for len(caBundle) > 0 {
+		var block *pem.Block
+		block, caBundle = pem.Decode(caBundle)
+		// no pem block is found
+		if block == nil {
+			return false
+		}
+
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+
+		crt, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return false
+		}
+		if cert.SerialNumber.String() == crt.SerialNumber.String() {
+			return true
+		}
+	}
+	return false
 }
