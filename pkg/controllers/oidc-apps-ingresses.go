@@ -39,7 +39,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -91,7 +91,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),

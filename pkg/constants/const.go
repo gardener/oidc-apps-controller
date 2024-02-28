@@ -53,8 +53,22 @@ const (
 	//IngressName is the name of the oauth2 ingress
 	IngressName = "oauth2-ingress"
 
-	//LabelKey is the annotation added to each enhanced deployment or statefulset
+	//LabelKey is the label added to dependent configuration secrets
 	LabelKey = "oidc-application-controller/component"
+	//LabelValue is the label added to dependent configuration secrets
+	LabelValue = "oidc-apps"
+	//SecretLabelKey is the label added to dependent configuration secrets
+	SecretLabelKey = "oidc-application-controller/secret"
+	//Oauth2LabelValue is the value of the Label
+	Oauth2LabelValue = "oauth2"
+	//RbacLabelValue is the value of the Label
+	RbacLabelValue = "rbac"
+	//OidcCa2LabelValue is the value of the Label
+	OidcCa2LabelValue = "oidc-ca"
+	//KubeconfigLabelValue is the value of the Label
+	KubeconfigLabelValue = "kubeconfig"
+	//RegistrySecretLabelValue is the value of the Label
+	RegistrySecretLabelValue = "registry-secret"
 
 	//GardenerPublicLabelsKey is a label used by the gardener network policy controller to manage access to public networks
 	GardenerPublicLabelsKey = "networking.gardener.cloud/to-public-networks"

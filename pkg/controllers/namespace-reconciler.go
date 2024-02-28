@@ -60,7 +60,10 @@ func (n *NamespaceReconciler) Reconcile(ctx context.Context, request reconcile.R
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      originalSecret.Name,
 			Namespace: request.Name,
-			Labels:    map[string]string{constants.LabelKey: IMAGEPULLSECRET},
+			Labels: map[string]string{
+				constants.LabelKey:       constants.LabelValue,
+				constants.SecretLabelKey: constants.RegistrySecretLabelValue,
+			},
 		},
 		Data: originalSecret.Data,
 		Type: originalSecret.Type,

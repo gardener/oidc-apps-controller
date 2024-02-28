@@ -29,8 +29,6 @@ import (
 const (
 	// DOCKERCONFIGJSON is a standard field name in the authentication secrets for private container registries
 	DOCKERCONFIGJSON = ".dockerconfigjson"
-	// IMAGEPULLSECRET the default secret name
-	IMAGEPULLSECRET = "imagepullsecret"
 )
 
 // ImagePullSecretReconciler holds configuration for the reconciler
@@ -57,7 +55,8 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(
 				map[string]string{
-					constants.LabelKey: IMAGEPULLSECRET,
+					constants.LabelKey:       constants.LabelValue,
+					constants.SecretLabelKey: constants.RegistrySecretLabelValue,
 				},
 			),
 		},

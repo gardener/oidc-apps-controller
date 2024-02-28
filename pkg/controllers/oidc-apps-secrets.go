@@ -61,14 +61,18 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	}
 
 	checksum := rand.GenerateFullSha256(cfg)
+
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        constants.SecretNameOauth2Proxy + "-" + suffix,
 			Namespace:   object.GetNamespace(),
 			Annotations: map[string]string{constants.AnnotationOauth2SecertCehcksumKey: checksum},
-			Labels:      map[string]string{constants.LabelKey: "oauth2"},
+			Labels: map[string]string{
+				constants.LabelKey:       constants.LabelValue,
+				constants.SecretLabelKey: constants.Oauth2LabelValue,
+			},
 		},
-		StringData: map[string]string{"oauth2-proxy.cfg": cfg},
+		Data: map[string][]byte{"oauth2-proxy.cfg": []byte(cfg)},
 	}, nil
 }
 
@@ -84,7 +88,10 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.SecretNameResourceAttributes + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: "rbac"},
+			Labels: map[string]string{
+				constants.LabelKey:       constants.LabelValue,
+				constants.SecretLabelKey: constants.RbacLabelValue,
+			},
 		},
 		StringData: map[string]string{"config-file.yaml": cfg},
 	}, nil
@@ -110,7 +117,10 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SecretNameKubeconfig + "-" + suffix,
 				Namespace: object.GetNamespace(),
-				Labels:    map[string]string{constants.LabelKey: "kubeconfig"},
+				Labels: map[string]string{
+					constants.LabelKey:       constants.LabelValue,
+					constants.SecretLabelKey: constants.KubeconfigLabelValue,
+				},
 			},
 			StringData: map[string]string{"kubeconfig": string(kubeconfig)},
 		}
@@ -171,7 +181,10 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubeconfig-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: "kubeconfig"},
+			Labels: map[string]string{
+				constants.LabelKey:       constants.LabelValue,
+				constants.SecretLabelKey: constants.KubeconfigLabelValue,
+			},
 		},
 		StringData: map[string]string{"kubeconfig": string(k)},
 	}, nil
@@ -186,7 +199,10 @@ func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SecretNameOidcCa + "-" + suffix,
 				Namespace: object.GetNamespace(),
-				Labels:    map[string]string{constants.LabelKey: "oidcca"},
+				Labels: map[string]string{
+					constants.LabelKey:       constants.LabelValue,
+					constants.SecretLabelKey: constants.OidcCa2LabelValue,
+				},
 			},
 			StringData: map[string]string{"ca.crt": oidcCABundle},
 		}

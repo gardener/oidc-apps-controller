@@ -36,6 +36,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
@@ -45,6 +46,7 @@ import (
 	"k8s.io/utils/ptr"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -80,12 +82,32 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 	}
 
+	//Limit the cache
+	c := cache.Options{
+		Scheme: sch,
+		ByObject: map[client.Object]cache.ByObject{
+			&corev1.Pod{}: {},
+			&corev1.Secret{}: {
+				Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+			},
+			&corev1.Service{}: {
+				Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+			},
+			&corev1.Namespace{}: {},
+			&networkingv1.Ingress{}: {
+				Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+			},
+			&autoscalerv1.VerticalPodAutoscaler{}: {},
+		}}
+
 	// Add additional scheme in case of running in gardener cluster
 	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 {
 		// Add gardener Cluster schemes
 		if err := gardenextensionsv1alpha1.AddToScheme(sch); err != nil {
 			return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 		}
+		cluster := &gardenextensionsv1alpha1.Cluster{}
+		c.ByObject[cluster] = cache.ByObject{}
 	}
 
 	// NAMESPACE is a required environment variable for the oidc-apps-controller certificate manager
@@ -103,6 +125,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	mgr, err := manager.New(cfg,
 		manager.Options{
+			Cache:                         c,
 			Scheme:                        sch,
 			LeaderElection:                true,
 			LeaderElectionID:              "oidc-apps-controller",

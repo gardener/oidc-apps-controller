@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -139,7 +139,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 	kubeConfigList := &corev1.SecretList{}
 	if err = g.client.List(ctx, kubeConfigList,
 		client.MatchingLabelsSelector{
-			Selector: labels.SelectorFromSet(map[string]string{oidc_apps_controller.LabelKey: "kubeconfig"}),
+			Selector: labels.SelectorFromSet(map[string]string{constants.SecretLabelKey: constants.KubeconfigLabelValue}),
 		},
 	); err != nil {
 		_log.Error(err, "error fetching kubeconfig secretes")

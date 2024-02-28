@@ -30,6 +30,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -160,9 +161,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		oidcCABundleSecret corev1.Secret
 		// Optional secret with kubeconfig the rbac-proxy sidecar
 		kubeConfig corev1.Secret
-		// Callback function for the create or update operation
-		mutateFn = func() error { return nil }
-		err      error
+		// Error
+		err error
 	)
 
 	if !object.GetDeletionTimestamp().IsZero() {
@@ -176,7 +176,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn); err != nil {
+	if err = createOrPatchObject(ctx, c, &oauth2Secret); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 	}
 
@@ -188,7 +188,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn); err != nil {
+	if err = createOrPatchObject(ctx, c, &oauth2Service); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 	}
 
@@ -200,8 +200,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if err := controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn); err != nil {
-		return fmt.Errorf("failed to create or update resource attributes secret secret: %w", err)
+	if err = createOrPatchObject(ctx, c, &rbacSecret); err != nil {
+		return fmt.Errorf("failed to create or update rbac secret: %w", err)
 	}
 
 	// kubeconfig secret is optionally added to the kube-rbac-proxy
@@ -212,8 +212,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn); err != nil {
-			return fmt.Errorf("failed to create or update kubeconfig secret: %w", err)
+		if err = createOrPatchObject(ctx, c, &kubeConfig); err != nil {
+			return fmt.Errorf("failed to create or update kubecofig secret: %w", err)
 		}
 	}
 
@@ -225,8 +225,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn); err != nil {
-			return fmt.Errorf("failed to create or update oidc ca: %w", err)
+		if err = createOrPatchObject(ctx, c, &oidcCABundleSecret); err != nil {
+			return fmt.Errorf("failed to create or update oidc caBundle secret: %w", err)
 		}
 	}
 
@@ -237,7 +237,8 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if err = controllerutil.SetOwnerReference(object, &oauth2Ingress, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn); err != nil {
+
+	if err = createOrPatchObject(ctx, c, &oauth2Ingress); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 	}
 
@@ -258,9 +259,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		oidcCABundleSecret corev1.Secret
 		// Optional secret with kubeconfig the rbac-proxy sidecar
 		kubeConfig corev1.Secret
-		// Callback function for the create or update operation
-		mutateFn = func() error { return nil }
-		err      error
+
+		err error
 	)
 
 	if !object.GetDeletionTimestamp().IsZero() {
@@ -274,7 +274,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Secret, mutateFn); err != nil {
+
+	if err = createOrPatchObject(ctx, c, &oauth2Secret); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 	}
 
@@ -306,7 +307,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Service, mutateFn); err != nil {
+
+		if err = createOrPatchObject(ctx, c, &oauth2Service); err != nil {
 			return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 		}
 
@@ -317,7 +319,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oauth2Ingress, mutateFn); err != nil {
+
+		if err = createOrPatchObject(ctx, c, &oauth2Ingress); err != nil {
 			return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 		}
 	}
@@ -330,8 +333,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if err = controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
 	}
-	if _, err = controllerutil.CreateOrUpdate(ctx, c, &rbacSecret, mutateFn); err != nil {
-		return fmt.Errorf("failed to create or update resource attributes secret: %w", err)
+	if err = createOrPatchObject(ctx, c, &rbacSecret); err != nil {
+		return fmt.Errorf("failed to create or update rbac secret: %w", err)
 	}
 
 	// kubeconfig secret is optionally added to the kube-rbac-proxy
@@ -342,7 +345,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &kubeConfig, mutateFn); err != nil {
+		if err = createOrPatchObject(ctx, c, &kubeConfig); err != nil {
 			return fmt.Errorf("failed to create or update kubeconfig secret: %w", err)
 		}
 	}
@@ -355,12 +358,82 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
 		}
-		if _, err = controllerutil.CreateOrUpdate(ctx, c, &oidcCABundleSecret, mutateFn); err != nil {
-			return fmt.Errorf("failed to create or update oidc ca: %w", err)
+		if err = createOrPatchObject(ctx, c, &oidcCABundleSecret); err != nil {
+			return fmt.Errorf("failed to create or update oidc caBundle secret: %w", err)
 		}
 	}
 
 	return patchVpa(ctx, c, object)
+}
+
+func createOrPatchObject(ctx context.Context, c client.Client, patch client.Object) error {
+
+	//switch over tyoe
+
+	switch p := patch.(type) {
+	case *corev1.Secret:
+		return createOrPatchSecret(ctx, c, *p)
+	case *corev1.Service:
+		return createOrPatchService(ctx, c, *p)
+	case *networkingv1.Ingress:
+		return createOrPatchIngress(ctx, c, *p)
+	}
+	log.FromContext(ctx).Info("unknown object type", "object", patch)
+	return nil
+}
+
+func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secret) error {
+	secret := &corev1.Secret{}
+	client.ObjectKeyFromObject(&patch)
+	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret)
+	if err == nil {
+		patch := client.MergeFrom(&patch)
+		if err := c.Patch(ctx, secret, patch); err != nil {
+			return fmt.Errorf("failed to patch secret: %w", err)
+		}
+	} else if apierrors.IsNotFound(err) {
+		// Object does not exist, create a new one
+		if err := c.Create(ctx, &patch); err != nil {
+			return fmt.Errorf("failed to create secret	: %w", err)
+		}
+	}
+	return nil
+}
+
+func createOrPatchIngress(ctx context.Context, c client.Client, patch networkingv1.Ingress) error {
+	ingress := &networkingv1.Ingress{}
+	client.ObjectKeyFromObject(&patch)
+	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress)
+	if err == nil {
+		patch := client.MergeFrom(&patch)
+		if err := c.Patch(ctx, ingress, patch); err != nil {
+			return fmt.Errorf("failed to patch ingress: %w", err)
+		}
+	} else if apierrors.IsNotFound(err) {
+		// Object does not exist, create a new one
+		if err := c.Create(ctx, &patch); err != nil {
+			return fmt.Errorf("failed to create ingress	: %w", err)
+		}
+	}
+	return nil
+}
+
+func createOrPatchService(ctx context.Context, c client.Client, patch corev1.Service) error {
+	service := &corev1.Service{}
+	client.ObjectKeyFromObject(&patch)
+	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service)
+	if err == nil {
+		patch := client.MergeFrom(&patch)
+		if err := c.Patch(ctx, service, patch); err != nil {
+			return fmt.Errorf("failed to patch service: %w", err)
+		}
+	} else if apierrors.IsNotFound(err) {
+		// Object does not exist, create a new one
+		if err := c.Create(ctx, &patch); err != nil {
+			return fmt.Errorf("failed to create service	: %w", err)
+		}
+	}
+	return nil
 }
 
 func patchVpa(ctx context.Context, c client.Client, object client.Object) error {

@@ -34,7 +34,7 @@ func createOauth2Service(selectors client.MatchingLabels, object client.Object) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ServiceNameOauth2Service + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: "oauth2"},
+			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
