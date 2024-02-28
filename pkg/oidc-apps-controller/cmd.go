@@ -83,7 +83,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	//Limit the cache
-	c := cache.Options{
+	cacheOptions := cache.Options{
 		Scheme: sch,
 		ByObject: map[client.Object]cache.ByObject{
 			&corev1.Pod{}: {},
@@ -107,7 +107,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 			return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 		}
 		cluster := &gardenextensionsv1alpha1.Cluster{}
-		c.ByObject[cluster] = cache.ByObject{}
+		cacheOptions.ByObject[cluster] = cache.ByObject{}
 	}
 
 	// NAMESPACE is a required environment variable for the oidc-apps-controller certificate manager
@@ -125,7 +125,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	mgr, err := manager.New(cfg,
 		manager.Options{
-			Cache:                         c,
+			Cache:                         cacheOptions,
 			Scheme:                        sch,
 			LeaderElection:                true,
 			LeaderElectionID:              "oidc-apps-controller",

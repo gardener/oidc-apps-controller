@@ -17,52 +17,10 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-func logOwnedResources(ctx context.Context, c client.Client, object client.Object) {
-
-	secb := strings.Builder{}
-	secb.WriteString("[")
-
-	secrets, _ := fetchOidcAppsSecrets(ctx, c, object)
-	for i, s := range secrets.Items {
-		secb.WriteString(s.Namespace + "/" + s.Name)
-		if i < (len(secrets.Items) - 1) {
-			secb.WriteString(", ")
-		}
-	}
-	secb.WriteString("]")
-
-	srvb := strings.Builder{}
-	srvb.WriteString("[")
-	services, _ := fetchOidcAppsServices(ctx, c, object)
-	for i, s := range services.Items {
-		srvb.WriteString(s.Namespace + "/" + s.Name)
-		if i < (len(services.Items) - 1) {
-			srvb.WriteString(", ")
-		}
-	}
-	srvb.WriteString("]")
-
-	ingb := strings.Builder{}
-	ingb.WriteString("[")
-	ingresses, _ := fetchOidcAppsIngress(ctx, c, object)
-	for i, s := range ingresses.Items {
-		ingb.WriteString(s.Namespace + "/" + s.Name)
-		if i < (len(ingresses.Items) - 1) {
-			ingb.WriteString(", ")
-		}
-	}
-	ingb.WriteString("]")
-
-	log.FromContext(ctx).V(9).Info("Owning resources", "secrets", secb.String(), "services", srvb.String(), "ingresses",
-		ingb.String())
-
-}
 
 func isAnOwnedResource(owner, owned client.Object) bool {
 	if owner == nil || owned == nil {
