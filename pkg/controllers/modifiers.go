@@ -40,15 +40,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList,
-	error) {
+func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList, error) {
 	oidcService := &corev1.ServiceList{}
-	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcService,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
-			Selector: oidcLabelSelector,
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
 		},
 	); err != nil {
 		return oidcService, client.IgnoreNotFound(err)
@@ -67,12 +67,13 @@ func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.O
 func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Object) (*networkingv1.IngressList,
 	error) {
 	oidcIngress := &networkingv1.IngressList{}
-	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcIngress,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
-			Selector: oidcLabelSelector,
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
 		},
 	); err != nil {
 		return oidcIngress, client.IgnoreNotFound(err)
@@ -90,12 +91,14 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Object) (*corev1.SecretList,
 	error) {
 	oidcSecrets := &corev1.SecretList{}
-	oidcLabelSelector, _ := labels.Parse(constants.LabelKey)
 
 	if err := c.List(ctx, oidcSecrets,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
-			Selector: oidcLabelSelector,
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey:       constants.LabelValue,
+				constants.SecretLabelKey: constants.Oauth2LabelValue,
+			}),
 		},
 	); err != nil {
 		return oidcSecrets, client.IgnoreNotFound(err)
@@ -145,7 +148,7 @@ func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, obje
 	return ""
 }
 
-// reconcileDeploementDependencies is the function responsible for managing authentication & authorization dependencies.
+// reconcileDeploymentDependencies is the function responsible for managing authentication & authorization dependencies.
 // It reconciles the needed secrets, ingresses and services.
 func reconcileDeploymentDependencies(ctx context.Context, c client.Client, object *v1.Deployment) error {
 	var (
