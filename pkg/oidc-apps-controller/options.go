@@ -24,7 +24,7 @@ type OidcAppsControllerOptions struct {
 	webhookPort          int
 	registrySecret       string
 	useCertManager       bool
-	metricsPort		     int
+	metricsPort          int
 }
 
 // AddFlags adds the controller parameters to the flag set

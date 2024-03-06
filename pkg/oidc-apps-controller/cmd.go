@@ -136,7 +136,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 			RetryPeriod:                   ptr.To(2 * time.Second),
 			LeaderElectionReleaseOnCancel: true,
 			HealthProbeBindAddress:        ":8081",
-			Metrics: 					 metricsserver.Options{BindAddress: fmt.Sprintf(":%d", o.metricsPort)},
+			Metrics:                       metricsserver.Options{BindAddress: fmt.Sprintf(":%d", o.metricsPort)},
 		},
 	)
 	if err != nil {
