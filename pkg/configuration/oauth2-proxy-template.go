@@ -39,6 +39,7 @@ type oauth2Config struct {
 	oidcIssuerUrl                      string
 	sslInsecureSkipVerify              bool
 	insecureOidcSkipIssuerVerification bool
+	insecureOidcSkipNonce              bool
 }
 
 // Parse returns the parsed oauth2 config
@@ -81,6 +82,8 @@ func (o *oauth2Config) Parse() string {
 					line = l + "=" + "\"" + strconv.FormatBool(o.sslInsecureSkipVerify) + "\""
 				case "insecure_oidc_skip_issuer_verification":
 					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipIssuerVerification) + "\""
+				case "insecure_oidc_skip_nonce":
+					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipNonce) + "\""
 
 				}
 
@@ -157,5 +160,12 @@ func EnableSslInsecureSkipVerify(b bool) optOauth2 {
 func EnableInsecureOidcSkipIssuerVerification(b bool) optOauth2 {
 	return func(o *oauth2Config) {
 		o.insecureOidcSkipIssuerVerification = b
+	}
+}
+
+// EnableInsecureOidcSkipNonce sets the insecure oidc skip nonce
+func EnableInsecureOidcSkipNonce(b bool) optOauth2 {
+	return func(o *oauth2Config) {
+		o.insecureOidcSkipNonce = b
 	}
 }

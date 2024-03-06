@@ -18,10 +18,10 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,9 +39,9 @@ var configYaml01 string
 func TestLoadSimpleConfiguration(t *testing.T) {
 
 	parsedConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(configYaml01), &parsedConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml01), &parsedConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	expectedConf := OIDCAppsControllerConfig{
 		Configuration: Configuration{
@@ -73,9 +73,7 @@ func TestLoadSimpleConfiguration(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(parsedConfig, expectedConf) {
-		t.Errorf("Expected %#v,\n got %#v", expectedConf, parsedConfig)
-	}
+	g.Expect(parsedConfig).To(Equal(expectedConf))
 
 }
 
@@ -83,11 +81,10 @@ func TestLoadSimpleConfiguration(t *testing.T) {
 var configYaml string
 
 func TestLoadFullConfiguration(t *testing.T) {
-
+	g := NewWithT(t)
 	parsedConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(configYaml), &parsedConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	err := yaml.Unmarshal([]byte(configYaml), &parsedConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	expectedConf := OIDCAppsControllerConfig{
 		Configuration: Configuration{
@@ -155,19 +152,16 @@ func TestLoadFullConfiguration(t *testing.T) {
 			},
 		},
 	}
-
-	if !reflect.DeepEqual(parsedConfig, expectedConf) {
-		t.Errorf("Expected %#v,\n got %#v", expectedConf, parsedConfig)
-	}
+	g.Expect(parsedConfig).To(Equal(expectedConf))
 
 }
 
 func TestContainsLabels(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(configYaml), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -194,10 +188,7 @@ func TestContainsLabels(t *testing.T) {
 				},
 			},
 			test: func(o client.Object) {
-				if !extensionConfig.Match(o) {
-					t.Errorf("expected matching labels")
-					t.Fail()
-				}
+				g.Expect(extensionConfig.Match(o)).To(BeTrue())
 			},
 		},
 		{
@@ -210,10 +201,7 @@ func TestContainsLabels(t *testing.T) {
 				},
 			},
 			test: func(o client.Object) {
-				if extensionConfig.Match(o) {
-					t.Errorf("expected no-matching labels")
-					t.Fail()
-				}
+				g.Expect(extensionConfig.Match(o)).To(BeFalse())
 			},
 		},
 	}
@@ -233,9 +221,9 @@ var targetHostYaml string
 func TestGetTargetHost(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(targetHostYaml), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(targetHostYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -255,16 +243,10 @@ func TestGetTargetHost(t *testing.T) {
 	}
 
 	z := strings.SplitN(extensionConfig.GetHost(deployment), ".", 2)
-	if len(z) != 2 || z[1] != "domain.org" {
-		t.Error("getting target host is not as expected",
-			"expected: ", "my-service-[hostPrefix].domain.org.domain.org",
-			"got", extensionConfig.GetHost(deployment))
-	}
-	if !strings.HasPrefix(z[0], "my-service-") {
-		t.Error("getting target host is not as expected",
-			"expected: ", "my-service-[hostPrefix].domain.org.domain.org",
-			"got", extensionConfig.GetHost(deployment))
-	}
+	g.Expect(len(z)).To(Equal(2))
+	g.Expect(z[0]).To(HavePrefix("my-service-"))
+	g.Expect(z[1]).To(Equal("domain.org"))
+
 }
 
 //go:embed test/02-target-host-with-ingress-host.yaml
@@ -273,9 +255,9 @@ var targetHostWithIngressHostYaml string
 func TestGetTargetHostWithIngressHost(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(targetHostWithIngressHostYaml), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(targetHostWithIngressHostYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -293,13 +275,7 @@ func TestGetTargetHostWithIngressHost(t *testing.T) {
 			Namespace: "default",
 		},
 	}
-
-	if extensionConfig.GetHost(deployment) != "this.overwrites" {
-		t.Error("getting target host is not as expected",
-			"expected: ", "this.overwrites",
-			"got",
-			extensionConfig.GetHost(deployment))
-	}
+	g.Expect(extensionConfig.GetHost(deployment)).To(Equal("this.overwrites"))
 }
 
 //go:embed test/02-target-host-without-prefix.yaml
@@ -308,9 +284,9 @@ var targetHostWithoutPrefix string
 func TestGetTargetHostWithoutPrefix(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(targetHostWithoutPrefix), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(targetHostWithoutPrefix), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -330,11 +306,7 @@ func TestGetTargetHostWithoutPrefix(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetHost(deployment) != "app-default.domain.org" {
-		t.Error("getting target host is not as expected: ",
-			"expected", "service.domain.org",
-			"got", extensionConfig.GetHost(deployment))
-	}
+	g.Expect(extensionConfig.GetHost(deployment)).To(Equal("app-default.domain.org"))
 }
 
 //go:embed test/03-with-kubesecretref.yaml
@@ -343,9 +315,9 @@ var withKubeSecretRef string
 func TestGetWithKubeSecret(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(withKubeSecretRef), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(withKubeSecretRef), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -365,11 +337,8 @@ func TestGetWithKubeSecret(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetKubeSecretName(deployment) != "kubeconfig-secret" {
-		t.Error("getting kube secret name is not as expected:",
-			"expected", "kubeconfig-secret",
-			"got", extensionConfig.GetKubeSecretName(deployment))
-	}
+	g.Expect(extensionConfig.GetKubeSecretName(deployment)).To(Equal("kubeconfig-secret"))
+
 }
 
 //go:embed test/03-with-target-kubesecretref.yaml
@@ -378,9 +347,9 @@ var withTargetKubeSecretRef string
 func TestGetWithTargetKubeSecret(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(withTargetKubeSecretRef), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(withTargetKubeSecretRef), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -400,11 +369,7 @@ func TestGetWithTargetKubeSecret(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetKubeSecretName(deployment) != "shall-have-precedence" {
-		t.Error("getting kube secret name is not as expected: ",
-			"expected", "shall-have-precedence",
-			"got", extensionConfig.GetHost(deployment))
-	}
+	g.Expect(extensionConfig.GetKubeSecretName(deployment)).To(Equal("shall-have-precedence"))
 }
 
 //go:embed test/04-oidc-config.yaml
@@ -413,9 +378,9 @@ var oidcConfig string
 func TestGetOidcConfig(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(oidcConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(oidcConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -435,46 +400,14 @@ func TestGetOidcConfig(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetClientID(deployment) != "client-id" {
-		t.Error("getting clientId is not as expected: ",
-			"expected", "client-id",
-			"got", extensionConfig.GetClientID(deployment))
-	}
-
-	if extensionConfig.GetScope(deployment) != "openid email" {
-		t.Error("getting scope is not as expected: ",
-			"expected", "openid email",
-			"got", extensionConfig.GetScope(deployment))
-	}
-
-	if extensionConfig.GetClientSecret(deployment) != "client-secret" {
-		t.Error("getting clientSecret is not as expected: ",
-			"expected", "client-secret",
-			"got", extensionConfig.GetClientSecret(deployment))
-	}
-
-	if extensionConfig.GetRedirectUrl(deployment) != "https://service-default/oauth2/callback" {
-		t.Error("getting redirectUrl is not as expected: ",
-			"expected", "https://service-default/oauth2/callback",
-			"got", extensionConfig.GetRedirectUrl(deployment))
-	}
-
-	if extensionConfig.GetOidcIssuerUrl(deployment) != "https://oidc.provider.org" {
-		t.Error("getting oidcIssuerUrl is not as expected: ",
-			"expected", "https://oidc.provider.org",
-			"got", extensionConfig.GetOidcIssuerUrl(deployment))
-	}
-
-	if extensionConfig.GetSslInsecureSkipVerify(deployment) {
-		t.Error("getting sslInsecureSkipVerify is not as expected: ",
-			"expected", "false",
-			"got", extensionConfig.GetSslInsecureSkipVerify(deployment))
-	}
-	if extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment) {
-		t.Error("getting insecureOidcSkipIssuerVerification is not as expected: ",
-			"expected", "false",
-			"got", extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment))
-	}
+	g.Expect(extensionConfig.GetClientID(deployment)).To(Equal("client-id"))
+	g.Expect(extensionConfig.GetScope(deployment)).To(Equal("openid email"))
+	g.Expect(extensionConfig.GetClientSecret(deployment)).To(Equal("client-secret"))
+	g.Expect(extensionConfig.GetRedirectUrl(deployment)).To(Equal("https://service-default/oauth2/callback"))
+	g.Expect(extensionConfig.GetOidcIssuerUrl(deployment)).To(Equal("https://oidc.provider.org"))
+	g.Expect(extensionConfig.GetSslInsecureSkipVerify(deployment)).To(BeFalse())
+	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment)).To(BeFalse())
+	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(deployment)).To(BeFalse())
 
 }
 
@@ -484,9 +417,9 @@ var oidcTargetConfig string
 func TestGetTargetOidcConfig(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(oidcTargetConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(oidcTargetConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -506,46 +439,14 @@ func TestGetTargetOidcConfig(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetClientID(deployment) != "client-id-target" {
-		t.Error("getting clientId is not as expected: ",
-			"expected", "client-id-target",
-			"got", extensionConfig.GetClientID(deployment))
-	}
-
-	if extensionConfig.GetScope(deployment) != "openid email target" {
-		t.Error("getting scope is not as expected: ",
-			"expected", "openid email target",
-			"got", extensionConfig.GetScope(deployment))
-	}
-
-	if extensionConfig.GetClientSecret(deployment) != "client-secret-target" {
-		t.Error("getting clientSecret is not as expected: ",
-			"expected", "client-secret-target",
-			"got", extensionConfig.GetClientSecret(deployment))
-	}
-
-	if extensionConfig.GetRedirectUrl(deployment) != "https://target.domainName/oauth2/callback" {
-		t.Error("getting redirectUrl is not as expected: ",
-			"expected", "https://target.domainName/oauth2/callback",
-			"got", extensionConfig.GetRedirectUrl(deployment))
-	}
-
-	if extensionConfig.GetOidcIssuerUrl(deployment) != "https://oidc.provider.org/target" {
-		t.Error("getting oidcIssuerUrl is not as expected: ",
-			"expected", "https://oidc.provider.org/target",
-			"got", extensionConfig.GetOidcIssuerUrl(deployment))
-	}
-
-	if !extensionConfig.GetSslInsecureSkipVerify(deployment) {
-		t.Error("getting sslInsecureSkipVerify is not as expected: ",
-			"expected", "true",
-			"got", extensionConfig.GetSslInsecureSkipVerify(deployment))
-	}
-	if !extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment) {
-		t.Error("getting insecureOidcSkipIssuerVerification is not as expected: ",
-			"expected", "true",
-			"got", extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment))
-	}
+	g.Expect(extensionConfig.GetClientID(deployment)).To(Equal("client-id-target"))
+	g.Expect(extensionConfig.GetScope(deployment)).To(Equal("openid email target"))
+	g.Expect(extensionConfig.GetClientSecret(deployment)).To(Equal("client-secret-target"))
+	g.Expect(extensionConfig.GetRedirectUrl(deployment)).To(Equal("https://target.domainName/oauth2/callback"))
+	g.Expect(extensionConfig.GetOidcIssuerUrl(deployment)).To(Equal("https://oidc.provider.org/target"))
+	g.Expect(extensionConfig.GetSslInsecureSkipVerify(deployment)).To(BeTrue())
+	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(deployment)).To(BeTrue())
+	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(deployment)).To(BeFalse())
 }
 
 //go:embed test/05-kube-rbac-proxy-config.yaml
@@ -553,9 +454,9 @@ var kubeRbacProxyConfig string
 
 func TestKubeRbacProxyConfig(t *testing.T) {
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(kubeRbacProxyConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(kubeRbacProxyConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -575,28 +476,10 @@ func TestKubeRbacProxyConfig(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetKubeConfigStr(deployment) != "Imt1YmVjb25maWci" {
-		t.Error("getting kube config string is not as expected: ",
-			"expected", "Imt1YmVjb25maWci",
-			"got", extensionConfig.GetKubeConfigStr(deployment))
-	}
-	if extensionConfig.GetKubeSecretName(deployment) != "kubeconfig-secret" {
-		t.Error("getting kube config secret name is not as expected: ",
-			"expected", "kubeconfig-secret",
-			"got", extensionConfig.GetKubeSecretName(deployment))
-	}
-
-	if extensionConfig.GetOidcCABundle(deployment) != "...\n" {
-		t.Error("getting oidc ca bundle is not as expected: ",
-			"expected", "...\n",
-			"got", extensionConfig.GetOidcCABundle(deployment))
-	}
-
-	if extensionConfig.GetOidcCASecretName(deployment) != "oidcca" {
-		t.Error("getting oidc ca bundle secret name is not as expected: ",
-			"expected", "oidcca",
-			"got", extensionConfig.GetOidcCASecretName(deployment))
-	}
+	g.Expect(extensionConfig.GetKubeConfigStr(deployment)).To(Equal("Imt1YmVjb25maWci"))
+	g.Expect(extensionConfig.GetKubeSecretName(deployment)).To(Equal("kubeconfig-secret"))
+	g.Expect(extensionConfig.GetOidcCABundle(deployment)).To(Equal("...\n"))
+	g.Expect(extensionConfig.GetOidcCASecretName(deployment)).To(Equal("oidcca"))
 
 }
 
@@ -605,9 +488,9 @@ var kubeRbacProxyTargetConfig string
 
 func TestKubeRbacProxyTargetConfig(t *testing.T) {
 	extensionConfig := OIDCAppsControllerConfig{}
-	if err := yaml.Unmarshal([]byte(kubeRbacProxyTargetConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(kubeRbacProxyTargetConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -627,29 +510,10 @@ func TestKubeRbacProxyTargetConfig(t *testing.T) {
 		},
 	}
 
-	if extensionConfig.GetKubeConfigStr(deployment) != "bXktb3RoZXIta3ViZS1jb25maWcK" {
-		t.Error("getting kube config string is not as expected: ",
-			"expected", "bXktb3RoZXIta3ViZS1jb25maWcK",
-			"got", extensionConfig.GetKubeConfigStr(deployment))
-	}
-
-	if extensionConfig.GetKubeSecretName(deployment) != "kubeconfig-secret-target" {
-		t.Error("getting kube config secret name is not as expected: ",
-			"expected", "kubeconfig-secret-target",
-			"got", extensionConfig.GetKubeSecretName(deployment))
-	}
-
-	if extensionConfig.GetOidcCABundle(deployment) != "...\n...\n" {
-		t.Error("getting oidc ca bundle is not as expected: ",
-			"expected", "...\n...\n",
-			"got", extensionConfig.GetOidcCABundle(deployment))
-	}
-
-	if extensionConfig.GetOidcCASecretName(deployment) != "oidc-ca-target" {
-		t.Error("getting oidc ca bundle secret name is not as expected: ",
-			"expected", "oidcca",
-			"got", extensionConfig.GetOidcCASecretName(deployment))
-	}
+	g.Expect(extensionConfig.GetKubeConfigStr(deployment)).To(Equal("bXktb3RoZXIta3ViZS1jb25maWcK"))
+	g.Expect(extensionConfig.GetKubeSecretName(deployment)).To(Equal("kubeconfig-secret-target"))
+	g.Expect(extensionConfig.GetOidcCABundle(deployment)).To(Equal("...\n...\n"))
+	g.Expect(extensionConfig.GetOidcCASecretName(deployment)).To(Equal("oidc-ca-target"))
 
 }
 
@@ -659,10 +523,9 @@ var kubeRbacProxyKubeconfigConfig string
 func TestKubeRbacProxyKubeConfig(t *testing.T) {
 
 	extensionConfig := OIDCAppsControllerConfig{}
-
-	if err := yaml.Unmarshal([]byte(kubeRbacProxyKubeconfigConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(kubeRbacProxyKubeconfigConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -684,17 +547,12 @@ func TestKubeRbacProxyKubeConfig(t *testing.T) {
 
 	str := extensionConfig.GetKubeConfigStr(deployment)
 	decodestr, err := base64.StdEncoding.DecodeString(str)
-	if err != nil {
-		t.Error(err)
-	}
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	kubeConfig := clientcmdv1.Config{}
-	if err = yaml.Unmarshal(decodestr, &kubeConfig); err != nil {
-		t.Error(err)
-	}
-	if _, err = yaml.Marshal(kubeConfig); err != nil {
-		t.Error(err)
-	}
+	err = yaml.Unmarshal(decodestr, &kubeConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	g.Expect(yaml.Marshal(kubeConfig)).Error().ShouldNot(HaveOccurred())
 
 }
 
@@ -703,17 +561,15 @@ var gardenConfig string
 
 func TestGardenConfig(t *testing.T) {
 	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(gardenConfig), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
-	if err := yaml.Unmarshal([]byte(gardenConfig), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	err = os.Setenv("GARDEN_SEED_DOMAIN_NAME", "seed.domain.org")
+	g.Expect(err).ShouldNot(HaveOccurred())
 
-	if err := os.Setenv("GARDEN_SEED_DOMAIN_NAME", "seed.domain.org"); err != nil {
-		t.Error(err)
-	}
-	if err := os.Setenv("GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID", "seed-client-id"); err != nil {
-		t.Error(err)
-	}
+	err = os.Setenv("GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID", "seed-client-id")
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	// Create a fake client
 	builder := fake.NewClientBuilder()
@@ -734,27 +590,18 @@ func TestGardenConfig(t *testing.T) {
 	}
 
 	host := extensionConfig.GetHost(deployment)
-	if host != "service-default.seed.domain.org" {
-		t.Error("getting domain is not as expected: ",
-			"expected", "service-default.seed.domain.org",
-			"got", host)
-	}
+	g.Expect(host).To(Equal("service-default.seed.domain.org"))
 
 	clientId := extensionConfig.GetClientID(deployment)
-	if clientId != "seed-client-id" {
-		t.Error("getting clientId is not as expected: ",
-			"expected", "seed-client-id",
-			"got", clientId)
-	}
+	g.Expect(clientId).To(Equal("seed-client-id"))
 
 }
 
 func TestLabelSelectors(t *testing.T) {
 	extensionConfig := OIDCAppsControllerConfig{}
-
-	if err := yaml.Unmarshal([]byte(targetHostWithoutPrefix), &extensionConfig); err != nil {
-		t.Errorf("error unmarshalling configuration: %v", err)
-	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(targetHostWithoutPrefix), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -772,11 +619,7 @@ func TestLabelSelectors(t *testing.T) {
 	}).WithObjects(deployment).Build()
 
 	selector, err := metav1.LabelSelectorAsSelector(extensionConfig.GetTargetLabelSelector(deployment))
-	if err != nil {
-		t.Error(err)
-	}
-	if !selector.Matches(labels.Set(map[string]string{"app": "service"})) {
-		t.Error("label selector does not match")
-	}
+	g.Expect(err).ShouldNot(HaveOccurred())
+	g.Expect(selector.Matches(labels.Set(map[string]string{"app": "service"}))).To(BeTrue())
 
 }

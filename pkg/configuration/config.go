@@ -63,6 +63,7 @@ type Oauth2ProxyConfig struct {
 	OidcIssuerURL                      string `json:"oidcIssuerUrl"`
 	SSLInsecureSkipVerify              *bool  `json:"sslInsecureSkipVerify,omitempty"`
 	InsecureOidcSkipIssuerVerification *bool  `json:"insecureOidcSkipIssuerVerification,omitempty"`
+	InsecureOidcSkipNonce              *bool  `json:"insecureOidcSkipNonce,omitempty"`
 }
 
 // KubeRbacProxyConfig kube-rbac-proxy configuration
@@ -431,6 +432,22 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 	if c.Configuration.Oauth2Proxy != nil &&
 		c.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
 		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
+
+	}
+	return false
+}
+
+// GetInsecureOidcSkipNonce designates if oauth2-proxy shall skip OIDC nonce request parameter
+func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object) bool {
+
+	t := c.fetchTarget(object)
+	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
+		t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce != nil {
+		return ptr.Deref(t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
+	}
+	if c.Configuration.Oauth2Proxy != nil &&
+		c.Configuration.Oauth2Proxy.InsecureOidcSkipNonce != nil {
+		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
 
 	}
 	return false

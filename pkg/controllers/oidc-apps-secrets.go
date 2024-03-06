@@ -48,7 +48,9 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
 			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object))).Parse()
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
+			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
+
 	default:
 		cfg = configuration.NewOAuth2Config(
 			configuration.WithClientId(extConfig.GetClientID(object)),
@@ -57,7 +59,8 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
 			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object))).Parse()
+			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
+			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
 	}
 
 	checksum := rand.GenerateFullSha256(cfg)

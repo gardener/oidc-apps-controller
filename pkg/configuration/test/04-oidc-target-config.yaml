@@ -23,3 +23,4 @@ targets:
         oidcIssuerUrl: "https://oidc.provider.org/target"
         sslInsecureSkipVerify: true
         insecureOidcSkipIssuerVerification: true
+        insecureOidcSkipNonce: false
