@@ -61,6 +61,7 @@ providerConfig:
       oauth2Proxy:
         sslInsecureSkipVerify: true
         insecureOidcSkipIssuerVerification: false
+        insecureOidcSkipNonce: false
         oidcIssuerUrl: "... OIDC issuer URL ..."
         clientId: "... OIDC client ID ..."
         scope: "openid email groups"
