@@ -11,6 +11,11 @@ metadata:
     {{- include "oidc-apps-extension.labels" . | nindent 4 }}
   annotations:
     networking.resources.gardener.cloud/from-world-to-ports: '[{"protocol":"TCP","port":{{.Values.service.port}}}]'
+    {{- if .Values.metrics.enableScraping }}
+    networking.resources.gardener.cloud/from-all-seed-scrape-targets-allowed-ports: '[{"protocol":"TCP","port":{{.Values.metrics.port}}}]'
+    networking.resources.gardener.cloud/from-policy-allowed-ports: '[{"protocol":"TCP","port":{{.Values.metrics.port}}}]'
+    networking.resources.gardener.cloud/from-policy-pod-label-selector: all-seed-scrape-targets
+    {{- end }}
     networking.resources.gardener.cloud/namespace-selectors: '[{"matchLabels":{"kubernetes.io/metadata.name":"garden"}}]'
     networking.resources.gardener.cloud/pod-label-selector-namespace-alias: 'extensions'
   {{- with .Values.service.annotations }}
@@ -23,5 +28,10 @@ spec:
       targetPort: webhook
       protocol: TCP
       name: webhook
+    {{- if .Values.metrics.enableScraping }}
+    - port: {{ .Values.metrics.port | int }}
+      protocol: TCP
+      name: metrics
+    {{- end }}
   selector:
     {{- include "oidc-apps-extension.selectorLabels" . | nindent 4 }}

@@ -24,6 +24,7 @@ type OidcAppsControllerOptions struct {
 	webhookPort          int
 	registrySecret       string
 	useCertManager       bool
+	metricsPort		     int
 }
 
 // AddFlags adds the controller parameters to the flag set
@@ -40,4 +41,6 @@ func (o *OidcAppsControllerOptions) AddFlags(pflag *pflag.FlagSet) {
 		"The name of the oidc-apps controller webhook ")
 	pflag.IntVar(&o.webhookPort, "webhook-port", 10250,
 		"The port of the oidc-apps controller webhook ")
+	pflag.IntVar(&o.metricsPort, "metrics-port", 8080,
+		"The port of the oidc-apps controller metrics endpoint ")
 }

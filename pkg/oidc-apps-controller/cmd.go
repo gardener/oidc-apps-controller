@@ -54,6 +54,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -135,6 +136,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 			RetryPeriod:                   ptr.To(2 * time.Second),
 			LeaderElectionReleaseOnCancel: true,
 			HealthProbeBindAddress:        ":8081",
+			Metrics: 					 metricsserver.Options{BindAddress: fmt.Sprintf(":%d", o.metricsPort)},
 		},
 	)
 	if err != nil {

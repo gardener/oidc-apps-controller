@@ -63,6 +63,10 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+metrics:
+  enableScraping: true
+  port: 8080
+
 priorityClass:
   # create: false
   # value: 100

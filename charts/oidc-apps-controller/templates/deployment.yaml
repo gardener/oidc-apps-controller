@@ -22,6 +22,11 @@ spec:
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- if .Values.metrics.enableScraping }}
+        prometheus.io/name: "{{ .Release.Name }}"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.metrics.port }}"
+        {{- end }}
       labels:
         {{- include "oidc-apps-extension.selectorLabels" . | nindent 8 }}
         networking.gardener.cloud/to-dns: allowed
@@ -79,6 +84,9 @@ spec:
           - "--registry-secret={{ .name }}"
           {{- end }}
           {{- end }}
+          {{- if .Values.metrics.enableScraping }}
+          - "--metrics-port={{ .Values.metrics.port | int }}"
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthz
@@ -96,6 +104,11 @@ spec:
             - name: webhook
               containerPort: {{ .Values.service.port | int }}
               protocol: TCP
+            {{- if .Values.metrics.enableScraping }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port | int }}
+              protocol: TCP
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
