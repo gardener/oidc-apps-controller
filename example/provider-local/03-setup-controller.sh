@@ -57,6 +57,7 @@ providerConfig:
       oauth2Proxy:
         sslInsecureSkipVerify: true
         insecureOidcSkipIssuerVerification: false
+        insecureOidcSkipNonce: false
         oidcIssuerUrl: "https://dexidp:5556"
         scope: "openid email groups"
       kubeRbacProxy:
