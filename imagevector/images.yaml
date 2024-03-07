@@ -7,12 +7,12 @@ images:
   - name: kube-rbac-proxy-watcher
     sourceRepository: github.com/gardener/kube-rbac-proxy-watcher
     repository: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/kube-rbac-proxy-watcher
-    tag: "v0.1.0"
+    tag: "v0.1.1"
   - name: oauth2-proxy
     sourceRepository: github.com/oauth2-proxy/oauth2-proxy
     repository: quay.io/oauth2-proxy/oauth2-proxy
-    tag: "v7.5.1"
+    tag: "v7.6.0"
   - name: "curl-container"
     sourceRepository: github.com/curl/curl-container
     repository: "quay.io/curl/curl"
-    tag: "8.5.0"
+    tag: "8.6.0"
