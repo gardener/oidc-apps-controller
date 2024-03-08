@@ -449,11 +449,19 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 	return container
 }
 
-func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
+func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Container {
 	image, _ := imagevector.ImageVector().FindImage("oauth2-proxy")
 
 	if pod == nil {
 		return corev1.Container{}
+	}
+
+	volumeMounts := []corev1.VolumeMount{
+		{
+			Name:      constants.Oauth2VolumeName,
+			ReadOnly:  true,
+			MountPath: "/etc/oauth2-proxy",
+		},
 	}
 
 	containerResourceRequirements := corev1.ResourceRequirements{
@@ -482,12 +490,12 @@ func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
 		}
 	}
 
-	return corev1.Container{
+	container := corev1.Container{
 		Name:            constants.ContainerNameOauth2Proxy,
 		Image:           image.String(),
 		ImagePullPolicy: "IfNotPresent",
 		Args: []string{"--provider=oidc",
-			"--config=/etc/oauth2-proxy.cfg",
+			"--config=/etc/oauth2-proxy/oauth2-proxy.cfg",
 			"--code-challenge-method=S256",
 			"--pass-authorization-header=true",
 			"--cookie-secret=" + rand.GenerateRandomString(16),
@@ -501,16 +509,15 @@ func getOIDCProxyContainer(pod *corev1.PodSpec) corev1.Container {
 		Ports: []corev1.ContainerPort{
 			{Name: "oauth2", ContainerPort: 8000},
 		},
-		Resources: containerResourceRequirements,
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      constants.Oauth2VolumeName,
-				ReadOnly:  true,
-				MountPath: "/etc/oauth2-proxy.cfg",
-				SubPath:   "oauth2-proxy.cfg",
-			},
-		},
+		Resources:    containerResourceRequirements,
+		VolumeMounts: volumeMounts,
 	}
+
+	if shallAddOidcCaSecretName(owner) {
+		// Add volume mount and start parameter if the secret name is provided
+		container.Args = append(container.Args, "--provider-ca-file=/etc/oauth2-proxy/ca.crt")
+	}
+	return container
 }
 
 func shallAddKubeConfigSecretName(object client.Object) bool {

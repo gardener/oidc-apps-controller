@@ -52,6 +52,9 @@ type Configuration struct {
 	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 	DomainName  string            `json:"domainName,omitempty"`
+
+	OidcCABundle    string                  `json:"oidcCABundle,omitempty"`
+	OidcCASecretRef *corev1.SecretReference `json:"oidcCASecretRef,omitempty"`
 }
 
 // Oauth2ProxyConfig OIDC Provider configuration
@@ -68,10 +71,8 @@ type Oauth2ProxyConfig struct {
 
 // KubeRbacProxyConfig kube-rbac-proxy configuration
 type KubeRbacProxyConfig struct {
-	KubeConfigStr   string                  `json:"kubeConfigStr,omitempty"`
-	KubeSecretRef   *corev1.SecretReference `json:"kubeSecretRef,omitempty"`
-	OidcCABundle    string                  `json:"oidcCABundle,omitempty"`
-	OidcCASecretRef *corev1.SecretReference `json:"oidcCASecretRef,omitempty"`
+	KubeConfigStr string                  `json:"kubeConfigStr,omitempty"`
+	KubeSecretRef *corev1.SecretReference `json:"kubeSecretRef,omitempty"`
 }
 
 // Target workload selector configuration
@@ -258,15 +259,14 @@ func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) str
 	secretName := ""
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
-		t.Configuration.KubeRbacProxy != nil &&
-		t.Configuration.KubeRbacProxy.OidcCASecretRef != nil &&
-		t.Configuration.KubeRbacProxy.OidcCASecretRef.Name != "" {
-		return t.Configuration.KubeRbacProxy.OidcCASecretRef.Name
+		t.Configuration.OidcCASecretRef != nil &&
+		t.Configuration.OidcCASecretRef.Name != "" {
+		return t.Configuration.OidcCASecretRef.Name
 	}
-	if c.Configuration.KubeRbacProxy != nil &&
-		c.Configuration.KubeRbacProxy.OidcCASecretRef != nil &&
-		c.Configuration.KubeRbacProxy.OidcCASecretRef.Name != "" {
-		secretName = c.Configuration.KubeRbacProxy.OidcCASecretRef.Name
+
+	if c.Configuration.OidcCASecretRef != nil &&
+		c.Configuration.OidcCASecretRef.Name != "" {
+		secretName = c.Configuration.OidcCASecretRef.Name
 	}
 
 	return secretName
@@ -281,18 +281,16 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
-		t.Configuration.KubeRbacProxy != nil &&
-		t.Configuration.KubeRbacProxy.OidcCABundle != "" {
+		t.Configuration.OidcCABundle != "" {
 
-		if decodedBytes, err = base64.StdEncoding.DecodeString(t.Configuration.KubeRbacProxy.OidcCABundle); err != nil {
+		if decodedBytes, err = base64.StdEncoding.DecodeString(t.Configuration.OidcCABundle); err != nil {
 			c.log.Error(err, "failed to decode oidc ca bundle")
 			return ""
 		}
 		return string(decodedBytes)
 	}
-	if c.Configuration.KubeRbacProxy != nil &&
-		c.Configuration.KubeRbacProxy.OidcCABundle != "" {
-		oidcCABundle = c.Configuration.KubeRbacProxy.OidcCABundle
+	if c.Configuration.OidcCABundle != "" {
+		oidcCABundle = c.Configuration.OidcCABundle
 	}
 
 	if decodedBytes, err = base64.StdEncoding.DecodeString(oidcCABundle); err != nil {

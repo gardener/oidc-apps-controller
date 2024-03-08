@@ -96,12 +96,18 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	)
 
 	// Add the oauth2-proxy volume
-	// TODO: handle scaling statefulset pods
-	addSecretSourceVolume(
+	addProjectedSecretSourceVolume(
 		constants.Oauth2VolumeName,
 		constants.SecretNameOauth2Proxy+"-"+suffix,
 		&patch.Spec,
 	)
+	if shallAddOidcCaSecretName(owner) {
+		addProjectedSecretSourceVolume(
+			constants.Oauth2VolumeName,
+			fetchOidcCASecretName(suffix, owner),
+			&patch.Spec,
+		)
+	}
 
 	// Add the resource-attribute secret volume for the kube-rbac-proxy
 	addProjectedSecretSourceVolume(
@@ -132,7 +138,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	addInitContainer(constants.ContainerNameOidcInit, &patch.Spec, getInitContainer(issuerUrl))
 
 	// Add the OAUTH2 proxy sidecar to the pod template
-	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer(&patch.Spec))
+	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer(&patch.Spec, owner))
 
 	// Add the kube-rbac-proxy sidecar to the pod template
 	addProxyContainer(constants.ContainerNameKubeRbacProxy, &patch.Spec, getKubeRbacProxyContainer(clientId,

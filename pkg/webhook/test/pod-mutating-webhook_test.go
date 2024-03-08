@@ -317,9 +317,26 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				corev1.Volume{
 					Name: constants.Oauth2VolumeName,
 					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
-							SecretName: "oauth2-proxy-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
-							Optional:   ptr.To(false),
+						Projected: &corev1.ProjectedVolumeSource{
+							Sources: []corev1.VolumeProjection{
+								{
+									Secret: &corev1.SecretProjection{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: "oauth2-proxy-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
+										},
+										Optional: ptr.To(false),
+									},
+								},
+								{
+									Secret: &corev1.SecretProjection{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
+												Name+"-"+targetDeployment.Namespace),
+										},
+										Optional: ptr.To(false),
+									},
+								},
+							},
 						},
 					},
 				},
@@ -363,8 +380,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 						corev1.VolumeMount{
 							Name:      constants.Oauth2VolumeName,
 							ReadOnly:  true,
-							MountPath: "/etc/oauth2-proxy.cfg",
-							SubPath:   "oauth2-proxy.cfg",
+							MountPath: "/etc/oauth2-proxy",
 						}))
 				}
 				switch c.Name {

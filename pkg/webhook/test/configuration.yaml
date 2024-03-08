@@ -5,7 +5,6 @@ targets:
       matchLabels:
         app: nginx
     configuration:
+      oidcCABundle: Y2VydGlmaWNhdGUK
       oauth2Proxy:
         clientID: "test-client-id"
-      kubeRbacProxy:
-        oidcCABundle: Y2VydGlmaWNhdGUK

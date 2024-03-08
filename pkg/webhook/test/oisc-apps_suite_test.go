@@ -27,7 +27,7 @@ import (
 
 var tmpDir string
 
-//go:embed config.yaml
+//go:embed configuration.yaml
 var configFile string
 
 var _log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
