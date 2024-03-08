@@ -92,7 +92,7 @@ affinity: {}
 
 webhook:
   objectSelector: {}
-  namspaceSelector: {}
+  namespaceSelector: {}
 
 # OIDC Apps Extension Configuration
 # Cluster-wide extension conf
@@ -125,12 +125,12 @@ configuration:
     kubeSecretRef: {} # Ignored if kubeConfig is present
     # If niether of those is provided the kube-rbac-proxy uses the target pod's service account
 
-    # A trusted CA bundle in pem format used to verify the server identity of OIDC
-    oidcCABundle: ""
-    # A secret with ca.crt key container the trusted CA bundle
-    # Type corev1.SecretReference https://github.com/kubernetes/api/blob/v0.28.2/core/v1/types.go#L1014
-    oidcCASecretRef: {} # Ignored if oidcCABundle is present
-    #Due to https://github.com/brancz/kube-rbac-proxy/issues/259 issue for now either of those two is a mandatory option
+  # A trusted CA bundle in pem format used to verify the server identity of OIDC
+  oidcCABundle: ""
+  # A secret with ca.crt key container the trusted CA bundle
+  # Type corev1.SecretReference https://github.com/kubernetes/api/blob/v0.28.2/core/v1/types.go#L1014
+  oidcCASecretRef: {} # Ignored if oidcCABundle is present
+  #Due to https://github.com/brancz/kube-rbac-proxy/issues/259 issue for now either of those two is a mandatory option
 
   # Adds additional labels to the target pod templates
   labels: {}
