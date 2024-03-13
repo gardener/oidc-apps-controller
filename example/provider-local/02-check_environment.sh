@@ -181,8 +181,8 @@ function check_hosts {
         prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud
         aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
-        pr-404698-0.ingress.local.seed.local.gardener.cloud
-        pl-b5e187.ingress.local.seed.local.gardener.cloud
+        prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
+        plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud
     )
     for record in "${records[@]}"; do
         if grep -qF -- "$record" /etc/hosts; then

@@ -19,8 +19,8 @@ cat <<EOF | sudo tee -a /etc/hosts
 127.0.0.1 aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
 127.0.0.1 prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
 # setup shoot
-127.0.0.1 pr-404698-0.ingress.local.seed.local.gardener.cloud
-127.0.0.1 pl-b5e187.ingress.local.seed.local.gardener.cloud
+127.0.0.1 prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
+127.0.0.1 plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud
 EOF
 ```
 

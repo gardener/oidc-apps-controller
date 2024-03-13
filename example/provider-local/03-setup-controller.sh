@@ -55,13 +55,12 @@ providerConfig:
       enabled: true
     configuration:
       oauth2Proxy:
-        sslInsecureSkipVerify: true
+        sslInsecureSkipVerify: false
         insecureOidcSkipIssuerVerification: false
         insecureOidcSkipNonce: false
         oidcIssuerUrl: "https://dexidp:5556"
         scope: "openid email groups"
-      kubeRbacProxy:
-        oidcCABundle: $ca_bundle
+      oidcCABundle: $ca_bundle
     targets:
       - name: "shoot--plutono"
         namespaceSelector:
@@ -73,7 +72,6 @@ providerConfig:
         targetPort: 3000
         ingress:
           create: true
-          hostPrefix: pl
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
             name: "ingress-wildcard-cert"
@@ -87,7 +85,6 @@ providerConfig:
         targetPort: 9090
         ingress:
           create: true
-          hostPrefix: pr
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
             name: "ingress-wildcard-cert"

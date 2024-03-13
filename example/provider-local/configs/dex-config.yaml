@@ -63,7 +63,9 @@ staticClients:
       - "https://prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://pr-404698-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://pl-b5e187.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud/oauth2/callback"
     name: "oauth2-proxy"
     public: true
 
