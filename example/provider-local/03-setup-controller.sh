@@ -39,19 +39,11 @@ providerConfig:
     imagePullPolicy: Always
     cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
     webhook:
-      namespaceSelector:
+      objectSelector:
         matchExpressions:
-          - {key: "shoot.gardener.cloud/no-cleanup", operator: "NotIn", values: ["true"]}
-          - {key: "gardener.cloud/purpose", operator: "NotIn", values: ["kube-system"]}
-          - {key: "kubernetes.io/metadata.name", operator: "NotIn", values: ["kube-system"]}
-          - {key: "gardener.cloud/role", operator: "NotIn", values: ["extension"]}
-      # TODO: Add the moment there is no single label key to identify the components which should be
-      # enahnaced by the webhook. This setup is not recommended in production environments.
-      # For production environments, there shall be a single key on pod level and each component
-      # shall have it own value
-      # objectSelector:
-      #   matchExpressions:
-      #     - {key: "gardener.cloud/role", operator: "In", values: ["plutono", "prometheus", ...]}
+          - key: "observability.gardener.cloud/app"
+            operator: "In"
+            values: ["plutono", "prometheus-shoot", "prometheus-cache", "promehteus-aggregate", "prometheus-seed"]
     vpa:
       enabled: true
     configuration:
@@ -110,6 +102,7 @@ providerConfig:
         labelSelector:
           matchLabels:
             name: seed
+            role: monitoring
         targetPort: 9090
         ingress:
           create: true
@@ -117,13 +110,14 @@ providerConfig:
           tlsSecretRef:
             name: "ingress-wildcard-cert"
             namespace: "garden"
-      - name: "garden--aggregate-prometheus"
+      - name: "garden--prometheus-aggregate"
         namespaceSelector:
           matchLabels:
             project.gardener.cloud/name: garden
         labelSelector:
           matchLabels:
-            app: aggregate-prometheus
+            name: aggregate
+            role: monitoring
         targetPort: 9090
         ingress:
           create: true
@@ -138,7 +132,7 @@ providerConfig:
         labelSelector:
           matchLabels:
             name: cache
-            app: prometheus
+            role: monitoring
         targetPort: 9090
         ingress:
           create: true
