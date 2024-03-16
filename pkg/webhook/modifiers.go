@@ -426,8 +426,7 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 			"--oidc-clientID=" + clientID,
 			"--oidc-issuer=" + issuerUrl,
 			"--upstream=" + upstream,
-			"--config-file=/etc/kube-rbac-proxy/config-file.yaml",
-			"--v=10"},
+			"--config-file=/etc/kube-rbac-proxy/config-file.yaml"},
 		Ports: []corev1.ContainerPort{
 			{Name: "rbac", ContainerPort: 8100},
 		},
