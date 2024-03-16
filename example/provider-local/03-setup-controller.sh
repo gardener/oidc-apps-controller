@@ -37,6 +37,7 @@ providerConfig:
       repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name@sha256
       tag: $version
     imagePullPolicy: Always
+    cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
     webhook:
       namespaceSelector:
         matchExpressions:
@@ -108,7 +109,6 @@ providerConfig:
             project.gardener.cloud/name: garden
         labelSelector:
           matchLabels:
-            app: prometheus
             name: seed
         targetPort: 9090
         ingress:

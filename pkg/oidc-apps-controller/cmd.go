@@ -61,10 +61,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-var extensionConfig *configuration.OIDCAppsControllerConfig
-var predicates predicate.GenerationChangedPredicate
-var once sync.Once
-var _log = logf.Log
+var (
+	extensionConfig *configuration.OIDCAppsControllerConfig
+	predicates      predicate.GenerationChangedPredicate
+	once            sync.Once
+	_log            = logf.Log
+)
 
 // RunController is the entry point for initialzing and starting the controller-runtime manager
 func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
@@ -84,10 +86,21 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	//Limit the cache
+	oidcAppsSelector := labels.Everything()
+	if len(o.cacheSelectorString) > 0 {
+		var err error
+		if oidcAppsSelector, err = labels.Parse(o.cacheSelectorString); err != nil {
+			return fmt.Errorf("could not parse the cache selector: %w", err)
+		}
+		_log.Info("Using cache selector", "selector", oidcAppsSelector.String())
+	}
+
 	cacheOptions := cache.Options{
 		Scheme: sch,
 		ByObject: map[client.Object]cache.ByObject{
-			&corev1.Pod{}: {},
+			&corev1.Pod{}: {
+				Label: oidcAppsSelector,
+			},
 			&corev1.Secret{}: {
 				Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
 			},
@@ -98,7 +111,9 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 			&networkingv1.Ingress{}: {
 				Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
 			},
-			&autoscalerv1.VerticalPodAutoscaler{}: {},
+			&autoscalerv1.VerticalPodAutoscaler{}: {
+				Label: oidcAppsSelector,
+			},
 		}}
 
 	// Add additional scheme in case of running in gardener cluster

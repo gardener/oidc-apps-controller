@@ -94,6 +94,11 @@ webhook:
   objectSelector: {}
   namespaceSelector: {}
 
+# A selector string following https://pkg.go.dev/k8s.io/apimachinery/pkg/labels@v0.29.2#Parse pattern,
+# used to construct the controller-runtime manager cache. An empty string value defaults to the standard
+# controller-runtime cache.
+cacheSelectorStr:
+
 # OIDC Apps Extension Configuration
 # Cluster-wide extension conf
 configuration:

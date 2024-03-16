@@ -18,13 +18,14 @@ import "github.com/spf13/pflag"
 
 // OidcAppsControllerOptions holds th controller starup parameters
 type OidcAppsControllerOptions struct {
-	webhookCertsDir      string
-	controllerConfigPath string
-	webhookName          string
-	webhookPort          int
-	registrySecret       string
 	useCertManager       bool
+	webhookPort          int
 	metricsPort          int
+	controllerConfigPath string
+	cacheSelectorString  string
+	webhookCertsDir      string
+	webhookName          string
+	registrySecret       string
 }
 
 // AddFlags adds the controller parameters to the flag set
@@ -43,4 +44,5 @@ func (o *OidcAppsControllerOptions) AddFlags(pflag *pflag.FlagSet) {
 		"The port of the oidc-apps controller webhook ")
 	pflag.IntVar(&o.metricsPort, "metrics-port", 8080,
 		"The port of the oidc-apps controller metrics endpoint ")
+	pflag.StringVar(&o.cacheSelectorString, "cache-selector", "", "The selector string for controller-runtime cache.")
 }

@@ -84,6 +84,9 @@ spec:
           - "--registry-secret={{ .name }}"
           {{- end }}
           {{- end }}
+          {{- if .Values.cacheSelectorStr }}
+          - "--cache-selector={{ .Values.cacheSelectorStr }}"
+          {{- end }}
           {{- if .Values.metrics.enableScraping }}
           - "--metrics-port={{ .Values.metrics.port | int }}"
           {{- end }}
