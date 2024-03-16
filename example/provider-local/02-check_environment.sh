@@ -179,7 +179,7 @@ function check_hosts {
         dexidp
         plutono-garden.ingress.local.seed.local.gardener.cloud
         prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud
-        aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
+        prometheus-aggregate-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
         plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud
