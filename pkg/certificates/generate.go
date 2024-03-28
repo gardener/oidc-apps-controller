@@ -54,7 +54,7 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error generating the CA private key: %w", err)
 	}
-	serial, _ := generateSerial()
+	serial, err := generateSerial()
 	if err != nil {
 		return nil, fmt.Errorf("error generating bundle serial number: %w", err)
 	}
