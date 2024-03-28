@@ -104,7 +104,10 @@ func New(certPath string, name string, namespace string, c client.Client, config
 
 	var err error
 	// Check if there is valid CA bundle
-	if runnable.ca, _ = loadCAFromDisk(certPath); runnable.ca == nil {
+	if runnable.ca, err = loadCAFromDisk(certPath); runnable.ca == nil {
+		if err != nil {
+			_log.Error(err, "Failed loading CA certificate from disk, generating a new one")
+		}
 		if runnable.ca, err = generateCACert(certPath, realCertOps{}); err != nil {
 			return nil, err
 		}
@@ -114,7 +117,10 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	}
 
 	// Check if there is valid TLS bundle
-	if runnable.tls, _ = loadTLSFromDisk(certPath); runnable.tls == nil {
+	if runnable.tls, err = loadTLSFromDisk(certPath); runnable.tls == nil {
+		if err != nil {
+			_log.Error(err, "Failed loading certificate from disk, generating a new one")
+		}
 		if runnable.tls, err = generateTLSCert(certPath, realCertOps{}, dnsNames, runnable.ca); err != nil {
 			return nil, err
 		}
