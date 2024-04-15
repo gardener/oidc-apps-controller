@@ -117,3 +117,11 @@ Returns a clientId by seed name
   {{- end }}
   {{- required (print "found no clientID for seed: " .Values.gardener.seed.name ) $clientID -}}
 {{- end }}
+
+{{-  define "image" -}}
+  {{- if hasPrefix "sha256:" .Values.image.tag }}
+  {{- printf "%s@%s" .Values.image.repository .Values.image.tag }}
+  {{- else }}
+  {{- printf "%s:%s" .Values.image.repository .Values.image.tag }}
+  {{- end }}
+{{- end }}
