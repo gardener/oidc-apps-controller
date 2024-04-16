@@ -34,7 +34,7 @@ providerConfig:
       - name: local
         clientId: local
     image:
-      repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name@sha256
+      repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name
       tag: $version
     imagePullPolicy: Always
     cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
