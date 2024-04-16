@@ -43,7 +43,7 @@ providerConfig:
         matchExpressions:
           - key: "observability.gardener.cloud/app"
             operator: "In"
-            values: ["plutono", "prometheus-shoot", "prometheus-cache", "promehteus-aggregate", "prometheus-seed"]
+            values: ["plutono", "prometheus-shoot", "prometheus-cache", "prometheus-aggregate", "prometheus-seed"]
     vpa:
       enabled: true
     configuration:

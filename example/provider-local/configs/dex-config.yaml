@@ -59,7 +59,7 @@ staticClients:
   - id: "local"
     redirectURIs:
       - "https://plutono-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback"
-      - "https://aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://prometheus-aggregate-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://pr-404698-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"

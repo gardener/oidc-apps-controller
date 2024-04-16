@@ -8,7 +8,7 @@ rules:
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus
-      - observabilityapps/aggregate-prometheus
+      - observabilityapps/prometheus-aggregate
       - observabilityapps/prometheus-cache
       - observabilityapps/prometheus-seed
     verbs: ["get", "create"]
