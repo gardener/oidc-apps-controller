@@ -245,7 +245,8 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 	once.Do(
 		func() {
 			predicates = predicate.GenerationChangedPredicate{
-				Funcs: predicate.Funcs{
+
+				TypedFuncs: predicate.Funcs{
 					CreateFunc: func(e event.CreateEvent) bool {
 						if extensionConfig.Match(e.Object) {
 							_log.V(9).Info("create event", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
@@ -530,7 +531,7 @@ func addPrivateRegistrySecretControllers(mgr manager.Manager, o *OidcAppsControl
 
 	if o.registrySecret != "" {
 		imagePullSecretPredicates := predicate.GenerationChangedPredicate{
-			Funcs: predicate.Funcs{
+			TypedFuncs: predicate.Funcs{
 				CreateFunc: func(e event.CreateEvent) bool {
 					return e.Object.GetName() == o.registrySecret && e.Object.GetNamespace() == os.Getenv(constants.NAMESPACE)
 				},

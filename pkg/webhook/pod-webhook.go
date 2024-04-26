@@ -39,7 +39,7 @@ var _ admission.Handler = &PodMutator{}
 // PodMutator is a handler modifying the resource definitions of the pod targets
 type PodMutator struct {
 	Client          client.Client
-	Decoder         *webhook.AdmissionDecoder
+	Decoder         webhook.AdmissionDecoder
 	ImagePullSecret string
 }
 

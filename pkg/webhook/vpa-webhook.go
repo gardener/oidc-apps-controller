@@ -40,7 +40,7 @@ var _ admission.Handler = &VPAMutator{}
 // VPAMutator is a handler modifying the resource definitions of the vpa targets
 type VPAMutator struct {
 	Client  client.Client
-	Decoder *webhook.AdmissionDecoder
+	Decoder webhook.AdmissionDecoder
 }
 
 // Handle provides interface implementation for the PodMutator
