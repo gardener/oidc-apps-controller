@@ -8,7 +8,7 @@ require (
 	github.com/gardener/gardener v1.92.1
 	github.com/go-logr/logr v1.4.1
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.17.1
+	github.com/onsi/ginkgo/v2 v2.17.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
@@ -25,8 +25,8 @@ require (
 )
 
 require (
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/google/pprof v0.0.0-20211214055906-6f57359322fd // indirect
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	golang.org/x/tools v0.20.0 // indirect
 )
 
