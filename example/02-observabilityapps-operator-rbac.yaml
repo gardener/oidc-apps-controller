@@ -7,7 +7,7 @@ rules:
   - apiGroups: ["authorization.extensions.gardener.cloud"]
     resources:
       - observabilityapps/plutono
-      - observabilityapps/prometheus
+      - observabilityapps/prometheus-shoot
       - observabilityapps/prometheus-aggregate
       - observabilityapps/prometheus-cache
       - observabilityapps/prometheus-seed
