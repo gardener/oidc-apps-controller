@@ -488,8 +488,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								"memory": resource.MustParse("100Mi"),
 							},
 							Requests: corev1.ResourceList{
-								"cpu":    resource.MustParse("50m"),
-								"memory": resource.MustParse("50Mi"),
+								"cpu":    resource.MustParse("5m"),
+								"memory": resource.MustParse("32Mi"),
 							},
 							Claims: nil,
 						}))
@@ -524,8 +524,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								"memory": resource.MustParse("100Mi"),
 							},
 							Requests: map[corev1.ResourceName]resource.Quantity{
-								"cpu":    resource.MustParse("50m"),
-								"memory": resource.MustParse("50Mi"),
+								"cpu":    resource.MustParse("5m"),
+								"memory": resource.MustParse("32Mi"),
 							}}
 						Expect(c.Resources).To(Equal(expected))
 					}

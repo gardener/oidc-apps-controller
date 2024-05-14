@@ -85,15 +85,23 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
 		ContainerName: constants.ContainerNameOauth2Proxy,
 		MinAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("50m"),
-			corev1.ResourceMemory: resource.MustParse("50Mi"),
+			corev1.ResourceCPU:    resource.MustParse("5m"),
+			corev1.ResourceMemory: resource.MustParse("32Mi"),
+		},
+		MaxAllowed: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("100m"),
+			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		},
 	})
 	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
 		ContainerName: constants.ContainerNameKubeRbacProxy,
 		MinAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("50m"),
-			corev1.ResourceMemory: resource.MustParse("50Mi"),
+			corev1.ResourceCPU:    resource.MustParse("5m"),
+			corev1.ResourceMemory: resource.MustParse("32Mi"),
+		},
+		MaxAllowed: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("100m"),
+			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		},
 	})
 

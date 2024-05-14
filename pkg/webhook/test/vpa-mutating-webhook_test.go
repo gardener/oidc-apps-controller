@@ -144,15 +144,23 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			Expect(patchedVpa.Spec.ResourcePolicy.ContainerPolicies).To(ContainElement(autoscalerv1.ContainerResourcePolicy{
 				ContainerName: constants.ContainerNameOauth2Proxy,
 				MinAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("50m"),
-					corev1.ResourceMemory: resource.MustParse("50Mi"),
+					corev1.ResourceCPU:    resource.MustParse("5m"),
+					corev1.ResourceMemory: resource.MustParse("32Mi"),
+				},
+				MaxAllowed: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
 				},
 			}))
 			Expect(patchedVpa.Spec.ResourcePolicy.ContainerPolicies).To(ContainElement(autoscalerv1.ContainerResourcePolicy{
 				ContainerName: constants.ContainerNameKubeRbacProxy,
 				MinAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("50m"),
-					corev1.ResourceMemory: resource.MustParse("50Mi"),
+					corev1.ResourceCPU:    resource.MustParse("5m"),
+					corev1.ResourceMemory: resource.MustParse("32Mi"),
+				},
+				MaxAllowed: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("100m"),
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
 				},
 			}))
 

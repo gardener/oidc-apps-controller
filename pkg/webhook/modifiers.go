@@ -398,8 +398,8 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 			"memory": resource.MustParse("100Mi"),
 		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("50m"),
-			"memory": resource.MustParse("50Mi"),
+			"cpu":    resource.MustParse("5m"),
+			"memory": resource.MustParse("32Mi"),
 		},
 	}
 	for _, c := range pod.Spec.Containers {
@@ -469,8 +469,8 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 			"memory": resource.MustParse("100Mi"),
 		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("50m"),
-			"memory": resource.MustParse("50Mi"),
+			"cpu":    resource.MustParse("5m"),
+			"memory": resource.MustParse("32Mi"),
 		},
 	}
 	for _, c := range pod.Containers {
