@@ -4,12 +4,16 @@ updates:
 - package-ecosystem: gomod
   directory: /
   schedule:
-    interval: daily
+    interval: weekkly
   open-pull-requests-limit: 5
   ignore:
     - dependency-name: "github.com/gardener/gardener"
+  commit-message:
+      prefix: ":seedling:"  
 # Create PRs for golang version updates
 - package-ecosystem: docker
   directory: /
   schedule:
-    interval: daily
+    interval: weekly
+  commit-message:
+      prefix: ":seedling:"  
