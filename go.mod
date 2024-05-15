@@ -15,7 +15,7 @@ require (
 	go.uber.org/automaxprocs v1.5.3
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.0
-	k8s.io/apimachinery v0.30.0
+	k8s.io/apimachinery v0.30.1
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.1.1
 	k8s.io/client-go v0.30.0
 	k8s.io/component-base v0.30.0
