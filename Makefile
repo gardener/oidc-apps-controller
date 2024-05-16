@@ -21,7 +21,7 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    ?= $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(BINARY))
 PLATFORM                    := linux/amd64,linux/arm64
-ENVTEST_K8S_VERSION         ?= 1.26.1
+ENVTEST_K8S_VERSION         ?= 1.29.3
 
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
@@ -32,8 +32,12 @@ endif
 # Tools                                 #
 #########################################
 
-TOOLS_DIR := $(REPO_ROOT)/hack/tools
+TOOLS_DIR                   := $(REPO_ROOT)/hack/tools
+TOOLS_DIR_BIN               := $(TOOLS_DIR)/bin
 include $(REPO_ROOT)/hack/tools.mk
+
+KUBEBUILDER_ASSETS          := $(shell $(TOOLS_DIR_BIN)/setup-envtest use $(ENVTEST_K8S_VERSION) \
+									--bin-dir=$(TOOLS_DIR_BIN) -i -p path 2>/dev/null || true)
 
 .DEFAULT_GOAL := build
 #################################################################
@@ -83,18 +87,15 @@ test: $(MOCKGEN)
 	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
-.PHONY: test-e2e
-test-e2e: $(SETUP_ENVTEST)
-	@KUBEBUILDER_ASSETS="$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) -i \
-	--bin-dir $(abspath $(TOOLS_BIN_DIR)) -p path)" \
-	go test $(REPO_ROOT)/test/... -v -timeout 10m
+.PHONY: envtest
+envtest: $(SETUP_ENVTEST)
+	@go test $(REPO_ROOT)/test/... -v -timeout 10m
 
 .PHONY: test-clean
 test-clean:
 
-
 .PHONY: verify
-verify: format check test test-e2e
+verify: format check test envtest
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
