@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 NAME                        := oidc-apps-controller
 REGISTRY                    ?= europe-docker.pkg.dev/gardener-project/snapshots
 IMAGE_PREFIX                ?= $(REGISTRY)/gardener/extensions
@@ -22,7 +21,6 @@ EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    ?= $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(BINARY))
 PLATFORM                    := linux/amd64,linux/arm64
 ENVTEST_K8S_VERSION         ?= 1.29.3
-
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -37,44 +35,40 @@ TOOLS_DIR_BIN               := $(TOOLS_DIR)/bin
 include $(REPO_ROOT)/hack/tools.mk
 
 KUBEBUILDER_ASSETS          := $(shell $(TOOLS_DIR_BIN)/setup-envtest use $(ENVTEST_K8S_VERSION) \
-									--bin-dir=$(TOOLS_DIR_BIN) -i -p path 2>/dev/null || true)
+									--bin-dir=$(TOOLS_DIR_BIN) -i -p env 2>/dev/null || true)
 
-.DEFAULT_GOAL := build
-#################################################################
-# Rules related to binary build, Docker image build and release #
-#################################################################
-
-.PHONY: docker-images
-docker-images:
-	@docker buildx build --push --platform=$(PLATFORM) --build-arg LD_FLAGS="$(LD_FLAGS)" \
-	-t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest \
-	-f Dockerfile .
-
+.DEFAULT_GOAL := all
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
 
+.PHONY: all
+all: format lint test envtest build generate-controller-registration
+
 .PHONY: build
-build: format check
+build: format lint modules
 	@mkdir -p $(BIN)
-	@go mod tidy
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) GOBIN=$(BIN) \
 		CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(BIN)/$(NAME) $(REPO_ROOT)/cmd/main.go
 
 .PHONY: clean
-clean: test-clean
-	@$(shell find $(REPO_ROOT)/example -type f -name "controller-registration.yaml" -exec rm '{}' \;)
+clean:
 	@go clean -r $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	@GOBIN=$(BIN) go clean -i $(REPO_ROOT)/cmd/main.go
+	@go clean --testcache
+	@rm -f $(BIN)/$(NAME)
 
-.PHONY: check
-check: $(GOLANGCI_LINT)
+.PHONY: modules
+modules:
+	@go mod tidy
+
+.PHONY: lint
+lint: $(GOLANGCI_LINT)
 	@$(REPO_ROOT)/hack/check.sh --golangci-lint-config=$(REPO_ROOT)/.golangci.yaml $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
-.PHONY: generate
-generate:
-	@go generate $(REPO_ROOT)/charts/... $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+.PHONY: generate-controller-registration
+generate-controller-registration:
+	@go generate $(REPO_ROOT)/charts/...
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
@@ -89,14 +83,18 @@ test: $(MOCKGEN)
 
 .PHONY: envtest
 envtest: $(SETUP_ENVTEST)
-	@go test $(REPO_ROOT)/test/... -v -timeout 10m
-
-.PHONY: test-clean
-test-clean:
-
-.PHONY: verify
-verify: format check test envtest
+	@$(KUBEBUILDER_ASSETS); go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
+
+#################################################################
+# Rules related to Docker image build and release #
+#################################################################
+
+.PHONY: docker-images
+docker-images:
+	@docker buildx build --push --platform=$(PLATFORM) --build-arg LD_FLAGS="$(LD_FLAGS)" \
+	-t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest \
+	-f Dockerfile .
