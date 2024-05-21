@@ -69,9 +69,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 				Port:    env.WebhookInstallOptions.LocalServingPort,
 				Host:    env.WebhookInstallOptions.LocalServingHost,
 				CertDir: env.WebhookInstallOptions.LocalServingCertDir,
-				TLSOpts: []func(*tls.Config){func(config *tls.Config) {
-					config.InsecureSkipVerify = false // to delete later
-				}},
+				TLSOpts: []func(*tls.Config){func(config *tls.Config) {}},
 			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -116,6 +114,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 		BeforeAll(func() {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
+			time.Sleep(1 * time.Second)
 			deployment = createDeployment()
 			Expect(c.Create(context.TODO(), deployment)).Should(Succeed())
 
