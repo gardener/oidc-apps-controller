@@ -102,19 +102,27 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 			pod        *corev1.Pod
 		)
 
-		BeforeAll(func() {
+		// We need to implement a retryable operations in the BeforeAll block because the webhook server might not be
+		// initialized before the pod is created and the admission webhook is called. In the latter case, the pod creation
+		// will fail because the webhook server is not ready to serve the k8s-apiserver request.
+		BeforeAll(func(ctx SpecContext) {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
-			time.Sleep(1 * time.Second)
 			deployment = createDeployment()
-			Expect(c.Create(context.TODO(), deployment)).Should(Succeed())
+			Eventually(
+				func() error { return c.Create(ctx, deployment) },
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			replicaSet = createReplicaSet(deployment)
-			Expect(c.Create(context.TODO(), replicaSet)).Should(Succeed())
+			Eventually(
+				func() error { return c.Create(ctx, replicaSet) },
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			pod = createPod(replicaSet)
-			Expect(c.Create(context.TODO(), pod)).Should(Succeed())
+			Eventually(
+				func() error { return c.Create(ctx, pod) },
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-		})
+		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func() {
 			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), deployment))).Should(Succeed())
