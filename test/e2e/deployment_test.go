@@ -16,32 +16,134 @@ package e2e
 
 import (
 	"context"
+	"crypto/tls"
 	_ "embed"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"time"
+
+	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Oidc Apps Deployment Framework Test", func() {
-	var (
-		_      context.Context
-		cancel context.CancelFunc
-	)
+var (
+	ctx    context.Context
+	cancel context.CancelFunc
+	m      manager.Manager
+	c      client.Client
+)
 
-	// Initialize the test environment
-	BeforeEach(func() {
-		_, cancel = context.WithTimeout(
+var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
+
+	// Initialize the respective target resources such as deployments and statefulsets
+	BeforeAll(func() {
+		c, err = client.New(env.Config, client.Options{
+			Scheme: scheme.Scheme,
+		})
+		// Initialize the test timeout context
+		ctx, cancel = context.WithTimeout(
 			logr.NewContext(context.Background(), _log),
-			30*time.Second,
+			15*time.Second,
 		)
+
+		//TODO: Clean up all debug logs
+		_log.Info("env", "LocalServingPort", env.WebhookInstallOptions.LocalServingPort)
+		_log.Info("env", "LocalServingHost", env.WebhookInstallOptions.LocalServingHost)
+		_log.Info("env", "LocalServingCertDir", env.WebhookInstallOptions.LocalServingCertDir)
+
+		// Initialize the controller-runtime manager
+		m, err = controllerruntime.NewManager(cfg, controllerruntime.Options{
+			Logger: _log,
+			WebhookServer: webhook.NewServer(webhook.Options{
+				Port:    env.WebhookInstallOptions.LocalServingPort,
+				Host:    env.WebhookInstallOptions.LocalServingHost,
+				CertDir: env.WebhookInstallOptions.LocalServingCertDir,
+				TLSOpts: []func(*tls.Config){func(config *tls.Config) {
+					config.InsecureSkipVerify = false // to delete later
+				}},
+			}),
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		server := m.GetWebhookServer()
+		server.Register(constants.PodWebHookPath, &webhook.Admission{Handler: &oidcappswebhook.PodMutator{
+			Client:  c,
+			Decoder: admission.NewDecoder(scheme.Scheme),
+		}})
+
+		go func() {
+			defer GinkgoRecover()
+			Expect(m.GetWebhookServer().Start(context.TODO())).Should(Succeed())
+			_log.Info("Webhook server started")
+			Expect(m.GetCache().Start(context.TODO())).Should(Succeed())
+			_log.Info("Cache started")
+		}()
+
+		_log.Info("Manager started")
+
+		conf := &admissionv1.MutatingWebhookConfiguration{}
+		err = c.Get(context.TODO(), client.ObjectKey{
+			Namespace: "",
+			Name:      "oidc-apps-controller-pods.gardener.cloud",
+		}, conf)
+		_log.Info("Webhook configuration", "conf", conf)
+		Expect(err).ShouldNot(HaveOccurred())
+
 	})
 
-	AfterEach(func() {
+	AfterAll(func() {
 		cancel()
 	})
-	Context("when a deployment is a target", func() {
-		It("there shall be auth & autz proxies present in the deployment", func() {})
+
+	Context("when a deployment is a target", Ordered, func() {
+
+		var (
+			deployment *appsv1.Deployment
+			replicaSet *appsv1.ReplicaSet
+			pod        *corev1.Pod
+		)
+
+		BeforeAll(func() {
+			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
+			deployment = createDeployment()
+			Expect(c.Create(context.TODO(), deployment)).Should(Succeed())
+
+			replicaSet = createReplicaSet(deployment)
+			Expect(c.Create(context.TODO(), replicaSet)).Should(Succeed())
+
+			pod = createPod(replicaSet)
+			Expect(c.Create(context.TODO(), pod)).Should(Succeed())
+
+		})
+
+		AfterAll(func() {
+			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), deployment))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), replicaSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), pod))).Should(Succeed())
+		})
+
+		It("there shall be auth & autz proxies present in the deployment", func() {
+
+			pod := &corev1.Pod{}
+			Expect(c.Get(ctx, client.ObjectKey{
+				Namespace: "default",
+				Name:      "nginx-pod",
+			}, pod)).Should(Succeed())
+
+			Expect(pod.Spec.Containers).Should(HaveLen(3))
+
+		})
 		It("there shall be ingress present in the deployment namespace", func() {})
 		It("there shall be service present in the deployment namespace", func() {})
 		It("there shall be outh2 and kube-rbac secrets present in the deployment namespace", func() {})

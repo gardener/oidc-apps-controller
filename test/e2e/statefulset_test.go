@@ -25,11 +25,6 @@ import (
 
 var _ = Describe("Oidc Apps StatefulSets Framework Test", func() {
 
-	var (
-		_      context.Context
-		cancel context.CancelFunc
-	)
-
 	// Initialize the test environment
 	BeforeEach(func() {
 		_, cancel = context.WithTimeout(
@@ -44,7 +39,6 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", func() {
 	})
 	Context("when a statefulset is a target", func() {
 		It("there shall be  auth & autz proxies present in the statefulset", func() {})
-
 		When("the statefulset is created with two pods", func() {
 			It("there shall be an ingress and service for each pod", func() {})
 		})
