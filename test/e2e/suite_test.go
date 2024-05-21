@@ -16,8 +16,11 @@ package e2e
 
 import (
 	_ "embed"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"testing"
 
@@ -32,12 +35,30 @@ func TestSute(t *testing.T) {
 
 //go:embed config.yaml
 var configFile string
-
-var _log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
+var (
+	env  *envtest.Environment
+	cfg  *rest.Config
+	_log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
+	err  error
+)
 
 var _ = BeforeSuite(func() {
 	tmpDir := GinkgoT().TempDir()
-	err := os.WriteFile(filepath.Join(tmpDir, "config.yaml"), []byte(configFile), 0444)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(os.WriteFile(filepath.Join(tmpDir, "config.yaml"), []byte(configFile), 0444)).Should(Succeed())
 	DeferCleanup(os.RemoveAll, tmpDir)
+
+	// Setup oidc-apps-controller configuration
+	configuration.CreateControllerConfigOrDie(filepath.Join(tmpDir, "config.yaml"))
+
+	env = &envtest.Environment{}
+
+	installWebHooks(env)
+	cfg, err = env.Start()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(cfg).NotTo(BeNil(), "Failed to create a new test environment")
+	
+})
+
+var _ = AfterSuite(func() {
+	Expect(env.Stop()).Should(Succeed())
 })
