@@ -56,12 +56,6 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 			logr.NewContext(context.Background(), _log),
 			15*time.Second,
 		)
-
-		//TODO: Clean up all debug logs
-		_log.Info("env", "LocalServingPort", env.WebhookInstallOptions.LocalServingPort)
-		_log.Info("env", "LocalServingHost", env.WebhookInstallOptions.LocalServingHost)
-		_log.Info("env", "LocalServingCertDir", env.WebhookInstallOptions.LocalServingCertDir)
-
 		// Initialize the controller-runtime manager
 		m, err = controllerruntime.NewManager(cfg, controllerruntime.Options{
 			Logger: _log,
@@ -83,19 +77,15 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 		go func() {
 			defer GinkgoRecover()
 			Expect(m.GetWebhookServer().Start(context.TODO())).Should(Succeed())
-			_log.Info("Webhook server started")
 			Expect(m.GetCache().Start(context.TODO())).Should(Succeed())
-			_log.Info("Cache started")
-		}()
 
-		_log.Info("Manager started")
+		}()
 
 		conf := &admissionv1.MutatingWebhookConfiguration{}
 		err = c.Get(context.TODO(), client.ObjectKey{
 			Namespace: "",
 			Name:      "oidc-apps-controller-pods.gardener.cloud",
 		}, conf)
-		_log.Info("Webhook configuration", "conf", conf)
 		Expect(err).ShouldNot(HaveOccurred())
 
 	})
