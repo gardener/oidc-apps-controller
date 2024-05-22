@@ -1,6 +1,7 @@
 configuration:
   oauth2Proxy:
   kubeRbacProxy:
+  domainName: "example.com"
 targets:
   - name: "nginx"
     labelSelector:
