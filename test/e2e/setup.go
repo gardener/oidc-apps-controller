@@ -23,6 +23,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"strings"
 )
 
 const (
@@ -145,6 +146,10 @@ func createReplicaSet(owner client.Object) *appsv1.ReplicaSet {
 
 func createPod(owner client.Object) *corev1.Pod {
 	return &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      NGINX_POD,
 			Namespace: DEFAULT_NAMESPACE,
@@ -192,6 +197,69 @@ func createNonTargetDeployment() *appsv1.Deployment {
 							Image: "nginx:latest",
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func createTargetStatefulSet() *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "StatefulSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      TARGET,
+			Namespace: DEFAULT_NAMESPACE,
+			Labels:    map[string]string{"app": TARGET},
+			UID:       "1234",
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "nginx"},
+			},
+			Replicas: ptr.To(int32(1)),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "nginx"},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createStatefulSetPod(owner client.Object, index string) *corev1.Pod {
+	return &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      strings.Join([]string{TARGET, index}, "-"),
+			Namespace: DEFAULT_NAMESPACE,
+			Labels: map[string]string{
+				"app":                                "nginx",
+				"statefulset.kubernetes.io/pod-name": strings.Join([]string{TARGET, index}, "-"),
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(owner, appsv1.SchemeGroupVersion.WithKind("StatefulSet")),
+			},
+			UID: "5678",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "nginx",
+					Image: "nginx:latest",
 				},
 			},
 		},
