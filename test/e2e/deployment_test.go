@@ -18,21 +18,33 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"fmt"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/controllers"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"strings"
 	"time"
 
 	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -42,20 +54,32 @@ var (
 	cancel context.CancelFunc
 	m      manager.Manager
 	c      client.Client
+	sch    *runtime.Scheme
 )
 
 var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 	// Initialize the respective target resources such as deployments and statefulsets
 	BeforeAll(func() {
-		c, err = client.New(env.Config, client.Options{
-			Scheme: scheme.Scheme,
-		})
+		sch = scheme.Scheme
+		err = autoscalerv1.AddToScheme(sch)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(sch.IsGroupRegistered("autoscaling.k8s.io")).Should(BeTrue())
+
+		c, err = client.New(env.Config, client.Options{Scheme: sch})
+
 		// Initialize the test timeout context
-		ctx, cancel = context.WithTimeout(
-			logr.NewContext(context.Background(), _log),
-			15*time.Second,
-		)
+		ctx, cancel = context.WithCancel(context.Background())
+
+		// Verify the oidc-apps-controller pod mutating webhook is present
+		mutatingWebhookConfiguration := &admissionv1.MutatingWebhookConfiguration{}
+		err = c.Get(ctx, client.ObjectKey{
+			Namespace: "",
+			Name:      "oidc-apps-controller-pods.gardener.cloud",
+		}, mutatingWebhookConfiguration)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(mutatingWebhookConfiguration.Webhooks).Should(HaveLen(1))
+
 		// Initialize the controller-runtime manager
 		m, err = controllerruntime.NewManager(cfg, controllerruntime.Options{
 			Logger: _log,
@@ -65,32 +89,62 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 				CertDir: env.WebhookInstallOptions.LocalServingCertDir,
 				TLSOpts: []func(*tls.Config){func(config *tls.Config) {}},
 			}),
+			Scheme: sch,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
+		// Register the webhook server
 		server := m.GetWebhookServer()
 		server.Register(constants.PodWebHookPath, &webhook.Admission{Handler: &oidcappswebhook.PodMutator{
 			Client:  c,
-			Decoder: admission.NewDecoder(scheme.Scheme),
+			Decoder: admission.NewDecoder(sch),
 		}})
 
+		// Set up the Oidc-Apps Deployment reconciler
+		err = controllerruntime.NewControllerManagedBy(m).
+			Named("oidc-apps-deployments").
+			For(&appsv1.Deployment{}).
+			Watches(
+				&corev1.Secret{},
+				handler.EnqueueRequestForOwner(
+					m.GetScheme(),
+					m.GetRESTMapper(),
+					&appsv1.Deployment{},
+				),
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			Watches(
+				&corev1.Service{},
+				handler.EnqueueRequestForOwner(
+					m.GetScheme(),
+					m.GetRESTMapper(),
+					&appsv1.Deployment{},
+				),
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			Watches(
+				&networkingv1.Ingress{},
+				handler.EnqueueRequestForOwner(
+					m.GetScheme(),
+					m.GetRESTMapper(),
+					&appsv1.Deployment{},
+				),
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			Watches(
+				&corev1.Pod{},
+				handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.OidcAppsPodMapFunc(m)),
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+			Complete(&controllers.DeploymentReconciler{Client: m.GetClient()})
+		Expect(err).ShouldNot(HaveOccurred())
+
+		// Start the controller-runtime manager
 		go func() {
 			defer GinkgoRecover()
-			Expect(m.GetWebhookServer().Start(context.TODO())).Should(Succeed())
-			Expect(m.GetCache().Start(context.TODO())).Should(Succeed())
-
+			Expect(m.Start(ctx)).Should(Succeed())
 		}()
-
-		conf := &admissionv1.MutatingWebhookConfiguration{}
-		err = c.Get(context.TODO(), client.ObjectKey{
-			Namespace: "",
-			Name:      "oidc-apps-controller-pods.gardener.cloud",
-		}, conf)
-		Expect(err).ShouldNot(HaveOccurred())
 
 	})
 
 	AfterAll(func() {
+		By("tearing down the controller-runtime manager")
 		cancel()
 	})
 
@@ -100,6 +154,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 			deployment *appsv1.Deployment
 			replicaSet *appsv1.ReplicaSet
 			pod        *corev1.Pod
+			suffix     string
 		)
 
 		// We need to implement a retryable operations in the BeforeAll block because the webhook server might not be
@@ -108,48 +163,247 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 		BeforeAll(func(ctx SpecContext) {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
 			deployment = createDeployment()
-			Eventually(
-				func() error { return c.Create(ctx, deployment) },
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(func() error {
+				return c.Create(ctx, deployment)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			replicaSet = createReplicaSet(deployment)
-			Eventually(
-				func() error { return c.Create(ctx, replicaSet) },
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(func() error {
+				return c.Create(ctx, replicaSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			pod = createPod(replicaSet)
-			Eventually(
-				func() error { return c.Create(ctx, pod) },
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(func() error {
+				return c.Create(ctx, pod)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
+			suffix = rand.GenerateSha256(strings.Join([]string{TARGET, DEFAULT_NAMESPACE}, "-"))
 		}, NodeTimeout(5*time.Second))
 
-		AfterAll(func() {
-			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), deployment))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), replicaSet))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(context.TODO(), pod))).Should(Succeed())
-		})
+		AfterAll(func(ctx SpecContext) {
+			Expect(client.IgnoreNotFound(c.Delete(ctx, deployment))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(ctx, replicaSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(ctx, pod))).Should(Succeed())
+			suffix = ""
+		}, NodeTimeout(5*time.Second))
 
-		It("there shall be auth & autz proxies present in the deployment", func() {
+		It("there shall be auth & authz sidecar containers present in the deployment pod", func() {
 
 			pod := &corev1.Pod{}
-			Expect(c.Get(ctx, client.ObjectKey{
-				Namespace: "default",
-				Name:      "nginx-pod",
-			}, pod)).Should(Succeed())
+			Expect(c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      NGINX_POD,
+				},
+				pod)).Should(Succeed())
 
 			Expect(pod.Spec.Containers).Should(HaveLen(3))
 
 		})
-		It("there shall be ingress present in the deployment namespace", func() {})
-		It("there shall be service present in the deployment namespace", func() {})
-		It("there shall be outh2 and kube-rbac secrets present in the deployment namespace", func() {})
-		When("the deployment is deleted", func() {
-			It("there shall be no auth & autz proxies present in the deployment", func() {})
-		})
-	})
-	Context("when a deployment is not a target", func() {
-		It("there shall be no auth & autz proxies present in the deployment", func() {})
-	})
 
+		It("there shall be an oidc-apps ingress present in the deployment namespace", func(ctx SpecContext) {
+			ingresses := networkingv1.IngressList{}
+			Eventually(
+				func() error {
+					if err = c.List(ctx, &ingresses,
+						client.InNamespace(DEFAULT_NAMESPACE),
+						client.MatchingLabelsSelector{
+							Selector: labels.SelectorFromSet(map[string]string{
+								constants.LabelKey: constants.LabelValue,
+							}),
+						}); err != nil {
+						return err
+					}
+					if len(ingresses.Items) == 0 {
+						return fmt.Errorf("no oidc-apps ingresses are found")
+					}
+					for _, ingress := range ingresses.Items {
+						if ingress.Name == constants.IngressName+"-"+suffix {
+							return nil
+						}
+					}
+					return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-"+suffix)
+				},
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be an oauth2 service present in the deployment namespace", func(ctx SpecContext) {
+
+			services := corev1.ServiceList{}
+			Eventually(
+				func() error {
+					if err = c.List(ctx, &services,
+						client.InNamespace(DEFAULT_NAMESPACE),
+						client.MatchingLabelsSelector{
+							Selector: labels.SelectorFromSet(map[string]string{
+								constants.LabelKey: constants.LabelValue,
+							}),
+						}); err != nil {
+						return err
+					}
+					for _, service := range services.Items {
+						if service.Name == constants.ServiceNameOauth2Service+"-"+suffix {
+							return nil
+						}
+					}
+					return fmt.Errorf("An expected oidc-apps service: %s is not found",
+						constants.ServiceNameOauth2Service+"-"+suffix)
+				},
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be an oauth2 secret present in the deployment namespace", func(ctx SpecContext) {
+
+			secrets := corev1.SecretList{}
+			Eventually(
+				func() error {
+					if err = c.List(ctx, &secrets,
+						client.InNamespace(DEFAULT_NAMESPACE),
+						client.MatchingLabelsSelector{
+							Selector: labels.SelectorFromSet(map[string]string{
+								constants.SecretLabelKey: constants.Oauth2LabelValue,
+							}),
+						}); err != nil {
+						return err
+					}
+					if len(secrets.Items) == 0 {
+						return fmt.Errorf("no oidc-apps secrets are found")
+					}
+					for _, secret := range secrets.Items {
+						if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
+							return nil
+						}
+					}
+					return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
+						constants.SecretNameOauth2Proxy+"-"+suffix)
+				},
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be a rbac secret present in the deployment namespace", func(ctx SpecContext) {
+
+			secrets := corev1.SecretList{}
+			Eventually(
+				func() error {
+					if err = c.List(ctx, &secrets,
+						client.InNamespace(DEFAULT_NAMESPACE),
+						client.MatchingLabelsSelector{
+							Selector: labels.SelectorFromSet(map[string]string{
+								constants.SecretLabelKey: constants.RbacLabelValue,
+							}),
+						}); err != nil {
+						return err
+					}
+					if len(secrets.Items) == 0 {
+						return fmt.Errorf("no oidc-apps secrets are found")
+					}
+					for _, secret := range secrets.Items {
+						if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
+							return nil
+						}
+					}
+					return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
+						constants.SecretNameResourceAttributes+"-"+suffix)
+				},
+			).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+	}) // End of Context("when a deployment is a target")
+
+	Context("when a deployment is not a target", func() {
+		var (
+			deployment *appsv1.Deployment
+			replicaSet *appsv1.ReplicaSet
+			pod        *corev1.Pod
+			suffix     string
+		)
+
+		// We need to implement a retryable operations in the BeforeAll block because the webhook server might not be
+		// initialized before the pod is created and the admission webhook is called. In the latter case, the pod creation
+		// will fail because the webhook server is not ready to serve the k8s-apiserver request.
+		BeforeAll(func(ctx SpecContext) {
+			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
+			deployment = createNonTargetDeployment()
+			Eventually(func() error {
+				return c.Create(ctx, deployment)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			replicaSet = createReplicaSet(deployment)
+			Eventually(func() error {
+				return c.Create(ctx, replicaSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			pod = createPod(replicaSet)
+			Eventually(func() error {
+				return c.Create(ctx, pod)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+			suffix = rand.GenerateSha256(strings.Join([]string{NON_TARGET, DEFAULT_NAMESPACE}, "-"))
+		}, NodeTimeout(5*time.Second))
+
+		AfterAll(func(ctx SpecContext) {
+			Expect(client.IgnoreNotFound(c.Delete(ctx, deployment))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(ctx, replicaSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(c.Delete(ctx, pod))).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be no auth & authz proxies present in the deployment pod", func() {
+
+			pod := &corev1.Pod{}
+			Expect(c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      NGINX_POD,
+				},
+				pod)).Should(Succeed())
+			Expect(pod.Spec.Containers).Should(HaveLen(1))
+
+		})
+
+		It("there shall be no oidc-apps ingress present in the deployment namespace", func() {
+
+			ingress := &networkingv1.Ingress{}
+			err = c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      constants.IngressName + "-" + suffix,
+				}, ingress)
+			Expect(err).Should(HaveOccurred())
+			Expect(errors.IsNotFound(err)).Should(BeTrue())
+		})
+
+		It("there shall be no oauth2 service present in the deployment namespace", func() {
+			service := &corev1.Service{}
+			err := c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      constants.ServiceNameOauth2Service + "-" + suffix,
+				}, service)
+			Expect(err).Should(HaveOccurred())
+			Expect(errors.IsNotFound(err)).Should(BeTrue())
+
+		})
+
+		It("there shall be no oauth2 secret present in the deployment namespace", func() {
+			secret := &corev1.Secret{}
+			err := c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      constants.SecretNameOauth2Proxy + "-" + suffix,
+				}, secret)
+			Expect(err).Should(HaveOccurred())
+			Expect(errors.IsNotFound(err)).Should(BeTrue())
+		})
+
+		It("there shall be no rbac secret present in the deployment namespace", func() {
+			secret := &corev1.Secret{}
+			err := c.Get(ctx,
+				client.ObjectKey{
+					Namespace: DEFAULT_NAMESPACE,
+					Name:      constants.SecretNameResourceAttributes + "-" + suffix,
+				}, secret)
+			Expect(err).Should(HaveOccurred())
+			Expect(errors.IsNotFound(err)).Should(BeTrue())
+		})
+
+	}) // End of Context("when a deployment is not a target")
 })

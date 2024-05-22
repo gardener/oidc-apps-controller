@@ -15,17 +15,17 @@
 package e2e
 
 import (
-	_ "embed"
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"k8s.io/client-go/rest"
-	"os"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 func TestSute(t *testing.T) {
@@ -33,8 +33,6 @@ func TestSute(t *testing.T) {
 	RunSpecs(t, "E2E Suite")
 }
 
-//go:embed config.yaml
-var configFile string
 var (
 	env  *envtest.Environment
 	cfg  *rest.Config
@@ -43,20 +41,26 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	tmpDir := GinkgoT().TempDir()
-	Expect(os.WriteFile(filepath.Join(tmpDir, "config.yaml"), []byte(configFile), 0444)).Should(Succeed())
-	DeferCleanup(os.RemoveAll, tmpDir)
 
 	// Setup oidc-apps-controller configuration
-	configuration.CreateControllerConfigOrDie(filepath.Join(tmpDir, "config.yaml"))
+	configuration.CreateControllerConfigOrDie(filepath.Join("config", "oidc-apps.yaml"))
 
-	env = &envtest.Environment{}
+	// The oidc-apps reconcilers require autoscaling.k8s.io/v1 API
+	env = &envtest.Environment{
+		CRDDirectoryPaths:       []string{"crds"},
+		ControlPlaneStopTimeout: time.Second * 5,
+	}
 
 	installWebHooks(env)
+
+	// Start the test environment
 	cfg, err = env.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil(), "Failed to create a new test environment")
-	
+
+	// Disable metrics server in controller-runtime
+	metricsserver.DefaultBindAddress = "0"
+
 })
 
 var _ = AfterSuite(func() {

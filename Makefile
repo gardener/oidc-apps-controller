@@ -20,7 +20,7 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS                    ?= $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(BINARY))
 PLATFORM                    := linux/amd64,linux/arm64
-ENVTEST_K8S_VERSION         ?= 1.29.3
+ENVTEST_K8S_VERSION         ?= 1.30.0
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -83,7 +83,7 @@ test: $(MOCKGEN)
 
 .PHONY: envtest
 envtest: $(SETUP_ENVTEST)
-	@$(KUBEBUILDER_ASSETS); go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
+	@$(KUBEBUILDER_ASSETS) && go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)

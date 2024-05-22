@@ -369,38 +369,42 @@ func addDeploymentController(mgr manager.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Pod{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
-				pod := obj.(*corev1.Pod)
-				if !isOidcAppPod(pod) {
-					return nil
-				}
-				c := mgr.GetClient()
-				for _, r := range pod.GetOwnerReferences() {
-					if r.Kind != "ReplicaSet" {
-						continue
-					}
-					rs := &appsv1.ReplicaSet{}
-					if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, rs); client.IgnoreNotFound(err) != nil {
-						_log.Error(err, "could not get replicaset", "name", r.Name, "namespace", pod.Namespace)
-					}
-
-					for _, d := range rs.GetOwnerReferences() {
-						if d.Kind != "Deployment" {
-							continue
-						}
-						deployment := &appsv1.Deployment{}
-						if err := c.Get(ctx, types.NamespacedName{Name: d.Name, Namespace: rs.Namespace}, deployment); client.IgnoreNotFound(err) != nil {
-							_log.Error(err, "could not get deployment", "name", d.Name, "namespace", rs.Namespace)
-						}
-						_log.V(9).Info("enqueue deployment", "name", deployment.Name, "namespace", deployment.Namespace)
-						return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}}}
-					}
-				}
-
-				return nil
-			}),
+			handler.EnqueueRequestsFromMapFunc(OidcAppsPodMapFunc(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
+}
+
+func OidcAppsPodMapFunc(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		pod := obj.(*corev1.Pod)
+		if !IsOidcAppsPod(pod) {
+			return nil
+		}
+		c := mgr.GetClient()
+		for _, r := range pod.GetOwnerReferences() {
+			if r.Kind != "ReplicaSet" {
+				continue
+			}
+			rs := &appsv1.ReplicaSet{}
+			if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, rs); client.IgnoreNotFound(err) != nil {
+				_log.Error(err, "could not get replicaset", "name", r.Name, "namespace", pod.Namespace)
+			}
+
+			for _, d := range rs.GetOwnerReferences() {
+				if d.Kind != "Deployment" {
+					continue
+				}
+				deployment := &appsv1.Deployment{}
+				if err := c.Get(ctx, types.NamespacedName{Name: d.Name, Namespace: rs.Namespace}, deployment); client.IgnoreNotFound(err) != nil {
+					_log.Error(err, "could not get deployment", "name", d.Name, "namespace", rs.Namespace)
+				}
+				_log.V(9).Info("enqueue deployment", "name", deployment.Name, "namespace", deployment.Namespace)
+				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}}}
+			}
+		}
+
+		return nil
+	}
 }
 
 func addStatefulSetController(mgr manager.Manager) error {
@@ -603,7 +607,7 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 
 }
 
-func isOidcAppPod(pod *corev1.Pod) bool {
+func IsOidcAppsPod(pod *corev1.Pod) bool {
 	for _, c := range pod.Spec.Containers {
 		if c.Name == constants.ContainerNameOauth2Proxy || c.Name == constants.ContainerNameKubeRbacProxy {
 			_log.V(9).Info("oidc-apps enabled pod", "pod", pod.Name)

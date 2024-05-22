@@ -7,5 +7,5 @@ targets:
       matchLabels:
         app: nginx
     ingress:
-      enabled: false
+      enabled: true
       ingressClassName: "nginx"
