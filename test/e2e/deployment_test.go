@@ -48,35 +48,35 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 		// will fail because the webhook server is not ready to serve the k8s-apiserver request.
 		BeforeAll(func(ctx SpecContext) {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
-			deployment = createDeployment()
+			deployment = createTargetDeployment()
 			Eventually(func() error {
-				return c.Create(ctx, deployment)
+				return clt.Create(ctx, deployment)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			replicaSet = createReplicaSet(deployment)
 			Eventually(func() error {
-				return c.Create(ctx, replicaSet)
+				return clt.Create(ctx, replicaSet)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			pod = createPod(replicaSet)
 			Eventually(func() error {
-				return c.Create(ctx, pod)
+				return clt.Create(ctx, pod)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			suffix = rand.GenerateSha256(strings.Join([]string{TARGET, DEFAULT_NAMESPACE}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
-			Expect(client.IgnoreNotFound(c.Delete(ctx, deployment))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, replicaSet))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, pod))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, deployment))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, replicaSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod))).Should(Succeed())
 			suffix = ""
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be auth & authz sidecar containers present in the deployment pod", func() {
 
 			pod := &corev1.Pod{}
-			Expect(c.Get(ctx,
+			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      NGINX_POD,
@@ -89,110 +89,101 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 		It("there shall be an oidc-apps ingress present in the deployment namespace", func(ctx SpecContext) {
 			ingresses := networkingv1.IngressList{}
-			Eventually(
-				func() error {
-					if err = c.List(ctx, &ingresses,
-						client.InNamespace(DEFAULT_NAMESPACE),
-						client.MatchingLabelsSelector{
-							Selector: labels.SelectorFromSet(map[string]string{
-								constants.LabelKey: constants.LabelValue,
-							}),
-						}); err != nil {
-						return err
+			Eventually(func() error {
+				if err = clt.List(ctx, &ingresses,
+					client.InNamespace(DEFAULT_NAMESPACE),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.LabelKey: constants.LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+				if len(ingresses.Items) == 0 {
+					return fmt.Errorf("no oidc-apps ingresses are found")
+				}
+				for _, ingress := range ingresses.Items {
+					if ingress.Name == constants.IngressName+"-"+suffix {
+						return nil
 					}
-					if len(ingresses.Items) == 0 {
-						return fmt.Errorf("no oidc-apps ingresses are found")
-					}
-					for _, ingress := range ingresses.Items {
-						if ingress.Name == constants.IngressName+"-"+suffix {
-							return nil
-						}
-					}
-					return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-"+suffix)
-				},
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
-
+				}
+				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-"+suffix)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be an oauth2 service present in the deployment namespace", func(ctx SpecContext) {
 
 			services := corev1.ServiceList{}
-			Eventually(
-				func() error {
-					if err = c.List(ctx, &services,
-						client.InNamespace(DEFAULT_NAMESPACE),
-						client.MatchingLabelsSelector{
-							Selector: labels.SelectorFromSet(map[string]string{
-								constants.LabelKey: constants.LabelValue,
-							}),
-						}); err != nil {
-						return err
+			Eventually(func() error {
+				if err = clt.List(ctx, &services,
+					client.InNamespace(DEFAULT_NAMESPACE),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.LabelKey: constants.LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+				for _, service := range services.Items {
+					if service.Name == constants.ServiceNameOauth2Service+"-"+suffix {
+						return nil
 					}
-					for _, service := range services.Items {
-						if service.Name == constants.ServiceNameOauth2Service+"-"+suffix {
-							return nil
-						}
-					}
-					return fmt.Errorf("An expected oidc-apps service: %s is not found",
-						constants.ServiceNameOauth2Service+"-"+suffix)
-				},
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+				}
+				return fmt.Errorf("An expected oidc-apps service: %s is not found",
+					constants.ServiceNameOauth2Service+"-"+suffix)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be an oauth2 secret present in the deployment namespace", func(ctx SpecContext) {
 
 			secrets := corev1.SecretList{}
-			Eventually(
-				func() error {
-					if err = c.List(ctx, &secrets,
-						client.InNamespace(DEFAULT_NAMESPACE),
-						client.MatchingLabelsSelector{
-							Selector: labels.SelectorFromSet(map[string]string{
-								constants.SecretLabelKey: constants.Oauth2LabelValue,
-							}),
-						}); err != nil {
-						return err
+			Eventually(func() error {
+				if err = clt.List(ctx, &secrets,
+					client.InNamespace(DEFAULT_NAMESPACE),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.SecretLabelKey: constants.Oauth2LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+				if len(secrets.Items) == 0 {
+					return fmt.Errorf("no oidc-apps secrets are found")
+				}
+				for _, secret := range secrets.Items {
+					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
+						return nil
 					}
-					if len(secrets.Items) == 0 {
-						return fmt.Errorf("no oidc-apps secrets are found")
-					}
-					for _, secret := range secrets.Items {
-						if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
-							return nil
-						}
-					}
-					return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
-						constants.SecretNameOauth2Proxy+"-"+suffix)
-				},
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+				}
+				return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
+					constants.SecretNameOauth2Proxy+"-"+suffix)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be a rbac secret present in the deployment namespace", func(ctx SpecContext) {
 
 			secrets := corev1.SecretList{}
-			Eventually(
-				func() error {
-					if err = c.List(ctx, &secrets,
-						client.InNamespace(DEFAULT_NAMESPACE),
-						client.MatchingLabelsSelector{
-							Selector: labels.SelectorFromSet(map[string]string{
-								constants.SecretLabelKey: constants.RbacLabelValue,
-							}),
-						}); err != nil {
-						return err
+			Eventually(func() error {
+				if err = clt.List(ctx, &secrets,
+					client.InNamespace(DEFAULT_NAMESPACE),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.SecretLabelKey: constants.RbacLabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+				if len(secrets.Items) == 0 {
+					return fmt.Errorf("no oidc-apps secrets are found")
+				}
+				for _, secret := range secrets.Items {
+					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
+						return nil
 					}
-					if len(secrets.Items) == 0 {
-						return fmt.Errorf("no oidc-apps secrets are found")
-					}
-					for _, secret := range secrets.Items {
-						if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
-							return nil
-						}
-					}
-					return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
-						constants.SecretNameResourceAttributes+"-"+suffix)
-				},
-			).WithPolling(100 * time.Millisecond).Should(Succeed())
+				}
+				return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
+					constants.SecretNameResourceAttributes+"-"+suffix)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 	}) // End of Context("when a deployment is a target")
 
@@ -211,31 +202,31 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
 			deployment = createNonTargetDeployment()
 			Eventually(func() error {
-				return c.Create(ctx, deployment)
+				return clt.Create(ctx, deployment)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			replicaSet = createReplicaSet(deployment)
 			Eventually(func() error {
-				return c.Create(ctx, replicaSet)
+				return clt.Create(ctx, replicaSet)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			pod = createPod(replicaSet)
 			Eventually(func() error {
-				return c.Create(ctx, pod)
+				return clt.Create(ctx, pod)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 			suffix = rand.GenerateSha256(strings.Join([]string{NON_TARGET, DEFAULT_NAMESPACE}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
-			Expect(client.IgnoreNotFound(c.Delete(ctx, deployment))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, replicaSet))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, pod))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, deployment))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, replicaSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod))).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be no auth & authz proxies present in the deployment pod", func() {
 
 			pod := &corev1.Pod{}
-			Expect(c.Get(ctx,
+			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      NGINX_POD,
@@ -248,7 +239,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 		It("there shall be no oidc-apps ingress present in the deployment namespace", func() {
 
 			ingress := &networkingv1.Ingress{}
-			err = c.Get(ctx,
+			err = clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      constants.IngressName + "-" + suffix,
@@ -259,7 +250,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 		It("there shall be no oauth2 service present in the deployment namespace", func() {
 			service := &corev1.Service{}
-			err := c.Get(ctx,
+			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      constants.ServiceNameOauth2Service + "-" + suffix,
@@ -271,7 +262,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 		It("there shall be no oauth2 secret present in the deployment namespace", func() {
 			secret := &corev1.Secret{}
-			err := c.Get(ctx,
+			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      constants.SecretNameOauth2Proxy + "-" + suffix,
@@ -282,7 +273,7 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 
 		It("there shall be no rbac secret present in the deployment namespace", func() {
 			secret := &corev1.Secret{}
-			err := c.Get(ctx,
+			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      constants.SecretNameResourceAttributes + "-" + suffix,
@@ -290,6 +281,5 @@ var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
 			Expect(err).Should(HaveOccurred())
 			Expect(errors.IsNotFound(err)).Should(BeTrue())
 		})
-
 	}) // End of Context("when a deployment is not a target")
 })

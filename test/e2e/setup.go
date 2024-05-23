@@ -77,7 +77,7 @@ func installWebHooks(env *envtest.Environment) {
 	}
 }
 
-func createDeployment() *appsv1.Deployment {
+func createTargetDeployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",

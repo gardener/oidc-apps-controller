@@ -45,32 +45,32 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
 			statefulSet = createTargetStatefulSet()
 			Eventually(func() error {
-				return c.Create(ctx, statefulSet)
+				return clt.Create(ctx, statefulSet)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			// Target StatefulSet shall be scaled with 2 replicas
 			pod0 = createStatefulSetPod(statefulSet, "0")
 			Eventually(func() error {
-				return c.Create(ctx, pod0)
+				return clt.Create(ctx, pod0)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 			pod1 = createStatefulSetPod(statefulSet, "1")
 			Eventually(func() error {
-				return c.Create(ctx, pod1)
+				return clt.Create(ctx, pod1)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			suffix = rand.GenerateSha256(strings.Join([]string{TARGET, DEFAULT_NAMESPACE}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
-			Expect(client.IgnoreNotFound(c.Delete(ctx, statefulSet))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, pod0))).Should(Succeed())
-			Expect(client.IgnoreNotFound(c.Delete(ctx, pod1))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, statefulSet))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod0))).Should(Succeed())
+			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod1))).Should(Succeed())
 			suffix = ""
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be auth & authz sidecar containers present in the statefulset pods", func() {
 			pod := &corev1.Pod{}
-			Expect(c.Get(ctx,
+			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      TARGET + "-0",
@@ -79,7 +79,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 
 			Expect(pod.Spec.Containers).Should(HaveLen(3))
 			pod = &corev1.Pod{}
-			Expect(c.Get(ctx,
+			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: DEFAULT_NAMESPACE,
 					Name:      TARGET + "-1",
@@ -93,7 +93,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 			ingresses := networkingv1.IngressList{}
 			By("checking the ingress for the first pod")
 			Eventually(func() error {
-				if err = c.List(ctx, &ingresses,
+				if err = clt.List(ctx, &ingresses,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
@@ -116,7 +116,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 
 			By("checking the ingress for the second pod")
 			Eventually(func() error {
-				if err = c.List(ctx, &ingresses,
+				if err = clt.List(ctx, &ingresses,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
@@ -136,7 +136,6 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-1-"+podSuffix)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be oauth2 services per pod present in the statefulset namespace", func(ctx SpecContext) {
@@ -144,7 +143,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 			services := corev1.ServiceList{}
 			By("checking the service for the first pod")
 			Eventually(func() error {
-				if err = c.List(ctx, &services,
+				if err = clt.List(ctx, &services,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
@@ -165,7 +164,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 
 			By("checking the service for the second pod")
 			Eventually(func() error {
-				if err = c.List(ctx, &services,
+				if err = clt.List(ctx, &services,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
@@ -189,7 +188,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = c.List(ctx, &secrets,
+				if err = clt.List(ctx, &secrets,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
@@ -214,7 +213,7 @@ var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
 		It("there shall be a rbac secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = c.List(ctx, &secrets,
+				if err = clt.List(ctx, &secrets,
 					client.InNamespace(DEFAULT_NAMESPACE),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
