@@ -55,16 +55,18 @@ func TestSute(t *testing.T) {
 }
 
 var (
-	env  *envtest.Environment
-	cfg  *rest.Config
-	_log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
-	err  error
-
 	ctx    context.Context
 	cancel context.CancelFunc
-	m      manager.Manager
-	c      client.Client
-	sch    *runtime.Scheme
+
+	env *envtest.Environment
+	cfg *rest.Config
+	err error
+
+	mgr manager.Manager
+	clt client.Client
+	sch *runtime.Scheme
+
+	_log = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 )
 
 var _ = BeforeSuite(func() {
@@ -77,6 +79,7 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{"crds"},
 	}
 
+	// Add pod mutating webhook
 	installWebHooks(env)
 
 	// Start the test environment
@@ -87,19 +90,21 @@ var _ = BeforeSuite(func() {
 	// Disable metrics server in controller-runtime
 	metricsserver.DefaultBindAddress = "0"
 
+	// oidc-apps-controller uses autoscaling.k8s.io/v1 API to adapt VPAs of the target resources, if present
 	sch = scheme.Scheme
 	err = autoscalerv1.AddToScheme(sch)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(sch.IsGroupRegistered("autoscaling.k8s.io")).Should(BeTrue())
 
-	c, err = client.New(env.Config, client.Options{Scheme: sch})
+	// Initialize the client
+	clt, err = client.New(env.Config, client.Options{Scheme: sch})
 
 	// Initialize the test timeout context
 	ctx, cancel = context.WithCancel(context.Background())
 
 	// Verify the oidc-apps-controller pod mutating webhook is present
 	mutatingWebhookConfiguration := &admissionv1.MutatingWebhookConfiguration{}
-	err = c.Get(ctx, client.ObjectKey{
+	err = clt.Get(ctx, client.ObjectKey{
 		Namespace: "",
 		Name:      "oidc-apps-controller-pods.gardener.cloud",
 	}, mutatingWebhookConfiguration)
@@ -107,7 +112,7 @@ var _ = BeforeSuite(func() {
 	Expect(mutatingWebhookConfiguration.Webhooks).Should(HaveLen(1))
 
 	// Initialize the controller-runtime manager
-	m, err = controllerruntime.NewManager(cfg, controllerruntime.Options{
+	mgr, err = controllerruntime.NewManager(cfg, controllerruntime.Options{
 		Logger: _log,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Port:    env.WebhookInstallOptions.LocalServingPort,
@@ -120,86 +125,86 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Register the webhook server
-	server := m.GetWebhookServer()
+	server := mgr.GetWebhookServer()
 	server.Register(constants.PodWebHookPath, &webhook.Admission{Handler: &oidcappswebhook.PodMutator{
-		Client:  c,
+		Client:  clt,
 		Decoder: admission.NewDecoder(sch),
 	}})
 
-	// Set up the Oidc-Apps Deployment reconciler
-	err = controllerruntime.NewControllerManagedBy(m).
+	// Set up the deployment reconciler in oidc-apps-controller
+	err = controllerruntime.NewControllerManagedBy(mgr).
 		Named("oidc-apps-deployments").
 		For(&appsv1.Deployment{}).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestForOwner(
-				m.GetScheme(),
-				m.GetRESTMapper(),
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
 				&appsv1.Deployment{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Service{},
 			handler.EnqueueRequestForOwner(
-				m.GetScheme(),
-				m.GetRESTMapper(),
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
 				&appsv1.Deployment{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&networkingv1.Ingress{},
 			handler.EnqueueRequestForOwner(
-				m.GetScheme(),
-				m.GetRESTMapper(),
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
 				&appsv1.Deployment{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Pod{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.PodMapFuncForDeployment(m)),
+			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.PodMapFuncForDeployment(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Complete(&controllers.DeploymentReconciler{Client: m.GetClient()})
+		Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
 	Expect(err).ShouldNot(HaveOccurred())
 
-	// Set up the Oidc-Apps StatefulSet reconciler
-	err = controllerruntime.NewControllerManagedBy(m).
+	// Set up the statefulSet reconciler in oidc-apps-controller
+	err = controllerruntime.NewControllerManagedBy(mgr).
 		Named("oidc-apps-statefulsets").
 		For(&appsv1.StatefulSet{}).
 		Watches(
 			&corev1.Pod{},
 			handler.EnqueueRequestForOwner(
-				m.GetScheme(),
-				m.GetRESTMapper(),
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
 				&appsv1.StatefulSet{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestForOwner(
-				m.GetScheme(),
-				m.GetRESTMapper(),
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
 				&appsv1.StatefulSet{},
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Service{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.ServiceMapFuncForStatefulset(m)),
+			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.ServiceMapFuncForStatefulset(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&networkingv1.Ingress{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.IngressMapFuncForStatefulset(m)),
+			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.IngressMapFuncForStatefulset(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Complete(&controllers.StatefulSetReconciler{Client: m.GetClient()})
+		Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 	Expect(err).ShouldNot(HaveOccurred())
 
 	// Start the controller-runtime manager
 	go func() {
 		defer GinkgoRecover()
-		Expect(m.Start(ctx)).Should(Succeed())
+		Expect(mgr.Start(ctx)).Should(Succeed())
 	}()
 
-	// Retrieve the cache from the manager
-	Expect(m.GetCache().WaitForCacheSync(ctx)).Should(BeTrue())
+	// Sync manager cache
+	Expect(mgr.GetCache().WaitForCacheSync(ctx)).Should(BeTrue())
 
 })
 
