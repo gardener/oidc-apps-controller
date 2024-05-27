@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-var _ = Describe("Oidc Apps StatefulSets Framework Test", Ordered, func() {
+var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 	Context("when a statefulset is a target", Ordered, func() {
 		var (

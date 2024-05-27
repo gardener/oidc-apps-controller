@@ -32,7 +32,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Oidc Apps Deployment Framework Test", Ordered, func() {
+var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 	Context("when a deployment is a target", Ordered, func() {
 
