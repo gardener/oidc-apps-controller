@@ -34,9 +34,6 @@ TOOLS_DIR                   := $(REPO_ROOT)/hack/tools
 TOOLS_DIR_BIN               := $(TOOLS_DIR)/bin
 include $(REPO_ROOT)/hack/tools.mk
 
-KUBEBUILDER_ASSETS          := $(shell $(TOOLS_DIR_BIN)/setup-envtest use $(ENVTEST_K8S_VERSION) \
-									--bin-dir=$(TOOLS_DIR_BIN) -i -p env 2>/dev/null || true)
-
 .DEFAULT_GOAL := all
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -83,7 +80,7 @@ test: $(MOCKGEN)
 
 .PHONY: envtest
 envtest: $(SETUP_ENVTEST)
-	@$(KUBEBUILDER_ASSETS) && go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
+	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR_BIN)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR_BIN) -i -p path 2>/dev/null || true) go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
