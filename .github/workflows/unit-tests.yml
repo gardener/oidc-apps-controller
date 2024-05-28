@@ -23,8 +23,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '~1.22'
-      - name: Perform the test
+      - name: Perform the unit tests
         run: make test
+      - name: Perform e2e tests
+        run: make envtest
       - name: Report failure
         uses: nashmaniac/create-issue-action@v1.2
         # Only report failures of pushes (PRs are visible through the Checks section) to the default branch
