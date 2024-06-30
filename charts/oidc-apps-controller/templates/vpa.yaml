@@ -21,13 +21,13 @@ spec:
   resourcePolicy:
     containerPolicies:
       - containerName: {{ $.Chart.Name }}
-        controlledResources:
-          - cpu
-          - memory
         {{- with .Values.vpa.minAllowed }}
         minAllowed: {{ toYaml . | nindent 10 }}
         {{- end }}
         {{- with .Values.vpa.maxAllowed }}
         maxAllowed: {{ toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.vpa.controlledValues }}
+        controlledValues: {{ .Values.vpa.controlledValues }}
         {{- end }}
 {{- end }}
