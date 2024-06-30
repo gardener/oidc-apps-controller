@@ -72,18 +72,18 @@ priorityClass:
   # name: oidc-apps-controller
 
 vpa:
-  enabled: false
-  # updatePolicy:
-  #   updateMode: "Auto"
+  enabled: true
+  updatePolicy:
+    updateMode: "Auto"
   #   evictionRequirements:
   #     - resources: ["cpu", "memory"]
   #       changeRequirement: TargetHigherThanRequests
-  # minAllowed:
-  #   cpu: 50m
-  #   memory: 64Mi
+  minAllowed:
+    memory: 20Mi
   # maxAllowed:
   #   cpu: 200m
   #   memory: 256Mi
+  controlledValues: RequestsOnly
 
 nodeSelector: {}
 tolerations: []
