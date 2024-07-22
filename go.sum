@@ -255,8 +255,8 @@ k8s.io/autoscaler/vertical-pod-autoscaler v1.1.2 h1:ENxmnVXLt8+iXhDA0PNFhXb1sgvb
 k8s.io/autoscaler/vertical-pod-autoscaler v1.1.2/go.mod h1:J2cNKnieE7r4bInjpQDBq93D50aD/CmspSi6xRUfKk4=
 k8s.io/client-go v0.30.3 h1:bHrJu3xQZNXIi8/MoxYtZBBWQQXwy16zqJwloXXfD3k=
 k8s.io/client-go v0.30.3/go.mod h1:8d4pf8vYu665/kUbsxWAQ/JDBNWqfFeZnvFiVdmx89U=
-k8s.io/component-base v0.30.2 h1:pqGBczYoW1sno8q9ObExUqrYSKhtE5rW3y6gX88GZII=
-k8s.io/component-base v0.30.2/go.mod h1:yQLkQDrkK8J6NtP+MGJOws+/PPeEXNpwFixsUI7h/OE=
+k8s.io/component-base v0.30.3 h1:Ci0UqKWf4oiwy8hr1+E3dsnliKnkMLZMVbWzeorlk7s=
+k8s.io/component-base v0.30.3/go.mod h1:C1SshT3rGPCuNtBs14RmVD2xW0EhRSeLvBh7AGk1quA=
 k8s.io/klog/v2 v2.120.1 h1:QXU6cPEOIslTGvZaXvFWiP9VKyeet3sawzTOvdXb4Vw=
 k8s.io/klog/v2 v2.120.1/go.mod h1:3Jpz1GvMt720eyJH1ckRHK1EDfpxISzJ7I9OYgaDtPE=
 k8s.io/kube-aggregator v0.29.3 h1:5KvTyFN8sQq2imq8tMAHWEKoE64Zg9WSMaGX78KV6ps=
