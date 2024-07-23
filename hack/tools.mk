@@ -30,11 +30,13 @@ GOIMPORTSREVISER           := $(TOOLS_BIN_DIR)/goimports-reviser
 GO_ADD_LICENSE             := $(TOOLS_BIN_DIR)/addlicense
 MOCKGEN                    := $(TOOLS_BIN_DIR)/mockgen
 SETUP_ENVTEST		       := $(TOOLS_BIN_DIR)/setup-envtest
+GOVULNCHECK                := $(TOOLS_BIN_DIR)/govulncheck
 
 # default tool versions
 GOLANGCI_LINT_VERSION ?= v1.55.2
 GO_ADD_LICENSE_VERSION ?= v1.1.1
 GOIMPORTSREVISER_VERSION ?= v3.6.4
+GOVULNCHECK_VERSION ?= v1.1.3
 GOIMPORTS_VERSION ?= $(call version_gomod,golang.org/x/tools)
 MOCKGEN_VERSION ?= $(call version_gomod,github.com/golang/mock)
 SETUP_ENVTEST_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime/tools/setup-envtest)
@@ -89,6 +91,9 @@ $(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERS
 	@# CGO_ENABLED has to be set to 1 in order for golangci-lint to be able to load plugins
 	@# see https://github.com/golangci/golangci-lint/issues/1276
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+
+$(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
+	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
 	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)

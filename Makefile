@@ -86,6 +86,10 @@ envtest: $(SETUP_ENVTEST)
 add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK)
+	@$(GOVULNCHECK) $(REPO_ROOT)/...
+
 #################################################################
 # Rules related to Docker image build and release #
 #################################################################
