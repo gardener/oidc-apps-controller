@@ -469,6 +469,15 @@ func (c *OIDCAppsControllerConfig) GetIngressClassName(object client.Object) str
 	return ""
 }
 
+// GetIngressAnnotations returns the ingress annotations for the given target
+func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) map[string]string {
+	t := c.fetchTarget(object)
+	if t.Ingress != nil && t.Ingress.Annotations != nil {
+		return t.Ingress.Annotations
+	}
+	return nil
+}
+
 func (c *OIDCAppsControllerConfig) fetchTarget(o client.Object) Target {
 
 	var targets []Target
