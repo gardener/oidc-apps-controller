@@ -35,7 +35,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 	host := configuration.GetOIDCAppsControllerConfig().GetHost(object)
 
-	return networkingv1.Ingress{
+	ingress := networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
@@ -73,7 +73,13 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 				},
 			},
 		},
-	}, nil
+	}
+
+	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
+		ingress.ObjectMeta.Annotations = annotations
+	}
+
+	return ingress, nil
 }
 
 func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (networkingv1.Ingress, error) {
@@ -87,7 +93,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	host, domain, _ := strings.Cut(hostPrefix, ".")
 	index := fetchStrIndexIfPresent(pod)
 
-	return networkingv1.Ingress{
+	ingress := networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
@@ -126,5 +132,9 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 				},
 			},
 		},
-	}, nil
+	}
+	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
+		ingress.ObjectMeta.Annotations = annotations
+	}
+	return ingress, nil
 }
