@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -371,8 +372,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 func createOrPatchObject(ctx context.Context, c client.Client, patch client.Object) error {
 
-	//switch over tyoe
-
+	//switch over type
 	switch p := patch.(type) {
 	case *corev1.Secret:
 		return createOrPatchSecret(ctx, c, *p)
@@ -387,55 +387,78 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 
 func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secret) error {
 	secret := &corev1.Secret{}
-	client.ObjectKeyFromObject(&patch)
-	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret)
-	if err == nil {
-		patch := client.MergeFrom(&patch)
-		if err := c.Patch(ctx, secret, patch); err != nil {
-			return fmt.Errorf("failed to patch secret: %w", err)
+	// Create a secret if it does not exist
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &patch); err != nil {
+			return fmt.Errorf("failed to create ingress	: %w", err)
 		}
-	} else if apierrors.IsNotFound(err) {
-		// Object does not exist, create a new one
-		if err := c.Create(ctx, &patch); err != nil {
-			return fmt.Errorf("failed to create secret	: %w", err)
-		}
+		return nil
 	}
+
+	// Patch the secret if it exists
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		_patch := client.MergeFrom(&patch)
+		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret)
+		if err != nil {
+			return fmt.Errorf("failed to get secret: %w", err)
+		}
+		return c.Patch(ctx, secret, _patch)
+	}); err != nil {
+		return fmt.Errorf("failed to patch secret: %w", err)
+	}
+
 	return nil
+
 }
 
 func createOrPatchIngress(ctx context.Context, c client.Client, patch networkingv1.Ingress) error {
 	ingress := &networkingv1.Ingress{}
-	client.ObjectKeyFromObject(&patch)
-	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress)
-	if err == nil {
-		patch := client.MergeFrom(&patch)
-		if err := c.Patch(ctx, ingress, patch); err != nil {
-			return fmt.Errorf("failed to patch ingress: %w", err)
-		}
-	} else if apierrors.IsNotFound(err) {
-		// Object does not exist, create a new one
-		if err := c.Create(ctx, &patch); err != nil {
+
+	// Create an ingress if it does not exist
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &patch); err != nil {
 			return fmt.Errorf("failed to create ingress	: %w", err)
 		}
+		return nil
 	}
+
+	// Patch the ingress if it exists
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		_patch := client.MergeFrom(&patch)
+		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress)
+		if err != nil {
+			return fmt.Errorf("failed to get ingress: %w", err)
+		}
+		return c.Patch(ctx, ingress, _patch)
+	}); err != nil {
+		return fmt.Errorf("failed to patch ingress: %w", err)
+	}
+
 	return nil
 }
 
 func createOrPatchService(ctx context.Context, c client.Client, patch corev1.Service) error {
 	service := &corev1.Service{}
-	client.ObjectKeyFromObject(&patch)
-	err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service)
-	if err == nil {
-		patch := client.MergeFrom(&patch)
-		if err := c.Patch(ctx, service, patch); err != nil {
-			return fmt.Errorf("failed to patch service: %w", err)
-		}
-	} else if apierrors.IsNotFound(err) {
-		// Object does not exist, create a new one
-		if err := c.Create(ctx, &patch); err != nil {
+	// Create a service if it does not exist
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &patch); err != nil {
 			return fmt.Errorf("failed to create service	: %w", err)
 		}
+		return nil
 	}
+
+	// Patch the service if it exists
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		_patch := client.MergeFrom(&patch)
+		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service)
+		if err != nil {
+			return fmt.Errorf("failed to get service: %w", err)
+		}
+		return c.Patch(ctx, service, _patch)
+	}); err != nil {
+		return fmt.Errorf("failed to patch service: %w", err)
+	}
+
 	return nil
 }
 
