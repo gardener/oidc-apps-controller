@@ -87,7 +87,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		})
 
-		It("there shall be an oidc-apps ingress present in the deployment namespace", func(ctx SpecContext) {
+		It("there shall be an oidc-apps annotated ingress present in the deployment namespace", func(ctx SpecContext) {
 			ingresses := networkingv1.IngressList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
@@ -103,9 +103,15 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					if ingress.Name == constants.IngressName+"-"+suffix {
-						return nil
+					if ingress.Name != constants.IngressName+"-"+suffix {
+						continue
 					}
+					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
+					if !found || annotation != "/" {
+						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
+							constants.IngressName+"-"+suffix)
+					}
+					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-"+suffix)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
