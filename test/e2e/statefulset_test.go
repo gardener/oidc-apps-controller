@@ -118,7 +118,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-0-"+podSuffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 
 			By("checking the ingress for the second pod")
 			Eventually(func() error {
@@ -147,8 +147,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-1-"+podSuffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be oauth2 services per pod present in the statefulset namespace", func(ctx SpecContext) {
 
@@ -172,7 +172,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps service: %s is not found",
 					constants.ServiceNameOauth2Service+"-0-"+podSuffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 
 			By("checking the service for the second pod")
 			Eventually(func() error {
@@ -193,8 +193,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps service: %s is not found",
 					constants.ServiceNameOauth2Service+"-0-"+podSuffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be an oauth2 secret present in the statefulset namespace", func(ctx SpecContext) {
 
@@ -219,8 +219,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
 					constants.SecretNameOauth2Proxy+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be a rbac secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
@@ -244,8 +244,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
 					constants.SecretNameResourceAttributes+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
-
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 	})
 })

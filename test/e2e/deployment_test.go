@@ -114,8 +114,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be an oauth2 service present in the deployment namespace", func(ctx SpecContext) {
 
@@ -137,8 +137,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps service: %s is not found",
 					constants.ServiceNameOauth2Service+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be an oauth2 secret present in the deployment namespace", func(ctx SpecContext) {
 
@@ -163,8 +163,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
 					constants.SecretNameOauth2Proxy+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 
 		It("there shall be a rbac secret present in the deployment namespace", func(ctx SpecContext) {
 
@@ -189,8 +189,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				}
 				return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
 					constants.SecretNameResourceAttributes+"-"+suffix)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-		}, NodeTimeout(5*time.Second))
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
 	}) // End of Context("when a deployment is a target")
 
 	Context("when a deployment is not a target", func() {
