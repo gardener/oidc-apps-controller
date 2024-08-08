@@ -107,9 +107,15 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				for _, ingress := range ingresses.Items {
 					podSuffix = rand.GenerateSha256(TARGET + "-0-" + DEFAULT_NAMESPACE)
-					if ingress.Name == constants.IngressName+"-0-"+podSuffix {
-						return nil
+					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
+						continue
 					}
+					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
+					if !found || annotation != "/" {
+						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
+							constants.IngressName+"-"+suffix)
+					}
+					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-0-"+podSuffix)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
@@ -130,9 +136,15 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				}
 				for _, ingress := range ingresses.Items {
 					podSuffix = rand.GenerateSha256(TARGET + "-1-" + DEFAULT_NAMESPACE)
-					if ingress.Name == constants.IngressName+"-1-"+podSuffix {
-						return nil
+					if ingress.Name != constants.IngressName+"-1-"+podSuffix {
+						continue
 					}
+					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
+					if !found || annotation != "/" {
+						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
+							constants.IngressName+"-"+suffix)
+					}
+					return nil
 				}
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-1-"+podSuffix)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
