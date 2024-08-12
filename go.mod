@@ -14,7 +14,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.1.2
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.2.0
 	k8s.io/client-go v0.30.3
 	k8s.io/component-base v0.30.3
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
