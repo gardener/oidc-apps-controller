@@ -6,7 +6,7 @@ require (
 	github.com/gardener/gardener v1.92.1
 	github.com/go-logr/logr v1.4.2
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
