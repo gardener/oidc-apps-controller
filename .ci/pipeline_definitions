@@ -50,7 +50,7 @@ oidc-apps-controller:
         version:
           preprocess: "finalize"
         release:
-          nextversion: "bump_patch"
+          nextversion: "bump_minor"
           next_version_callback: ".ci/prepare_release"
           release_callback: ".ci/prepare_release"
         slack:
