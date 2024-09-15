@@ -166,7 +166,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 			// Remove the argument if present
 			for i, arg := range container.Args {
 				if strings.HasPrefix(arg, "--redirect-url") {
-					slices.Delete(patch.Spec.Containers[idx].Args, i, i+1)
+					patch.Spec.Containers[idx].Args = slices.Delete(patch.Spec.Containers[idx].Args, i, i+1)
 				}
 			}
 			// Add the correct argument

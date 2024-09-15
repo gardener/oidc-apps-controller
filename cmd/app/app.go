@@ -40,7 +40,7 @@ func NewOidcAppsController() *cobra.Command {
 		Use:           "oidc-apps-controller",
 		Short:         "This controller enhances target workloads with authentication & authorization proxies.",
 		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			logf.SetLogger(zap.New(zap.UseFlagOptions(fromFlags)))
 
 			verflag.PrintAndExitIfRequested()
