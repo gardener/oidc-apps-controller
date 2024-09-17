@@ -7,7 +7,7 @@ OPENSSL=
 LDAPSEARCH=
 
 function check_commands {
-    commands="cfssl cfssljson jq docker docker-compose kubectl curl"
+    commands="cfssl cfssljson jq docker kubectl curl"
     for cmd in $commands; do
         if ! command -v $cmd &> /dev/null; then
             printf '\u274c %s not found\n' $cmd
@@ -73,7 +73,7 @@ function check_provider_local {
     if grep -q "version v2" <<< $version ; then
         printf "\u2714 docker compose v2 found\n"
     else
-        printf "\u274c docker-compose: $version. Expected v2... and higher\n" && exit
+        printf "\u274c docker compose: $version. Expected v2... and higher\n" && exit
     fi
 }
 
