@@ -19,7 +19,7 @@ RUN --mount=type=cache,target="/root/.cache/go-build" GOOS=linux GOARCH=$TARGETA
     go build -ldflags="$LD_FLAGS" -o oidc-apps-controller ./cmd/main.go
 
 # Stage 2: Produce the runtime image
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static:nonroot AS oidc-apps-controller
 
 # Copy the binary from the build stage
 COPY --from=builder /src/oidc-apps-controller /bin/oidc-apps-controller

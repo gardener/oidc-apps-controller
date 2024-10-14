@@ -5,12 +5,16 @@ go 1.23.1
 require (
 	github.com/gardener/gardener v1.92.1
 	github.com/go-logr/logr v1.4.2
-	github.com/golang/mock v1.6.0
+	github.com/google/addlicense v1.1.1
+	github.com/incu6us/goimports-reviser/v3 v3.6.5
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/automaxprocs v1.6.0
+	go.uber.org/mock v0.4.0
+	golang.org/x/tools v0.24.0
+	golang.org/x/vuln v1.1.3
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.1
 	k8s.io/apimachinery v0.31.1
@@ -19,15 +23,19 @@ require (
 	k8s.io/component-base v0.31.1
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/controller-runtime v0.19.0
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9
 	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
+	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20240827171923-fa2c70bbbfe5 // indirect
+	github.com/spf13/afero v1.11.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/tools v0.24.0 // indirect
+	golang.org/x/mod v0.20.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 )
 

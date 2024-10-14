@@ -23,26 +23,38 @@ ifeq ($(strip $(shell go list -m 2>/dev/null)),oidc-apps-controller)
 TOOLS_PKG_PATH             := ./hack/tools
 endif
 
-TOOLS_BIN_DIR              := $(TOOLS_DIR)/bin
-GOLANGCI_LINT              := $(TOOLS_BIN_DIR)/golangci-lint
-GOIMPORTS                  := $(TOOLS_BIN_DIR)/goimports
-GOIMPORTSREVISER           := $(TOOLS_BIN_DIR)/goimports-reviser
-GO_ADD_LICENSE             := $(TOOLS_BIN_DIR)/addlicense
-MOCKGEN                    := $(TOOLS_BIN_DIR)/mockgen
-SETUP_ENVTEST		       := $(TOOLS_BIN_DIR)/setup-envtest
-GOVULNCHECK                := $(TOOLS_BIN_DIR)/govulncheck
+# linter dependency
+GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
+GO_LINT_VERSION                            ?= v1.60.3
 
-# default tool versions
-GOLANGCI_LINT_VERSION ?= v1.61.0
-GO_ADD_LICENSE_VERSION ?= v1.1.1
-GOIMPORTSREVISER_VERSION ?= v3.6.4
-GOVULNCHECK_VERSION ?= latest
-GOIMPORTS_VERSION ?= $(call version_gomod,golang.org/x/tools)
-MOCKGEN_VERSION ?= $(call version_gomod,github.com/golang/mock)
-SETUP_ENVTEST_VERSION ?= $(call version_gomod,sigs.k8s.io/controller-runtime/tools/setup-envtest)
+# test dependencies
+GINKGO                                     := $(TOOLS_DIR)/ginkgo
+GINKGO_VERSION                             ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
 
-export TOOLS_BIN_DIR := $(TOOLS_BIN_DIR)
-export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
+# goimports dependencies
+GOIMPORTS                                  := $(TOOLS_DIR)/goimports
+GOIMPORTS_VERSION                          ?= $(call version_gomod,golang.org/x/tools)
+
+# goimports_reviser dependencies
+GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
+GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
+
+MOCKGEN                                    := $(TOOLS_DIR)/mockgen
+MOCKGEN_VERSION                            ?= $(call version_gomod,go.uber.org/mock)
+
+GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
+GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
+
+SETUP_ENVTEST		                       := $(TOOLS_DIR)/setup-envtest
+SETUP_ENVTEST_VERSION                      ?= $(call version_gomod,sigs.k8s.io/controller-runtime/tools/setup-envtest)
+
+GOVULNCHECK                                := $(TOOLS_DIR)/govulncheck
+GOVULNCHECK_VERSION                        ?= $(call version_gomod,golang.org/x/vuln)
+
+GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
+GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
+
+export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 
 #########################################
@@ -57,56 +69,49 @@ export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
 
 # Use this "function" to add the version file as a prerequisite for the tool target: e.g.
 #   $(HELM): $(call tool_version_file,$(HELM),$(HELM_VERSION))
-tool_version_file = $(TOOLS_BIN_DIR)/.version_$(subst $(TOOLS_BIN_DIR)/,,$(1))_$(2)
+tool_version_file = $(TOOLS_DIR)/.version_$(subst $(TOOLS_DIR)/,,$(1))_$(2)
 
 # Use this function to get the version of a go module from go.mod
 version_gomod = $(shell go list -mod=mod -f '{{ .Version }}' -m $(1))
 
 # This target cleans up any previous version files for the given tool and creates the given version file.
 # This way, we can generically determine, which version was installed without calling each and every binary explicitly.
-$(TOOLS_BIN_DIR)/.version_%:
-	@mkdir -p  $(TOOLS_BIN_DIR)
+$(TOOLS_DIR)/.version_%:
+	@mkdir -p  $(TOOLS_DIR)
 	@version_file=$@; rm -f $${version_file%_*}*
 	@touch $@
 
-.PHONY: clean-tools-bin
-clean-tools-bin:
-	rm -rf $(TOOLS_BIN_DIR)/*
+.PHONY: clean-tools
+clean-tools:
+	rm -rf $(TOOLS_DIR)/*
 
-.PHONY: import-tools-bin
-import-tools-bin:
-ifeq ($(shell if [ -d $(TOOLS_BIN_SOURCE_DIR) ]; then echo "found"; fi),found)
-	@echo "Copying tool binaries from $(TOOLS_BIN_SOURCE_DIR)"
-	@cp -rpT $(TOOLS_BIN_SOURCE_DIR) $(TOOLS_BIN_DIR)
-endif
-
-.PHONY: create-tools-bin
-create-tools-bin: $(GOLANGCI_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(MOCKGEN) $(GOIMPORTSREVISER) $(SETUP_ENVTEST)
+.PHONY: create-tools
+create-tools: $(GO_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(GOVULNCHECK) $(MOCKGEN) $(SETUP_ENVTEST)
 
 #########################################
 # Tools                                 #
 #########################################
 
-$(GOLANGCI_LINT): $(call tool_version_file,$(GOLANGCI_LINT),$(GOLANGCI_LINT_VERSION))
+$(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
 	@# CGO_ENABLED has to be set to 1 in order for golangci-lint to be able to load plugins
 	@# see https://github.com/golangci/golangci-lint/issues/1276
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
 
 $(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+	GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+	GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
-$(GOIMPORTSREVISER): $(call tool_version_file,$(GOIMPORTSREVISER),$(GOIMPORTSREVISER_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTSREVISER_VERSION)
+$(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_REVISER_VERSION))
+	GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)
 
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
+	GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
 
 $(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
-	GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install github.com/golang/mock/mockgen@$(MOCKGEN_VERSION)
+	GOBIN=$(abspath $(TOOLS_DIR)) go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION)
 
 $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
-	@GOBIN=$(abspath $(TOOLS_BIN_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
-	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_BIN_DIR)
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
+	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR)
