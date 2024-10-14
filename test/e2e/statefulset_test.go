@@ -16,8 +16,9 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -25,8 +26,9 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
+
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
 var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
@@ -58,7 +60,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				return clt.Create(ctx, pod1)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{TARGET, DEFAULT_NAMESPACE}, "-"))
+			suffix = rand.GenerateSha256(strings.Join([]string{target, default_namespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -72,8 +74,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod := &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
-					Name:      TARGET + "-0",
+					Namespace: default_namespace,
+					Name:      target + "-0",
 				},
 				pod)).Should(Succeed())
 
@@ -81,8 +83,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod = &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
-					Name:      TARGET + "-1",
+					Namespace: default_namespace,
+					Name:      target + "-1",
 				},
 				pod)).Should(Succeed())
 
@@ -94,7 +96,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the ingress for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -106,7 +108,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(TARGET + "-0-" + DEFAULT_NAMESPACE)
+					podSuffix = rand.GenerateSha256(target + "-0-" + default_namespace)
 					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
 						continue
 					}
@@ -123,7 +125,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the ingress for the second pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -135,7 +137,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(TARGET + "-1-" + DEFAULT_NAMESPACE)
+					podSuffix = rand.GenerateSha256(target + "-1-" + default_namespace)
 					if ingress.Name != constants.IngressName+"-1-"+podSuffix {
 						continue
 					}
@@ -156,7 +158,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the service for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -164,7 +166,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(TARGET + "-0-" + DEFAULT_NAMESPACE)
+				podSuffix = rand.GenerateSha256(target + "-0-" + default_namespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-0-"+podSuffix {
 						return nil
@@ -177,7 +179,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the service for the second pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -185,7 +187,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(TARGET + "-1-" + DEFAULT_NAMESPACE)
+				podSuffix = rand.GenerateSha256(target + "-1-" + default_namespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-1-"+podSuffix {
 						return nil
@@ -201,7 +203,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
@@ -226,7 +228,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,

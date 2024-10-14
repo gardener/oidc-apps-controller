@@ -19,10 +19,6 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/webhook"
-
 	jsonpatch "github.com/evanphx/json-patch"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,6 +33,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
 var targetVPA, nonTargetVpa *autoscalerv1.VerticalPodAutoscaler

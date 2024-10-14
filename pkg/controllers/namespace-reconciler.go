@@ -17,8 +17,6 @@ package controllers
 import (
 	"context"
 
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 // NamespaceReconciler holds configuration for the reconciler

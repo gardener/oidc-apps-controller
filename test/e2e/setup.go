@@ -15,7 +15,8 @@
 package e2e
 
 import (
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"strings"
+
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -23,14 +24,15 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"strings"
+
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 const (
-	DEFAULT_NAMESPACE = "default"
-	TARGET            = "nginx"
-	NON_TARGET        = "nginx-non-target"
-	NGINX_POD         = "nginx-pod"
+	default_namespace = "default"
+	target            = "nginx"
+	non_target        = "nginx-non-target"
+	nginx_pod         = "nginx-pod"
 )
 
 func installWebHooks(env *envtest.Environment) {
@@ -64,7 +66,7 @@ func installWebHooks(env *envtest.Environment) {
 						ClientConfig: admissionv1.WebhookClientConfig{
 							Service: &admissionv1.ServiceReference{
 								Name:      "webhook-service",
-								Namespace: DEFAULT_NAMESPACE,
+								Namespace: default_namespace,
 								Path:      ptr.To(constants.PodWebHookPath),
 							},
 						},
@@ -84,9 +86,9 @@ func createTargetDeployment() *appsv1.Deployment {
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      TARGET,
-			Namespace: DEFAULT_NAMESPACE,
-			Labels:    map[string]string{"app": TARGET},
+			Name:      target,
+			Namespace: default_namespace,
+			Labels:    map[string]string{"app": target},
 			UID:       "1234",
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -116,7 +118,7 @@ func createReplicaSet(owner client.Object) *appsv1.ReplicaSet {
 	return &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "nginx-replicaset",
-			Namespace: DEFAULT_NAMESPACE,
+			Namespace: default_namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(owner, appsv1.SchemeGroupVersion.WithKind("Deployment")),
 			},
@@ -151,8 +153,8 @@ func createPod(owner client.Object) *corev1.Pod {
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      NGINX_POD,
-			Namespace: DEFAULT_NAMESPACE,
+			Name:      nginx_pod,
+			Namespace: default_namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(owner, appsv1.SchemeGroupVersion.WithKind("ReplicaSet")),
 			},
@@ -176,9 +178,9 @@ func createNonTargetDeployment() *appsv1.Deployment {
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      NON_TARGET,
-			Namespace: DEFAULT_NAMESPACE,
-			Labels:    map[string]string{"app": NON_TARGET},
+			Name:      non_target,
+			Namespace: default_namespace,
+			Labels:    map[string]string{"app": non_target},
 			UID:       "1234",
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -210,9 +212,9 @@ func createTargetStatefulSet() *appsv1.StatefulSet {
 			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      TARGET,
-			Namespace: DEFAULT_NAMESPACE,
-			Labels:    map[string]string{"app": TARGET},
+			Name:      target,
+			Namespace: default_namespace,
+			Labels:    map[string]string{"app": target},
 			UID:       "1234",
 		},
 		Spec: appsv1.StatefulSetSpec{
@@ -244,11 +246,11 @@ func createStatefulSetPod(owner client.Object, index string) *corev1.Pod {
 			Kind:       "Pod",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.Join([]string{TARGET, index}, "-"),
-			Namespace: DEFAULT_NAMESPACE,
+			Name:      strings.Join([]string{target, index}, "-"),
+			Namespace: default_namespace,
 			Labels: map[string]string{
 				"app":                                "nginx",
-				"statefulset.kubernetes.io/pod-name": strings.Join([]string{TARGET, index}, "-"),
+				"statefulset.kubernetes.io/pod-name": strings.Join([]string{target, index}, "-"),
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(owner, appsv1.SchemeGroupVersion.WithKind("StatefulSet")),

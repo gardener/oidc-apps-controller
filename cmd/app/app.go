@@ -18,14 +18,14 @@ import (
 	"flag"
 	"fmt"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
 )
 
 var _log = logf.Log
@@ -42,10 +42,14 @@ func NewOidcAppsController() *cobra.Command {
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			logf.SetLogger(zap.New(zap.UseFlagOptions(fromFlags)))
+			_log.Info("started",
+				"version", version.Get().GitVersion,
+				"revision", version.Get().GitCommit,
+				"gitTreeState", version.Get().GitTreeState,
+			)
 
 			verflag.PrintAndExitIfRequested()
 
-			_log.Info(fmt.Sprintf("VERSION: %s", version.Get().String()))
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 				_log.Info(fmt.Sprintf("FLAG: --%s=%s", flag.Name, flag.Value))
 			})

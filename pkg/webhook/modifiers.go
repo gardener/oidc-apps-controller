@@ -24,15 +24,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gardener/oidc-apps-controller/imagevector"
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/oidc-apps-controller/imagevector"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
 //go:embed oidc-check.sh

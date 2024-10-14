@@ -17,11 +17,12 @@ package e2e
 import (
 	"context"
 	"crypto/tls"
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/controllers"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
-	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
+	"path/filepath"
+	"testing"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,7 +31,6 @@ import (
 	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"path/filepath"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,15 +38,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"testing"
-	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/controllers"
+	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
+	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
 func TestSute(t *testing.T) {
@@ -118,7 +119,7 @@ var _ = BeforeSuite(func() {
 			Port:    env.WebhookInstallOptions.LocalServingPort,
 			Host:    env.WebhookInstallOptions.LocalServingHost,
 			CertDir: env.WebhookInstallOptions.LocalServingCertDir,
-			TLSOpts: []func(*tls.Config){func(config *tls.Config) {}},
+			TLSOpts: []func(*tls.Config){func(_ *tls.Config) {}},
 		}),
 		Scheme: sch,
 	})

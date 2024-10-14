@@ -21,15 +21,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
 var errSecretDoesNotExist = errors.New("secret does not exist")

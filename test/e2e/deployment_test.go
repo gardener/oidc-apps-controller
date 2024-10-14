@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -28,8 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
 var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
@@ -63,7 +63,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				return clt.Create(ctx, pod)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{TARGET, DEFAULT_NAMESPACE}, "-"))
+			suffix = rand.GenerateSha256(strings.Join([]string{target, default_namespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -78,8 +78,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			pod := &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
-					Name:      NGINX_POD,
+					Namespace: default_namespace,
+					Name:      nginx_pod,
 				},
 				pod)).Should(Succeed())
 
@@ -91,7 +91,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			ingresses := networkingv1.IngressList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -122,7 +122,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			services := corev1.ServiceList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -145,7 +145,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
@@ -171,7 +171,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(DEFAULT_NAMESPACE),
+					client.InNamespace(default_namespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,
@@ -220,7 +220,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			Eventually(func() error {
 				return clt.Create(ctx, pod)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-			suffix = rand.GenerateSha256(strings.Join([]string{NON_TARGET, DEFAULT_NAMESPACE}, "-"))
+			suffix = rand.GenerateSha256(strings.Join([]string{non_target, default_namespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -234,8 +234,8 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			pod := &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
-					Name:      NGINX_POD,
+					Namespace: default_namespace,
+					Name:      nginx_pod,
 				},
 				pod)).Should(Succeed())
 			Expect(pod.Spec.Containers).Should(HaveLen(1))
@@ -247,7 +247,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			ingress := &networkingv1.Ingress{}
 			err = clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
+					Namespace: default_namespace,
 					Name:      constants.IngressName + "-" + suffix,
 				}, ingress)
 			Expect(err).Should(HaveOccurred())
@@ -258,7 +258,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			service := &corev1.Service{}
 			err := clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
+					Namespace: default_namespace,
 					Name:      constants.ServiceNameOauth2Service + "-" + suffix,
 				}, service)
 			Expect(err).Should(HaveOccurred())
@@ -270,7 +270,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secret := &corev1.Secret{}
 			err := clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
+					Namespace: default_namespace,
 					Name:      constants.SecretNameOauth2Proxy + "-" + suffix,
 				}, secret)
 			Expect(err).Should(HaveOccurred())
@@ -281,7 +281,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secret := &corev1.Secret{}
 			err := clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: DEFAULT_NAMESPACE,
+					Namespace: default_namespace,
 					Name:      constants.SecretNameResourceAttributes + "-" + suffix,
 				}, secret)
 			Expect(err).Should(HaveOccurred())

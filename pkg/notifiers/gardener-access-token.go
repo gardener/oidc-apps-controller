@@ -20,8 +20,6 @@ import (
 	"os"
 	"time"
 
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -29,6 +27,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
+
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 var _ manager.Runnable = &gardenerAccessTokenNotifier{}

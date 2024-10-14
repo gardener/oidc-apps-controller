@@ -17,11 +17,11 @@ package main
 import (
 	"os"
 
-	"github.com/gardener/oidc-apps-controller/cmd/app"
-
 	_ "go.uber.org/automaxprocs"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	"github.com/gardener/oidc-apps-controller/cmd/app"
 )
 
 func main() {

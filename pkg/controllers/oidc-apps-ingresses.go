@@ -18,15 +18,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
-
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
 func createIngressForDeployment(object client.Object) (networkingv1.Ingress, error) {

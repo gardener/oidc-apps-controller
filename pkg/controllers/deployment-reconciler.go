@@ -17,12 +17,12 @@ package controllers
 import (
 	"context"
 
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-
 	appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 )
 
 // DeploymentReconciler holds configuration for the reconciler

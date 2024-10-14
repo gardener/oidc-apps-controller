@@ -24,13 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/oidc-apps-controller/pkg/certificates"
-	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/controllers"
-	"github.com/gardener/oidc-apps-controller/pkg/notifiers"
-	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
-
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	appsv1 "k8s.io/api/apps/v1"
@@ -59,6 +52,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/gardener/oidc-apps-controller/pkg/certificates"
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/controllers"
+	"github.com/gardener/oidc-apps-controller/pkg/notifiers"
+	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
 var (
