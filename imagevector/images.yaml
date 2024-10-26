@@ -11,7 +11,7 @@ images:
   - name: oauth2-proxy
     sourceRepository: github.com/oauth2-proxy/oauth2-proxy
     repository: quay.io/oauth2-proxy/oauth2-proxy
-    tag: "v7.6.0"
+    tag: "v7.7.1"
   - name: "curl-container"
     sourceRepository: github.com/curl/curl-container
     repository: "quay.io/curl/curl"
