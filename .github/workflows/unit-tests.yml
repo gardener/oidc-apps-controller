@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Unit tests
 
 # Trigger the workflow on pull requests and direct pushes to any branch
