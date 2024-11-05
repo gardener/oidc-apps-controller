@@ -38,81 +38,74 @@ endif
 include $(REPO_ROOT)/hack/tools.mk
 
 .DEFAULT_GOAL := all
+all: check test envtest build generate-controller-registration
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
-
-.PHONY: all
-all: check test envtest build generate-controller-registration
-
-.PHONY: build
-build: format
+tidy:
 	@go mod tidy
 	@go mod download
+
+build: tidy format
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) GOBIN=$(BIN) \
 		CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
-.PHONY: clean
 clean:
 	@rm -f $(BIN)/$(NAME)
 
-.PHONY: check
 check: format $(GO_LINT)
 	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/test/...
 	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/test/...
 
-.PHONY: format
 format:
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/test
 
-.PHONY: generate-controller-registration
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
 
-.PHONY: test
 test: $(MOCKGEN)
 	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
-.PHONY: envtest
 envtest: $(SETUP_ENVTEST)
 	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR) -i -p path 2>/dev/null || true) go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
-.PHONY: goimports
 goimports: goimports_tool goimports-reviser_tool
 
-.PHONY: goimports_tool
 goimports_tool: $(GOIMPORTS)
 	@for dir in $(SRC_DIRS); do \
 		$(GOIMPORTS) -w $$dir/; \
 	done
 
-.PHONY: goimports-reviser_tool
 goimports-reviser_tool: $(GOIMPORTS_REVISER)
 	@for dir in $(SRC_DIRS); do \
 		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
 		$(GOIMPORTS_REVISER) -recursive $$dir/; \
 	done
 
-.PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
-.PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
 	@$(GOVULNCHECK) $(REPO_ROOT)/...
+
+sast: tidy $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh
+
+sast-report: tidy $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
 
 #################################################################
 # Rules related to Docker image build and release #
 #################################################################
-.PHONY: docker-images
 docker-images:
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "oidc-apps-controller" \
 		$(IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-.PHONY: docker-push
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "oidc-apps-controller" \
 	$(IMAGE_REPOSITORY) $(IMAGE_TAG)
+
+.PHONY: add-license-headers all build check clean docker-images docker-push envtest format generate-controller-registration goimports goimports-reviser_tool goimports_tool govulncheck test tidy
