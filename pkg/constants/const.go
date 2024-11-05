@@ -39,7 +39,7 @@ const (
 	//ContainerNameKubeRbacProxy is the name of the kube-rbac-proxy container
 	ContainerNameKubeRbacProxy = "kube-rbac-proxy"
 	//SecretNameOauth2Proxy is the name of the kube-rbac-proxy container
-	SecretNameOauth2Proxy = "oauth2-proxy"
+	SecretNameOauth2Proxy = "oauth2-proxy" //#nosec G101 -- This is a false positive
 	//SecretNameResourceAttributes is the name of the resource attributes secret
 	SecretNameResourceAttributes = "resource-attributes"
 	//SecretNameKubeconfig is the name of the kubeconfig secret
