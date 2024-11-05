@@ -136,7 +136,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		err         error
 	)
 	path = filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
-	kcfg, err = os.ReadFile(filepath.Join(path, "kubeconfig"))
+	kcfg, err = os.ReadFile(filepath.Join(filepath.Clean(path), "kubeconfig"))
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
@@ -150,7 +150,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		path = os.Getenv("GARDEN_ACCESS_TOKEN")
 	}
 
-	token, err = os.ReadFile(filepath.Join(path, "token"))
+	token, err = os.ReadFile(filepath.Join(filepath.Clean(path), "token"))
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, nil
 	}

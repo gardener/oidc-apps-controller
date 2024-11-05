@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -129,7 +130,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 			o(config)
 		}
 
-		if cf, err = os.ReadFile(path); err != nil {
+		if cf, err = os.ReadFile(filepath.Clean(path)); err != nil {
 			if config.log.IsZero() {
 				log.SetLogger(zap.New(zap.UseDevMode(true)))
 				config.log = log.Log.WithName("oidcAppsExtensionConfig")

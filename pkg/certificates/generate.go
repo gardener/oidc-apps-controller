@@ -197,7 +197,7 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 		cert     *x509.Certificate
 		k        any
 	)
-	if crt, err = os.ReadFile(filepath.Join(path, string(certTLSType)+".crt")); err != nil {
+	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".crt")); err != nil {
 		return nil, err
 	}
 	if block, _ = pem.Decode(crt); block == nil {
@@ -206,7 +206,7 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
-	if key, err = os.ReadFile(filepath.Join(path, string(certTLSType)+".key")); err != nil {
+	if key, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".key")); err != nil {
 		return nil, err
 	}
 	if block, _ = pem.Decode(key); block == nil {
@@ -229,7 +229,7 @@ func loadCAFromDisk(path string) (*bundle, error) {
 		cert     *x509.Certificate
 		k        any
 	)
-	if crt, err = os.ReadFile(filepath.Join(path, string(certCAType)+".crt")); err != nil {
+	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".crt")); err != nil {
 		return nil, err
 	}
 	if block, _ = pem.Decode(crt); block == nil {
@@ -238,7 +238,7 @@ func loadCAFromDisk(path string) (*bundle, error) {
 	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
-	if key, err = os.ReadFile(filepath.Join(path, string(certCAType)+".key")); err != nil {
+	if key, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".key")); err != nil {
 		return nil, err
 	}
 	if block, _ = pem.Decode(key); block == nil {

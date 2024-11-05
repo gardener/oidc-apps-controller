@@ -85,6 +85,7 @@ func getFileSha256(filePath string) string {
 	}
 
 	hash := sha256.New()
+	filePath = filepath.Clean(filePath)
 	f, err := os.Open(filePath)
 	defer func() {
 		if err = f.Close(); err != nil {
