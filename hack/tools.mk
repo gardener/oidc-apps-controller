@@ -54,6 +54,10 @@ GOVULNCHECK_VERSION                        ?= $(call version_gomod,golang.org/x/
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
 
+# gosec
+GOSEC     	                               := $(TOOLS_DIR)/gosec
+GOSEC_VERSION		                       ?= v2.21.4
+
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 
@@ -81,12 +85,10 @@ $(TOOLS_DIR)/.version_%:
 	@version_file=$@; rm -f $${version_file%_*}*
 	@touch $@
 
-.PHONY: clean-tools
 clean-tools:
 	rm -rf $(TOOLS_DIR)/*
 
-.PHONY: create-tools
-create-tools: $(GO_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(GOVULNCHECK) $(MOCKGEN) $(SETUP_ENVTEST)
+create-tools: $(GO_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(GOVULNCHECK) $(MOCKGEN) $(SETUP_ENVTEST) $(GOSEC)
 
 #########################################
 # Tools                                 #
@@ -115,3 +117,9 @@ $(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
 $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
 	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR)
+
+$(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
+
+.PHONY: create-tools clean-tools
