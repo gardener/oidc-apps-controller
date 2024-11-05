@@ -61,6 +61,8 @@ check: format $(GO_LINT)
 format:
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/test
 
+verify: check test sast
+
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
 
