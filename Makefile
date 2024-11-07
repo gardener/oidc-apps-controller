@@ -63,6 +63,8 @@ format:
 
 verify: check sast test envtest
 
+verify-extended: check test envtest sast-report
+
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
 
@@ -110,4 +112,4 @@ docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "oidc-apps-controller" \
 	$(IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-.PHONY: add-license-headers all build check clean docker-images docker-push envtest format generate-controller-registration goimports goimports-reviser_tool goimports_tool govulncheck test tidy
+.PHONY: add-license-headers all build check clean docker-images docker-push envtest format generate-controller-registration goimports goimports-reviser_tool goimports_tool govulncheck sast sast-report test tidy verify verify-extended

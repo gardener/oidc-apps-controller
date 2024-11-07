@@ -21,3 +21,6 @@ local.ldif
 # GitGuardian
 .cache_ggshield
 .gitguardian.yaml
+
+# gosec report
+gosec-report.sarif
