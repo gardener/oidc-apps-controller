@@ -15,4 +15,4 @@ images:
   - name: "curl-container"
     sourceRepository: github.com/curl/curl-container
     repository: "quay.io/curl/curl"
-    tag: "8.10.1"
+    tag: "8.11.0"
