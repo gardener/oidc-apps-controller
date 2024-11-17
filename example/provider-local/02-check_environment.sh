@@ -185,7 +185,7 @@ function check_hosts {
         prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-aggregate-garden-0.ingress.local.seed.local.gardener.cloud
         prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
-        prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
+        prometheus-shoot-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
         plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud
     )
     for record in "${records[@]}"; do
