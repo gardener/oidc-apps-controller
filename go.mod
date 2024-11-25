@@ -6,7 +6,7 @@ require (
 	github.com/gardener/gardener v1.92.1
 	github.com/go-logr/logr v1.4.2
 	github.com/google/addlicense v1.1.1
-	github.com/incu6us/goimports-reviser/v3 v3.6.5
+	github.com/incu6us/goimports-reviser/v3 v3.8.2
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
