@@ -16,7 +16,7 @@ require (
 	golang.org/x/tools v0.27.0
 	golang.org/x/vuln v1.1.3
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.31.2
+	k8s.io/api v0.31.3
 	k8s.io/apimachinery v0.31.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.2.1
 	k8s.io/client-go v0.31.2
