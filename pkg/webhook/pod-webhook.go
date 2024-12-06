@@ -134,9 +134,6 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		)
 	}
 
-	// Add OIDC Apps init container to deployment.
-	addInitContainer(constants.ContainerNameOidcInit, &patch.Spec, getInitContainer(issuerUrl))
-
 	// Add the OAUTH2 proxy sidecar to the pod template
 	addProxyContainer(constants.ContainerNameOauth2Proxy, &patch.Spec, getOIDCProxyContainer(&patch.Spec, owner))
 
