@@ -339,7 +339,8 @@ func getInitContainer(oidcIssuerUrl string) corev1.Container {
 				Value: oidcIssuerUrl,
 			},
 		},
-		Args: []string{oidcInitCheck},
+		Args:          []string{oidcInitCheck},
+		RestartPolicy: ptr.To(corev1.ContainerRestartPolicyAlways),
 		Resources: corev1.ResourceRequirements{
 			Limits: map[corev1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("10m"),
