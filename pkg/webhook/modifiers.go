@@ -237,18 +237,6 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 
 }
 
-func addInitContainer(name string, podSpec *corev1.PodSpec, container corev1.Container) {
-	containers := podSpec.InitContainers
-	for i, c := range containers {
-		if c.Name == name {
-			podSpec.InitContainers = slices.Delete(podSpec.InitContainers, i, i+1)
-			break
-		}
-	}
-
-	podSpec.InitContainers = append(podSpec.InitContainers, container)
-}
-
 func addProxyContainer(name string, podSpec *corev1.PodSpec, container corev1.Container) {
 	containers := podSpec.Containers
 	for i, c := range containers {
@@ -322,43 +310,6 @@ func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 		}
 	}
 	return ""
-}
-
-func getInitContainer(oidcIssuerUrl string) corev1.Container {
-
-	image, _ := imagevector.ImageVector().FindImage("curl-container")
-
-	return corev1.Container{
-		Name:            "oidc-init",
-		Image:           image.String(),
-		ImagePullPolicy: "IfNotPresent",
-		Command:         []string{"sh", "-c"},
-		Env: []corev1.EnvVar{
-			{
-				Name:  "OIDC_URL",
-				Value: oidcIssuerUrl,
-			},
-		},
-		Args:          []string{oidcInitCheck},
-		RestartPolicy: ptr.To(corev1.ContainerRestartPolicyAlways),
-		Resources: corev1.ResourceRequirements{
-			Limits: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("10m"),
-				"memory": resource.MustParse("50Mi"),
-			},
-			Requests: map[corev1.ResourceName]resource.Quantity{
-				"cpu":    resource.MustParse("10m"),
-				"memory": resource.MustParse("50Mi"),
-			},
-		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      constants.KubeRbacProxyVolumeName,
-				ReadOnly:  true,
-				MountPath: "/etc/kube-rbac-proxy",
-			},
-		},
-	}
 }
 
 func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
