@@ -15,7 +15,7 @@ providerConfig:
         clientId: local
     image:
       repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/oidc-apps-controller
-      tag: v0.5.0-dev
+      tag: v0.6.0-dev
     imagePullPolicy: Always
     cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
     webhook:
