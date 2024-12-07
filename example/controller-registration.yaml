@@ -9,7 +9,7 @@ providerConfig:
   values:
     image:
       repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/oidc-apps-controller
-      tag: v0.5.0-dev
+      tag: v0.7.0-dev
     imagePullSecrets:
       - name: gardener-images
     webhook:
