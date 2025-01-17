@@ -1,6 +1,6 @@
 module github.com/gardener/oidc-apps-controller
 
-go 1.23.4
+go 1.23.5
 
 require (
 	github.com/gardener/gardener v1.92.1
