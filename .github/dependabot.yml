@@ -13,11 +13,11 @@ updates:
   ignore:
     - dependency-name: "github.com/gardener/gardener"
   commit-message:
-      prefix: ":seedling:"  
+      prefix: "chore(deps):"
 # Create PRs for golang version updates
 - package-ecosystem: docker
   directory: /
   schedule:
     interval: weekly
   commit-message:
-      prefix: ":seedling:"  
+      prefix: "chore(deps):"
