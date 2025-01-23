@@ -47,6 +47,11 @@ providerConfig:
       tag: $version
     imagePullSecrets:
       - name: gardener-images
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     webhook:
       namespaceSelector:
         matchExpressions:

@@ -46,7 +46,6 @@ providerConfig:
       capabilities:
         drop:
           - ALL
-      readOnlyRootFilesystem: true
     cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
     webhook:
       objectSelector:
