@@ -382,6 +382,11 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 		Ports: []corev1.ContainerPort{
 			{Name: "rbac", ContainerPort: 8100},
 		},
+		SecurityContext: &corev1.SecurityContext{
+			Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+			AllowPrivilegeEscalation: ptr.To(false),
+			ReadOnlyRootFilesystem:   ptr.To(true),
+		},
 		Resources:    containerResourceRequirements,
 		VolumeMounts: volumeMounts,
 	}
@@ -457,6 +462,11 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 			"--skip-provider-button=true",
 			"--skip-jwt-bearer-tokens=true",
 			"--upstream=http://127.0.0.1:8100"},
+		SecurityContext: &corev1.SecurityContext{
+			Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+			AllowPrivilegeEscalation: ptr.To(false),
+			ReadOnlyRootFilesystem:   ptr.To(true),
+		},
 		Ports: []corev1.ContainerPort{
 			{Name: "oauth2", ContainerPort: 8000},
 		},

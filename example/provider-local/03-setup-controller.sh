@@ -41,6 +41,12 @@ providerConfig:
       repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name
       tag: $version
     imagePullPolicy: Always
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
     cacheSelectorStr: "observability.gardener.cloud/app in (plutono, prometheus-shoot, prometheus-cache, prometheus-aggregate, prometheus-seed)"
     webhook:
       objectSelector:
