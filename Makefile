@@ -55,11 +55,11 @@ clean:
 	@rm -f $(BIN)/$(NAME)
 
 check: format $(GO_LINT)
-	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/test/...
-	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/test/...
+	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(SRC_DIRS)
+	 @go vet $(SRC_DIRS)
 
 format:
-	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/test
+	@gofmt -l -w $(SRC_DIRS)
 
 verify: check sast test envtest
 
