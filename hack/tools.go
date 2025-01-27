@@ -15,5 +15,6 @@ import (
 	_ "go.uber.org/mock/mockgen"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln"
+	_ "gotest.tools/gotestsum"
 	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
 )
