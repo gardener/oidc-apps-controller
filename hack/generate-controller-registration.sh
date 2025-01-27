@@ -17,8 +17,9 @@
 set -o errexit
 set -o functrace
 
-dir=$(dirname $0)
-version=${1:-$(cat $dir/../VERSION)}
+dir=$(cd "$(dirname "$0")" && pwd)
+repo_root_dir=$(cd "$dir/.." && pwd)
+version=${1:-$(cat $repo_root_dir/VERSION)}
 
 function __catch() {
   local cmd="${1:-}"
@@ -32,7 +33,7 @@ function generate_controller_registration() {
   local controller_name=$(yq -r .name "${path}/Chart.yaml")
   local chart=$(tar --sort=name -c --owner=root:0 --group=root:0 -C "$path/.." "$controller_name" | gzip -n | base64 -w0)
 
-cat <<EOF | tee "$dir/../example/controller-registration.yaml" >/dev/null 2>&1
+cat <<EOF | tee "$repo_root_dir/example/controller-registration.yaml" >/dev/null 2>&1
 ---
 apiVersion: core.gardener.cloud/v1beta1
 kind: ControllerDeployment
@@ -146,7 +147,6 @@ echo "Generated controller registration for $controller_name, version $version"
 
 }
 
-charts_dir=$(realpath "$dir/../charts/*")
-for f in $charts_dir; do
+for f in "${repo_root_dir}/charts"/*; do
     [[ -d "$f" ]] && generate_controller_registration $f;
 done
