@@ -99,35 +99,42 @@ $(TOOLS_DIR)/.version_%:
 	@touch $@
 
 clean-tools:
-	rm -rf $(TOOLS_DIR)/*
+	@rm -f $(TOOLS)
 
-create-tools: $(GO_LINT) $(GO_ADD_LICENSE) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(GOVULNCHECK) $(MOCKGEN) $(SETUP_ENVTEST) $(GOSEC)
+create-tools: tidy $(TOOLS)
 
 #########################################
 # Tools                                 #
 #########################################
 
 $(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
+	@echo "install target: $@"
 	@# CGO_ENABLED has to be set to 1 in order for golangci-lint to be able to load plugins
 	@# see https://github.com/golangci/golangci-lint/issues/1276
-	GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
+	@GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
 
 $(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
-	GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
-	GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 $(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_REVISER_VERSION))
-	GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)
 
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
-	GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
 
 $(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
-	GOBIN=$(abspath $(TOOLS_DIR)) go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION)
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION)
 
 $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
+	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
 	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR)
 
