@@ -68,12 +68,12 @@ verify-extended: check test envtest sast-report
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
 
-test: $(MOCKGEN)
-	@go generate $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	@go test $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+test: $(MOCKGEN) $(GOTESTSUM)
+	@go generate $(SRC_DIRS)
+	@$(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 envtest: $(SETUP_ENVTEST)
-	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR) -i -p path 2>/dev/null || true) go test $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
+	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR) -i -p path 2>/dev/null || true) $(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
 goimports: goimports_tool goimports-reviser_tool
 

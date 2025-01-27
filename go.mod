@@ -16,6 +16,7 @@ require (
 	golang.org/x/tools v0.29.0
 	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v2 v2.4.0
+	gotest.tools/gotestsum v1.12.0
 	k8s.io/api v0.32.1
 	k8s.io/apimachinery v0.32.1
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.2.2
@@ -28,12 +29,18 @@ require (
 )
 
 require (
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
+	github.com/dnephin/pflag v1.0.7 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/mod v0.22.0 // indirect

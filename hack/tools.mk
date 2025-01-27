@@ -58,6 +58,19 @@ GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/go
 GOSEC     	                               := $(TOOLS_DIR)/gosec
 GOSEC_VERSION		                       ?= v2.21.4
 
+GOTESTSUM                                  := $(TOOLS_DIR)/gotestsum
+GOTESTSUM_VERSION                          ?= $(call version_gomod,gotest.tools/gotestsum)
+
+TOOLS                                      := $(GO_LINT) \
+												$(GO_ADD_LICENSE) \
+												$(GOIMPORTS) \
+												$(GOIMPORTS_REVISER) \
+												$(GOVULNCHECK) \
+												$(MOCKGEN) \
+												$(SETUP_ENVTEST) \
+												$(GOSEC) \
+												$(GOTESTSUM)
+
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 
@@ -121,5 +134,9 @@ $(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERS
 $(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
+
+$(GOTESTSUM): $(call tool_version_file,$(GOTESTSUM),$(GOTESTSUM_VERSION))
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install gotest.tools/gotestsum@$(GOTESTSUM_VERSION)
 
 .PHONY: create-tools clean-tools
