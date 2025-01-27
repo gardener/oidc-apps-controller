@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	// Images YAML contains the contents of the images.yaml file.
+	// ImagesYAML contains the contents of the images.yaml file.
 	//
 	//go:embed images.yaml
 	ImagesYAML  string
