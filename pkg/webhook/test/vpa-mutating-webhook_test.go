@@ -137,31 +137,17 @@ func initNonTargetVPA() {
 
 var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 	Context("when the reconciled target has vpa", func() {
-		It("It shall contains allowMin for auth & autz proxies", func() {
+		It("It shall contain mode=Off for auth & autz proxies", func() {
 			patchedVpa := patchVpa(targetVPA)
 			_log.Info("patched pod", "patched vpa", patchedVpa)
 			Expect(patchedVpa.Spec.ResourcePolicy.ContainerPolicies).To(HaveLen(3))
 			Expect(patchedVpa.Spec.ResourcePolicy.ContainerPolicies).To(ContainElement(autoscalerv1.ContainerResourcePolicy{
 				ContainerName: constants.ContainerNameOauth2Proxy,
-				MinAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("5m"),
-					corev1.ResourceMemory: resource.MustParse("32Mi"),
-				},
-				MaxAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("100m"),
-					corev1.ResourceMemory: resource.MustParse("100Mi"),
-				},
+				Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
 			}))
 			Expect(patchedVpa.Spec.ResourcePolicy.ContainerPolicies).To(ContainElement(autoscalerv1.ContainerResourcePolicy{
 				ContainerName: constants.ContainerNameKubeRbacProxy,
-				MinAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("5m"),
-					corev1.ResourceMemory: resource.MustParse("32Mi"),
-				},
-				MaxAllowed: corev1.ResourceList{
-					corev1.ResourceCPU:    resource.MustParse("100m"),
-					corev1.ResourceMemory: resource.MustParse("100Mi"),
-				},
+				Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
 			}))
 
 		})

@@ -21,10 +21,9 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/json"
 	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -84,25 +83,11 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	}
 	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
 		ContainerName: constants.ContainerNameOauth2Proxy,
-		MinAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("5m"),
-			corev1.ResourceMemory: resource.MustParse("32Mi"),
-		},
-		MaxAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("100m"),
-			corev1.ResourceMemory: resource.MustParse("100Mi"),
-		},
+		Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
 	})
 	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
 		ContainerName: constants.ContainerNameKubeRbacProxy,
-		MinAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("5m"),
-			corev1.ResourceMemory: resource.MustParse("32Mi"),
-		},
-		MaxAllowed: corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("100m"),
-			corev1.ResourceMemory: resource.MustParse("100Mi"),
-		},
+		Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
 	})
 
 	patch.Spec.ResourcePolicy.ContainerPolicies = policies
