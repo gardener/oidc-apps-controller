@@ -25,7 +25,7 @@ endif
 
 # linter dependency
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.60.3
+GO_LINT_VERSION                            ?= v1.64.5
 
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
