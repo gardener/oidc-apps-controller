@@ -8,7 +8,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/incu6us/goimports-reviser/v3 v3.8.2
 	github.com/onsi/ginkgo/v2 v2.22.2
-	github.com/spf13/cobra v1.8.1
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/automaxprocs v1.6.0
