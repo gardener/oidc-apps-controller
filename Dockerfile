@@ -1,5 +1,5 @@
 # Stage 1: Build the Go app
-FROM golang:1.23.6 AS builder
+FROM golang:1.24.0 AS builder
 
 # Set up the working directory
 WORKDIR /src
