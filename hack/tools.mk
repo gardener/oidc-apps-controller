@@ -23,10 +23,6 @@ ifeq ($(strip $(shell go list -m 2>/dev/null)),oidc-apps-controller)
 TOOLS_PKG_PATH             := ./hack/tools
 endif
 
-# test dependencies
-GINKGO                                     := $(TOOLS_DIR)/ginkgo
-GINKGO_VERSION                             ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
-
 # goimports dependencies
 GOIMPORTS                                  := $(TOOLS_DIR)/goimports
 GOIMPORTS_VERSION                          ?= $(call version_gomod,golang.org/x/tools)
@@ -35,14 +31,8 @@ GOIMPORTS_VERSION                          ?= $(call version_gomod,golang.org/x/
 GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
 GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
 
-MOCKGEN                                    := $(TOOLS_DIR)/mockgen
-MOCKGEN_VERSION                            ?= $(call version_gomod,go.uber.org/mock)
-
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
-
-SETUP_ENVTEST		                       := $(TOOLS_DIR)/setup-envtest
-SETUP_ENVTEST_VERSION                      ?= $(call version_gomod,sigs.k8s.io/controller-runtime/tools/setup-envtest)
 
 GOVULNCHECK                                := $(TOOLS_DIR)/govulncheck
 GOVULNCHECK_VERSION                        ?= $(call version_gomod,golang.org/x/vuln)
@@ -54,18 +44,12 @@ GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/go
 GOSEC     	                               := $(TOOLS_DIR)/gosec
 GOSEC_VERSION		                       ?= v2.21.4
 
-GOTESTSUM                                  := $(TOOLS_DIR)/gotestsum
-GOTESTSUM_VERSION                          ?= $(call version_gomod,gotest.tools/gotestsum)
-
 TOOLS                                      := \
 												$(GO_ADD_LICENSE) \
 												$(GOIMPORTS) \
 												$(GOIMPORTS_REVISER) \
 												$(GOVULNCHECK) \
-												$(MOCKGEN) \
-												$(SETUP_ENVTEST) \
-												$(GOSEC) \
-												$(GOTESTSUM)
+												$(GOSEC)
 
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
@@ -119,21 +103,8 @@ $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
 
-$(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION)
-
-$(SETUP_ENVTEST): $(call tool_version_file,$(SETUP_ENVTEST),$(SETUP_ENVTEST_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(SETUP_ENVTEST_VERSION)
-	@$(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(TOOLS_DIR)
-
 $(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
-
-$(GOTESTSUM): $(call tool_version_file,$(GOTESTSUM),$(GOTESTSUM_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install gotest.tools/gotestsum@$(GOTESTSUM_VERSION)
 
 .PHONY: create-tools clean-tools

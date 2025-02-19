@@ -23,7 +23,7 @@ BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 TOOLS_DIR                   := $(REPO_ROOT)/tools
-ENVTEST_K8S_VERSION         ?= 1.30.0
+ENVTEST_K8S_VERSION         ?= 1.32.0
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -73,6 +73,7 @@ build: tidy format
 clean:
 	@rm -f $(REPO_ROOT)/build/$(NAME)
 	@rm -f $(REPO_ROOT)/gosec-report.sarif
+	@go tool setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
 
 .PHONY: check
 check: tidy format
@@ -86,6 +87,25 @@ check: tidy format
 format:
 	@gofmt -l -w $(SRC_DIRS)
 
+.PHONY: test
+test: tidy
+	@go generate $(SRC_DIRS)
+	@go tool gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+
+.PHONY: envtest
+envtest: tidy
+	@mkdir -p $(TOOLS_DIR)
+	@KUBEBUILDER_ASSETS=$(shell \
+		go tool setup-envtest \
+		use $(ENVTEST_K8S_VERSION) \
+		--bin-dir=$(TOOLS_DIR) \
+		-p path 2>/dev/null || true) \
+		go tool gotestsum \
+			--format-hide-empty-pkg \
+			$(REPO_ROOT)/test/... \
+			--ginkgo.v \
+			-timeout 10m
+
 .PHONY: verify
 verify: check sast test envtest
 
@@ -95,15 +115,6 @@ verify-extended: check test envtest sast-report
 .PHONY: generate-controller-registration
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
-
-.PHONY: test
-test: $(MOCKGEN) $(GOTESTSUM)
-	@go generate $(SRC_DIRS)
-	@$(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-
-.PHONY: envtest
-envtest: $(SETUP_ENVTEST)
-	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR) -i -p path 2>/dev/null || true) $(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
 .PHONY: goimports
 goimports: goimports_tool goimports-reviser_tool
