@@ -4,25 +4,18 @@ FROM golang:1.24.0 AS builder
 # Set up the working directory
 WORKDIR /src
 
-# Fetch Go dependencies
-COPY go.mod go.sum ./
-RUN go mod download
-
 # Copy the source code into the container
 COPY . .
+RUN go mod download
 
 # Build the application
-ENV GOCACHE=/root/.cache/go-build
-ARG TARGETARCH
-ARG LD_FLAGS
-RUN --mount=type=cache,target="/root/.cache/go-build" GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
-    go build -ldflags="$LD_FLAGS" -o oidc-apps-controller ./cmd/main.go
+RUN make build
 
 # Stage 2: Produce the runtime image
 FROM gcr.io/distroless/static:nonroot AS oidc-apps-controller
 
 # Copy the binary from the build stage
-COPY --from=builder /src/oidc-apps-controller /bin/oidc-apps-controller
+COPY --from=builder /src/build/oidc-apps-controller /bin/oidc-apps-controller
 
 # Expose the port the app runs on
 EXPOSE 10250
