@@ -31,13 +31,22 @@ endif
 IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 
 #########################################
-# Tools                                 #
+# Targets                                 #
 #########################################
 
 include $(REPO_ROOT)/hack/tools.mk
 
 .DEFAULT_GOAL := all
 all: check test envtest build
+
+.PHONY: verify
+verify: check test envtest sast
+
+.PHONY: verify-extended
+verify-extended: check test envtest sast-report
+
+.PHONY: goimports
+goimports: goimports_tool goimports-reviser_tool
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -105,19 +114,6 @@ envtest: tidy
 			$(REPO_ROOT)/test/... \
 			--ginkgo.v \
 			-timeout 10m
-
-.PHONY: verify
-verify: check sast test envtest
-
-.PHONY: verify-extended
-verify-extended: check test envtest sast-report
-
-.PHONY: generate-controller-registration
-generate-controller-registration:
-	@go generate $(REPO_ROOT)/charts/...
-
-.PHONY: goimports
-goimports: goimports_tool goimports-reviser_tool
 
 .PHONY: goimports_tool
 goimports_tool: $(GOIMPORTS)
