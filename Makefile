@@ -33,9 +33,6 @@ IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 #########################################
 # Targets                                 #
 #########################################
-
-include $(REPO_ROOT)/hack/tools.mk
-
 .DEFAULT_GOAL := all
 all: check test envtest build
 
@@ -51,7 +48,6 @@ goimports: goimports_tool goimports-reviser_tool
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
-
 .PHONY: docker-images
 docker-images:
 	@docker build \
@@ -129,7 +125,7 @@ goimports-reviser_tool: tidy
 	done
 
 .PHONY: add-license-headers
-add-license-headers: $(GO_ADD_LICENSE)
+add-license-headers: tidy
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
 .PHONY: govulncheck
