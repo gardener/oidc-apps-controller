@@ -22,7 +22,6 @@ LD_FLAGS                    := -w -s $(shell $(REPO_ROOT)/hack/get-build-ld-flag
 BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
-PKG_DIR                     := $(REPO_ROOT)/pkg
 TOOLS_DIR                   := $(REPO_ROOT)/tools
 ENVTEST_K8S_VERSION         ?= 1.30.0
 
