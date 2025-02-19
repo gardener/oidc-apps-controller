@@ -1,8 +1,6 @@
 run:
   concurrency: 4
-  # some of the linters don't work correctly with 1.18, ref https://github.com/golangci/golangci-lint/issues/2649
-  # we are not using generics, so let's pin this to 1.17 until 1.18 is fully supported
-  go: "1.23"
+  go: "1.24"
 
 linters:
   disable:
@@ -10,7 +8,7 @@ linters:
   enable:
     - revive
 
-skip-files:
+exclude-files:
   - "zz_generated\\..*\\.go$"
 
 issues:
