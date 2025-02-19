@@ -21,6 +21,7 @@ import (
 type MockCertificateOperations struct {
 	ctrl     *gomock.Controller
 	recorder *MockCertificateOperationsMockRecorder
+	isgomock struct{}
 }
 
 // MockCertificateOperationsMockRecorder is the mock recorder for MockCertificateOperations.
@@ -41,31 +42,31 @@ func (m *MockCertificateOperations) EXPECT() *MockCertificateOperationsMockRecor
 }
 
 // CreateCertificate mocks base method.
-func (m *MockCertificateOperations) CreateCertificate(arg0, arg1 *x509.Certificate, arg2, arg3 any) (*x509.Certificate, error) {
+func (m *MockCertificateOperations) CreateCertificate(template, parent *x509.Certificate, pub, priv any) (*x509.Certificate, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateCertificate", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreateCertificate", template, parent, pub, priv)
 	ret0, _ := ret[0].(*x509.Certificate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateCertificate indicates an expected call of CreateCertificate.
-func (mr *MockCertificateOperationsMockRecorder) CreateCertificate(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockCertificateOperationsMockRecorder) CreateCertificate(template, parent, pub, priv any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCertificate", reflect.TypeOf((*MockCertificateOperations)(nil).CreateCertificate), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCertificate", reflect.TypeOf((*MockCertificateOperations)(nil).CreateCertificate), template, parent, pub, priv)
 }
 
 // GenerateKey mocks base method.
-func (m *MockCertificateOperations) GenerateKey(arg0 int) (*rsa.PrivateKey, error) {
+func (m *MockCertificateOperations) GenerateKey(keyLength int) (*rsa.PrivateKey, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateKey", arg0)
+	ret := m.ctrl.Call(m, "GenerateKey", keyLength)
 	ret0, _ := ret[0].(*rsa.PrivateKey)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GenerateKey indicates an expected call of GenerateKey.
-func (mr *MockCertificateOperationsMockRecorder) GenerateKey(arg0 any) *gomock.Call {
+func (mr *MockCertificateOperationsMockRecorder) GenerateKey(keyLength any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateKey", reflect.TypeOf((*MockCertificateOperations)(nil).GenerateKey), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateKey", reflect.TypeOf((*MockCertificateOperations)(nil).GenerateKey), keyLength)
 }
