@@ -1,27 +1,23 @@
 #!/usr/bin/env bash
+
 # SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
 set -e
-dir=$(dirname $0)
+root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
+COPYRIGHT="SAP SE or an SAP affiliate company and Gardener contributors"
 
-echo "> Adding Apache License header to all go files where it is not present"
-
-temp_file=$(mktemp)
-trap "rm -f $temp_file" EXIT
-sed 's|^// *||' $dir/license_boilerplate.txt > $temp_file
-
-$dir/../tools/addlicense \
-  -f $temp_file \
-  -y "$(date +"%Y")" \
+go tool -modfile=${root_dir}/go.mod addlicense \
+  -c "$COPYRIGHT" \
   -l apache \
-  -ignore ".idea/**" \
-  -ignore ".vscode/**" \
-  -ignore "dev/**" \
+  -s=only \
+  -y "$(date +"%Y")" \
+  -ignore "${root_dir}/.git/**" \
+  -ignore "${root_dir}/.ci/**" \
+  -ignore "${root_dir}/.reuse/**" \
   -ignore "**/*.md" \
+  -ignore "**/*.html" \
   -ignore "**/*.yaml" \
   -ignore "**/Dockerfile" \
-  -ignore "pkg/component/**/*.sh" \
-  .
+  ${root_dir}

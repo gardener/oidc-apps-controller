@@ -4,6 +4,7 @@ go 1.24.0
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
+	github.com/google/addlicense
 	github.com/incu6us/goimports-reviser/v3
 	github.com/securego/gosec/v2/cmd/gosec
 	go.uber.org/mock/mockgen
@@ -16,7 +17,6 @@ tool (
 require (
 	github.com/gardener/gardener v1.112.1
 	github.com/go-logr/logr v1.4.2
-	github.com/google/addlicense v1.1.1
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
@@ -109,6 +109,7 @@ require (
 	github.com/golangci/plugin-module-register v0.1.1 // indirect
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/unconvert v0.0.0-20240309020433-c5143eacb3ed // indirect
+	github.com/google/addlicense v1.1.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/generative-ai-go v0.19.0 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
