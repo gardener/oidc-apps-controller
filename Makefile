@@ -60,59 +60,76 @@ docker-push:
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
+.PHONY: tidy
 tidy:
 	@go mod tidy
 	@go mod download
 
+.PHONY: build
 build: tidy format
 	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
+.PHONY: clean
 clean:
 	@rm -f $(BIN)/$(NAME)
 
+.PHONY: check
 check: format $(GO_LINT)
 	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(SRC_DIRS)
 	 @go vet $(SRC_DIRS)
 
+.PHONY: format
 format:
 	@gofmt -l -w $(SRC_DIRS)
 
+.PHONY: verify
 verify: check sast test envtest
 
+.PHONY: verify-extended
 verify-extended: check test envtest sast-report
 
+.PHONY: generate-controller-registration
 generate-controller-registration:
 	@go generate $(REPO_ROOT)/charts/...
 
+.PHONY: test
 test: $(MOCKGEN) $(GOTESTSUM)
 	@go generate $(SRC_DIRS)
 	@$(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
+.PHONY: envtest
 envtest: $(SETUP_ENVTEST)
 	@KUBEBUILDER_ASSETS=$(shell $(TOOLS_DIR)/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir=$(TOOLS_DIR) -i -p path 2>/dev/null || true) $(TOOLS_DIR)/gotestsum --format-hide-empty-pkg $(REPO_ROOT)/test/... --ginkgo.v -timeout 10m
 
+.PHONY: goimports
 goimports: goimports_tool goimports-reviser_tool
 
+.PHONY: goimports_tool
 goimports_tool: $(GOIMPORTS)
 	@for dir in $(SRC_DIRS); do \
 		$(GOIMPORTS) -w $$dir/; \
 	done
 
+.PHONY: goimports-reviser_tool
 goimports-reviser_tool: $(GOIMPORTS_REVISER)
 	@for dir in $(SRC_DIRS); do \
 		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
 		$(GOIMPORTS_REVISER) -recursive $$dir/; \
 	done
 
+.PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
+.PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
 	@$(GOVULNCHECK) $(REPO_ROOT)/...
 
+.PHONY: sast
 sast: tidy $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh
 
+.PHONY: sast-report
 sast-report: tidy $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
