@@ -16,12 +16,11 @@ REGISTRY                    ?= europe-docker.pkg.dev/gardener-project/snapshots/
 IMAGE_REPOSITORY            := $(REGISTRY)/$(NAME)
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
-EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
+EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse --short HEAD)
 SRC_DIRS                    := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
-LD_FLAGS                    := $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
+LD_FLAGS                    := -w -s $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-IMAGE_TAG                   := $(VERSION)
 
 PKG_DIR                     := $(REPO_ROOT)/pkg
 TOOLS_DIR                   := $(REPO_ROOT)/tools
@@ -30,6 +29,7 @@ ENVTEST_K8S_VERSION         ?= 1.30.0
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
+IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 
 #########################################
 # Tools                                 #
@@ -38,7 +38,25 @@ endif
 include $(REPO_ROOT)/hack/tools.mk
 
 .DEFAULT_GOAL := all
-all: check test envtest build generate-controller-registration
+all: check test envtest build
+
+#################################################################
+# Rules related to binary build, Docker image build and release #
+#################################################################
+
+.PHONY: docker-images
+docker-images:
+	@docker build \
+		--tag $(IMAGE_REPOSITORY):latest \
+		--tag $(IMAGE_REPOSITORY):$(IMAGE_TAG) \
+		-f Dockerfile --target oidc-apps-controller $(REPO_ROOT)
+
+.PHONY: docker-push
+docker-push:
+	@docker push $(IMAGE_REPOSITORY):latest
+	@docker push $(IMAGE_REPOSITORY):$(IMAGE_TAG)
+
+
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
@@ -47,8 +65,7 @@ tidy:
 	@go mod download
 
 build: tidy format
-	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) GOBIN=$(BIN) \
-		CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
+	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
 clean:
@@ -99,17 +116,3 @@ sast: tidy $(GOSEC)
 
 sast-report: tidy $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
-
-#################################################################
-# Rules related to Docker image build and release #
-#################################################################
-docker-images:
-	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "oidc-apps-controller" \
-		$(IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-docker-push:
-	@$(REPO_ROOT)/hack/docker-image-push.sh "oidc-apps-controller" \
-	$(IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-.PHONY: add-license-headers all build check clean docker-images docker-push envtest format generate-controller-registration goimports goimports-reviser_tool goimports_tool govulncheck sast sast-report test tidy verify verify-extended
