@@ -10,7 +10,5 @@ package tools
 
 import (
 	_ "github.com/google/addlicense"
-	_ "github.com/incu6us/goimports-reviser/v3"
-	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln"
 )

@@ -4,7 +4,9 @@ go 1.24.0
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
+	github.com/incu6us/goimports-reviser/v3
 	go.uber.org/mock/mockgen
+	golang.org/x/tools/cmd/goimports
 	gotest.tools/gotestsum
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
 )
@@ -13,14 +15,12 @@ require (
 	github.com/gardener/gardener v1.112.1
 	github.com/go-logr/logr v1.4.2
 	github.com/google/addlicense v1.1.1
-	github.com/incu6us/goimports-reviser/v3 v3.8.2
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/tools v0.30.0
 	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.2
@@ -113,6 +113,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
+	github.com/incu6us/goimports-reviser/v3 v3.8.2 // indirect
 	github.com/jgautheron/goconst v1.7.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.4 // indirect
@@ -200,6 +201,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools/gotestsum v1.12.0 // indirect

@@ -23,14 +23,6 @@ ifeq ($(strip $(shell go list -m 2>/dev/null)),oidc-apps-controller)
 TOOLS_PKG_PATH             := ./hack/tools
 endif
 
-# goimports dependencies
-GOIMPORTS                                  := $(TOOLS_DIR)/goimports
-GOIMPORTS_VERSION                          ?= $(call version_gomod,golang.org/x/tools)
-
-# goimports_reviser dependencies
-GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
-GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
-
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
 
@@ -46,8 +38,6 @@ GOSEC_VERSION		                       ?= v2.21.4
 
 TOOLS                                      := \
 												$(GO_ADD_LICENSE) \
-												$(GOIMPORTS) \
-												$(GOIMPORTS_REVISER) \
 												$(GOVULNCHECK) \
 												$(GOSEC)
 
@@ -90,14 +80,6 @@ create-tools: tidy $(TOOLS)
 $(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
-
-$(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
-
-$(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_REVISER_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)
 
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
 	@echo "install target: $@"

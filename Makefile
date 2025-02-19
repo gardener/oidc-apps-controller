@@ -116,16 +116,16 @@ envtest: tidy
 			-timeout 10m
 
 .PHONY: goimports_tool
-goimports_tool: $(GOIMPORTS)
+goimports_tool: tidy
 	@for dir in $(SRC_DIRS); do \
-		$(GOIMPORTS) -w $$dir/; \
+		go tool goimports -w $$dir/; \
 	done
 
 .PHONY: goimports-reviser_tool
-goimports-reviser_tool: $(GOIMPORTS_REVISER)
+goimports-reviser_tool: tidy
 	@for dir in $(SRC_DIRS); do \
 		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
-		$(GOIMPORTS_REVISER) -recursive $$dir/; \
+		go tool goimports-reviser -recursive $$dir/; \
 	done
 
 .PHONY: add-license-headers
