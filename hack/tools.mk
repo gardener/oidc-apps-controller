@@ -23,10 +23,6 @@ ifeq ($(strip $(shell go list -m 2>/dev/null)),oidc-apps-controller)
 TOOLS_PKG_PATH             := ./hack/tools
 endif
 
-# linter dependency
-GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.64.5
-
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
 GINKGO_VERSION                             ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
@@ -61,7 +57,7 @@ GOSEC_VERSION		                       ?= v2.21.4
 GOTESTSUM                                  := $(TOOLS_DIR)/gotestsum
 GOTESTSUM_VERSION                          ?= $(call version_gomod,gotest.tools/gotestsum)
 
-TOOLS                                      := $(GO_LINT) \
+TOOLS                                      := \
 												$(GO_ADD_LICENSE) \
 												$(GOIMPORTS) \
 												$(GOIMPORTS_REVISER) \
@@ -106,12 +102,6 @@ create-tools: tidy $(TOOLS)
 #########################################
 # Tools                                 #
 #########################################
-
-$(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
-	@echo "install target: $@"
-	@# CGO_ENABLED has to be set to 1 in order for golangci-lint to be able to load plugins
-	@# see https://github.com/golangci/golangci-lint/issues/1276
-	@GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
 
 $(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
 	@echo "install target: $@"

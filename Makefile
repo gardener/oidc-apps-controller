@@ -75,9 +75,12 @@ clean:
 	@rm -f $(REPO_ROOT)/gosec-report.sarif
 
 .PHONY: check
-check: format $(GO_LINT)
-	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(SRC_DIRS)
-	 @go vet $(SRC_DIRS)
+check: tidy format
+	@go vet $(SRC_DIRS)
+	@go tool golangci-lint run \
+	 	--config=$(REPO_ROOT)/.golangci.yaml \
+		--timeout 10m \
+		$(SRC_DIRS)
 
 .PHONY: format
 format:
