@@ -28,8 +28,6 @@ parse_flags() {
 
 parse_flags "$@"
 
-echo "> Running gosec"
-gosec --version
 if [[ "$gosec_report" != "false" ]]; then
   echo "Exporting report to $root_dir/gosec-report.sarif"
   gosec_report_parse_flags="-track-suppressions -fmt=sarif -out=gosec-report.sarif -stdout"
