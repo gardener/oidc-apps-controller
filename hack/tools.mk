@@ -26,20 +26,9 @@ endif
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
 
-GOVULNCHECK                                := $(TOOLS_DIR)/govulncheck
-GOVULNCHECK_VERSION                        ?= $(call version_gomod,golang.org/x/vuln)
-
-GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
-GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
-
-# gosec
-GOSEC     	                               := $(TOOLS_DIR)/gosec
-GOSEC_VERSION		                       ?= v2.21.4
 
 TOOLS                                      := \
-												$(GO_ADD_LICENSE) \
-												$(GOVULNCHECK) \
-												$(GOSEC)
+												$(GO_ADD_LICENSE)
 
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
@@ -77,16 +66,8 @@ create-tools: tidy $(TOOLS)
 # Tools                                 #
 #########################################
 
-$(GOVULNCHECK): $(call tool_version_file,$(GOVULNCHECK),$(GOVULNCHECK_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
-
 $(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/google/addlicense@$(GO_ADD_LICENSE_VERSION)
-
-$(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 
 .PHONY: create-tools clean-tools
