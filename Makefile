@@ -133,8 +133,8 @@ add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
 .PHONY: govulncheck
-govulncheck: $(GOVULNCHECK)
-	@$(GOVULNCHECK) $(REPO_ROOT)/...
+govulncheck: tidy
+	@go tool govulncheck $(REPO_ROOT)/...
 
 .PHONY: sast
 sast: tidy $(GOSEC)
