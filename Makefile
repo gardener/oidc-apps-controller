@@ -71,7 +71,8 @@ build: tidy format
 
 .PHONY: clean
 clean:
-	@rm -f $(BIN)/$(NAME)
+	@rm -f $(REPO_ROOT)/build/$(NAME)
+	@rm -f $(REPO_ROOT)/gosec-report.sarif
 
 .PHONY: check
 check: format $(GO_LINT)
