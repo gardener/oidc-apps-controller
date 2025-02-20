@@ -1,4 +1,15 @@
 oidc-apps-controller:
+  templates: 
+    helmcharts:
+    - &oidc-apps-controller
+      name: oidc-apps-controller
+      dir: charts/oidc-apps-controller
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:oidc-apps-controller.repository
+        attribute: image.repository
+      - ref: ocm-resource:oidc-apps-controller.tag
+        attribute: image.tag
   base_definition:
     repo:
       source_labels:
@@ -43,6 +54,9 @@ oidc-apps-controller:
         draft_release: ~
         options:
           public_build_logs: true
+        publish:
+          helmcharts:
+          - *oidc-apps-controller
     pull-request:
       traits:
         pull-request: ~
@@ -51,6 +65,9 @@ oidc-apps-controller:
             - repository: europe-docker.pkg.dev/gardener-project/releases
         options:
           public_build_logs: true
+        publish:
+          helmcharts:
+          - *oidc-apps-controller
     release:
       traits:
         version:
@@ -83,3 +100,6 @@ oidc-apps-controller:
             oidc-apps-controller:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/oidc-apps-controller
               tag_as_latest: true
+          helmcharts:
+          - <<: *oidc-apps-controller
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
