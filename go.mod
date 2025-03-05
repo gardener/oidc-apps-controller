@@ -1,6 +1,6 @@
 module github.com/gardener/oidc-apps-controller
 
-go 1.24.0
+go 1.24.1
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
