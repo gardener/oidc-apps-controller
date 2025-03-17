@@ -1,6 +1,7 @@
 module github.com/gardener/oidc-apps-controller
 
 go 1.24.1
+toolchain go1.24.1
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -24,11 +25,11 @@ require (
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.32.2
+	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.33.0-alpha.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.0
-	k8s.io/client-go v0.32.2
-	k8s.io/component-base v0.32.2
+	k8s.io/client-go v0.32.3
+	k8s.io/component-base v0.32.3
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/controller-runtime v0.20.3
 	sigs.k8s.io/yaml v1.4.0
