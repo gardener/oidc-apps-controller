@@ -19,7 +19,7 @@ set -o functrace
 
 dir=$(cd "$(dirname "$0")" && pwd)
 repo_root_dir=$(cd "$dir/.." && pwd)
-version=${1:-$(cat $repo_root_dir/VERSION)}
+version=${1:-latest}
 
 function __catch() {
   local cmd="${1:-}"
