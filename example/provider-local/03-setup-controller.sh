@@ -27,6 +27,7 @@ apiVersion: core.gardener.cloud/v1beta1
 kind: ControllerDeployment
 metadata:
   name: $controller_name
+injectGardenKubeconfig: true
 type: helm
 providerConfig:
   chart: $chart
