@@ -40,6 +40,7 @@ kind: ControllerDeployment
 metadata:
   name: $controller_name
 type: helm
+injectGardenKubeconfig: true
 providerConfig:
   chart: $chart
   values:
