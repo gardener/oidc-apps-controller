@@ -25,6 +25,12 @@ function create_certs {
         echo "generated certificate: $(openssl x509 -in dex.pem -subject -noout)"
     fi
 
+    ([[ ! -f "wildcard.pem" ]] || [[ ! -f "wildcard-key.pem" ]]) && \
+        cfssl gencert -ca ca.pem -ca-key ca-key.pem ../configs/wildcard.json | cfssljson -bare wildcard > /dev/null 2>&1
+    if [[ -n $OPENSSL ]]; then
+        echo "generated certificate: $(openssl x509 -in wildcard.pem -subject -noout)"
+    fi
+
 }
 
 create_certs
