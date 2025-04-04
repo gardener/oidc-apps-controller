@@ -1,6 +1,7 @@
 module github.com/gardener/oidc-apps-controller
 
-go 1.24.1
+go 1.24.2
+
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
 	github.com/google/addlicense
