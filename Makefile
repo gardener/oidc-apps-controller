@@ -67,30 +67,35 @@ docker-push:
 .PHONY: tidy
 tidy:
 	@go mod tidy
-	@go mod download
 
 .PHONY: build
-build: tidy format
+build: tidy check
 	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
 .PHONY: clean
 clean:
+	@echo "Running $@..."
 	@rm -f $(REPO_ROOT)/build/$(NAME)
 	@rm -f $(REPO_ROOT)/gosec-report.sarif
 	@go tool setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
 
-.PHONY: check
-check: tidy format
-	@go vet $(SRC_DIRS)
-	@go tool golangci-lint run \
-	 	--config=$(REPO_ROOT)/.golangci.yaml \
-		--timeout 10m \
-		$(SRC_DIRS)
+.PHONY: fmt
+fmt: tidy
+	@echo "Running $@..."
+	@go tool golangci-lint fmt \
+    	--config=$(REPO_ROOT)/.golangci.yaml \
+    	$(SRC_DIRS)
 
-.PHONY: format
-format:
-	@gofmt -l -w $(SRC_DIRS)
+.PHONY: check
+check: tidy fmt lint
+
+.PHONY: lint
+lint: tidy
+	@echo "Running $@..."
+	 @go tool golangci-lint run \
+	 	--config=$(REPO_ROOT)/.golangci.yaml \
+		$(SRC_DIRS)
 
 .PHONY: test
 test: tidy
