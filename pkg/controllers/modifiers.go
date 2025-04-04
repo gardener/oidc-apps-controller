@@ -375,7 +375,6 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 }
 
 func createOrPatchObject(ctx context.Context, c client.Client, patch client.Object) error {
-
 	// Switch over type
 	switch p := patch.(type) {
 	case *corev1.Secret:
@@ -415,7 +414,6 @@ func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secr
 	}
 
 	return nil
-
 }
 
 func createOrPatchIngress(ctx context.Context, c client.Client, patch networkingv1.Ingress) error {

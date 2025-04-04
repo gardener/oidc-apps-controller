@@ -242,7 +242,6 @@ func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
 }
 
 func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) predicate.GenerationChangedPredicate {
-
 	once.Do(
 		func() {
 			predicates = predicate.GenerationChangedPredicate{
@@ -421,7 +420,6 @@ func addStatefulSetController(mgr manager.Manager) error {
 
 // Add certificate manager in case no external certificate manager is available
 func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOptions) error {
-
 	if !o.useCertManager {
 		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
 		if err != nil {
@@ -457,7 +455,6 @@ func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 
 // Add namespace && image pull secret reconcilers if the registry-secret parameter is present
 func addPrivateRegistrySecretControllers(mgr manager.Manager, o *OidcAppsControllerOptions) error {
-
 	if o.registrySecret != "" {
 		imagePullSecretPredicates := predicate.GenerationChangedPredicate{
 			TypedFuncs: predicate.Funcs{

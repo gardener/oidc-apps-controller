@@ -14,6 +14,7 @@ linters:
     - revive
     - staticcheck
     - unused
+    - whitespace
   exclusions:
     generated: lax
     rules:

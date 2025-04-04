@@ -32,7 +32,6 @@ var _log = logf.Log
 
 // NewOidcAppsController returns the root command
 func NewOidcAppsController() *cobra.Command {
-
 	opts := &oidc_apps_controller.OidcAppsControllerOptions{}
 	fromFlags := &zap.Options{}
 

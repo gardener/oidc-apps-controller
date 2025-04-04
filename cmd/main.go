@@ -25,7 +25,6 @@ import (
 )
 
 func main() {
-
 	ctx := signals.SetupSignalHandler()
 	if err := app.NewOidcAppsController().ExecuteContext(ctx); err != nil {
 		runtimelog.Log.Error(err, "error executing the main command")

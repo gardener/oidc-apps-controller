@@ -230,7 +230,6 @@ func initTargetDeployment() {
 			},
 		},
 	}
-
 }
 
 func initNonTargetDeployment() {

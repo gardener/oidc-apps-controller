@@ -47,7 +47,6 @@ func TestTargetMatchLabels(t *testing.T) {
 
 	g.Expect(extensionConfig.Match(target)).To(BeTrue())
 	g.Expect(extensionConfig.Match(getNginxDeployment())).To(BeFalse())
-
 }
 
 func TestTargetIngressHostPrefix(t *testing.T) {
@@ -66,11 +65,9 @@ func TestTargetIngressHostPrefix(t *testing.T) {
 	g.Expect(len(z)).To(Equal(2))
 	g.Expect(z[0]).To(HavePrefix("test-02-prefix-"))
 	g.Expect(z[1]).To(Equal("domain.org"))
-
 }
 
 func TestTargetIngressHost(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -86,7 +83,6 @@ func TestTargetIngressHost(t *testing.T) {
 }
 
 func TestTargetWithoutIngressHost(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -102,7 +98,6 @@ func TestTargetWithoutIngressHost(t *testing.T) {
 }
 
 func TestTargetGlobalKubeSecret(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -115,11 +110,9 @@ func TestTargetGlobalKubeSecret(t *testing.T) {
 		Build()
 
 	g.Expect(extensionConfig.GetKubeSecretName(getDeployment("test-03"))).To(Equal("kubeconfig"))
-
 }
 
 func TestTargetKubeSecret(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -135,7 +128,6 @@ func TestTargetKubeSecret(t *testing.T) {
 }
 
 func TestTargetGlobalConfiguration(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -158,11 +150,9 @@ func TestTargetGlobalConfiguration(t *testing.T) {
 	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetKubeConfigStr(target)).To(Equal("Imt1YmVjb25maWci"))
 	g.Expect(extensionConfig.GetKubeSecretName(target)).To(Equal("kubeconfig"))
-
 }
 
 func TestTargetConfiguration(t *testing.T) {
-
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
@@ -212,11 +202,9 @@ func TestGardenConfig(t *testing.T) {
 
 	clientId := extensionConfig.GetClientID(target)
 	g.Expect(clientId).To(Equal("seed-client-id"))
-
 }
 
 func getDeployment(name string) *appsv1.Deployment {
-
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
