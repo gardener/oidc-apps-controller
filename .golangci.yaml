@@ -1,26 +1,34 @@
+version: "2"
+
 run:
   concurrency: 4
   go: "1.24"
 
 linters:
-  disable:
-    - unused
+  defaults: none
   enable:
     - revive
+    - staticcheck
+  exclusions:
+    generated: lax
+    rules:
+      - path: (.+)\.go$
+        text: var-naming
+      - path: (.+)\.go$
+        text: dot-imports
+      - path: (.+)\.go$
+        text: package-comments
+      - path: (.+)\.go$
+        text: indent-error-flow
+      - path: (.+)\.go$
+        text: unexported-return
+      - path: (.+)\.go$
+        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
+      - path: (.+)\.go$
+        text: 'undeclared name: `.*`'
+      - path: (.+)\.go$
+        text: '".*" imported but not used'
 
-exclude-files:
-  - "zz_generated\\..*\\.go$"
-
-issues:
-  exclude-use-default: false
-  exclude:
-    # revive
-    - var-naming # ((var|const|struct field|func) .* should be .*
-    - dot-imports # should not use dot imports
-    - package-comments # package comment should be of the form
-    - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
-    - unexported-return # exported func .* returns unexported type .*, which can be annoying to use
-    - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
-    # typecheck:
-    - "undeclared name: `.*`"
-    - '".*" imported but not used'
+formatters:
+  enable:
+    - gofmt
