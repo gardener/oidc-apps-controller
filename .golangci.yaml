@@ -13,6 +13,7 @@ linters:
     - nlreturn
     - revive
     - staticcheck
+    - unused
   exclusions:
     generated: lax
     rules:
