@@ -92,6 +92,7 @@ func addPodLabels(pod *corev1.Pod, lbls map[string]string) {
 	labels[constants.GardenerPrivateLabelsKey] = "allowed"
 	if len(lbls) == 0 {
 		pod.SetLabels(labels)
+
 		return
 	}
 	maps.Copy(labels, lbls)
@@ -106,6 +107,7 @@ func addPodAnnotations(pod *corev1.Pod, ann map[string]string) {
 
 	if len(ann) == 0 {
 		pod.SetAnnotations(annotations)
+
 		return
 	}
 	maps.Copy(annotations, ann)
@@ -121,6 +123,7 @@ func addImagePullSecret(secretName string, podSpec *corev1.PodSpec) {
 		podSpec.ImagePullSecrets = []corev1.LocalObjectReference{
 			{Name: secretName},
 		}
+
 		return
 	}
 	// Check to see if it is present
@@ -145,6 +148,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 		if v.Name == volumeName {
 			volume = podSpec.Volumes[i] // Fetch the volume if it is present
 			appendVolume = false
+
 			break
 		}
 	}
@@ -168,6 +172,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 		if appendVolume {
 			podSpec.Volumes = append(podSpec.Volumes, volume)
 		}
+
 		return
 	}
 
@@ -179,6 +184,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 		if appendVolume {
 			podSpec.Volumes = append(podSpec.Volumes, volume)
 		}
+
 		return
 	}
 
@@ -189,6 +195,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 			if appendVolume {
 				podSpec.Volumes = append(podSpec.Volumes, volume)
 			}
+
 			return
 		}
 	}
@@ -211,6 +218,7 @@ func addProxyContainer(name string, podSpec *corev1.PodSpec, container corev1.Co
 	for i, c := range containers {
 		if c.Name == name {
 			podSpec.Containers = slices.Delete(podSpec.Containers, i, i+1)
+
 			break
 		}
 	}
@@ -250,6 +258,7 @@ func fetchTargetSuffix(object client.Object) string {
 		objectAnnotations[constants.AnnotationSuffixKey] = suffix
 		object.SetAnnotations(objectAnnotations)
 	}
+
 	return suffix
 }
 
@@ -278,6 +287,7 @@ func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -307,6 +317,7 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 						MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 					}
 					volumeMounts = append(volumeMounts, serviceAccountVolumeMount)
+
 					break
 				}
 			}
@@ -447,6 +458,7 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 		// Add volume mount and start parameter if the secret name is provided
 		container.Args = append(container.Args, "--provider-ca-file=/etc/oauth2-proxy/ca.crt")
 	}
+
 	return container
 }
 
@@ -480,5 +492,6 @@ func shallAddOidcCaSecretName(object client.Object) bool {
 	if configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object) != "" {
 		return true
 	}
+
 	return configuration.GetOIDCAppsControllerConfig().GetOidcCASecretName(object) != ""
 }

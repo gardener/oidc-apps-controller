@@ -170,6 +170,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 			patch.Spec.Containers[idx].Args = append(patch.Spec.Containers[idx].Args,
 				fmt.Sprintf("--redirect-url=https://%s/oauth2/callback", host),
 			)
+
 			break
 		}
 	}
@@ -183,6 +184,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	if err != nil {
 		_log.Info("Unable to marshal pod")
 	}
+
 	return admission.PatchResponseFromRaw(original, patched)
 }
 
@@ -199,8 +201,10 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 			if err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()},
 				statefulset); err != nil {
 				log.FromContext(ctx).Error(err, "unable to get statefulset for object", "object", pod)
+
 				return false, nil
 			}
+
 			return configuration.GetOIDCAppsControllerConfig().Match(statefulset), statefulset
 		}
 
@@ -208,6 +212,7 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 			replicaset := &appsv1.ReplicaSet{}
 			if err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()}, replicaset); err != nil {
 				log.FromContext(ctx).Error(err, "unable to get replicaset for object", "object", pod)
+
 				return false, nil
 			}
 			deployment := &appsv1.Deployment{}
@@ -215,11 +220,14 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 				Namespace: pod.GetNamespace()},
 				deployment); err != nil {
 				log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", pod)
+
 				return false, nil
 			}
+
 			return configuration.GetOIDCAppsControllerConfig().Match(deployment), deployment
 
 		}
 	}
+
 	return false, nil
 }

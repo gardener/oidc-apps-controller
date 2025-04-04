@@ -46,6 +46,7 @@ var _log = logf.Log.WithName("gardener-access-token-notifier")
 func NewGardenerAccessTokenNotifier(c client.Client, kubeconfigPath, tokenPath string) manager.Runnable {
 
 	_log.Info("Creating notifier", "kubeconfig", kubeconfigPath, "token", tokenPath)
+
 	return &gardenerAccessTokenNotifier{
 		kubeconfigPath: kubeconfigPath,
 		tokenPath:      tokenPath,
@@ -70,6 +71,7 @@ func (g *gardenerAccessTokenNotifier) Start(ctx context.Context) error {
 
 	// Updating secrets upon controller restart
 	g.updateSecrets(ctx)
+
 	return nil
 }
 
@@ -86,6 +88,7 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 				if kubeconfigHash != g.hashes["kubeconfig"] {
 					g.hashes["kubeconfig"] = kubeconfigHash
 					hashPathChan <- kubeconfigHash
+
 					continue
 				}
 				tokenHash := getFileSha256(g.tokenPath)
@@ -96,10 +99,12 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 			case <-ctx.Done():
 				ticker.Stop()
 				close(hashPathChan)
+
 				return
 			}
 		}
 	}()
+
 	return hashPathChan
 }
 
@@ -108,12 +113,14 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 	tokenBytes, err := os.ReadFile(g.tokenPath)
 	if err != nil {
 		_log.Error(err, "error reading access token")
+
 		return
 	}
 	tokenBytes = bytes.TrimSpace(tokenBytes)
 	kubeConfigBytes, err := os.ReadFile(g.kubeconfigPath)
 	if err != nil {
 		_log.Error(err, "error reading kubeconfig")
+
 		return
 	}
 	kubeConfigBytes = bytes.TrimSpace(kubeConfigBytes)
@@ -125,6 +132,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 	for i, n := range kubeConfig.AuthInfos {
 		if n.Name != "extension" {
+
 			continue
 		}
 		kubeConfig.AuthInfos[i].AuthInfo.TokenFile = ""
@@ -143,6 +151,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 		},
 	); err != nil {
 		_log.Error(err, "error fetching kubeconfig secretes")
+
 		return
 	}
 	for _, secret := range kubeConfigList.Items {
@@ -152,6 +161,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 				_log.V(9).Info("No kubeconfig change in the target secret, skipping",
 					"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 				)
+
 				continue
 			}
 		}

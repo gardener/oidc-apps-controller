@@ -78,6 +78,7 @@ func (n *NamespaceReconciler) Reconcile(ctx context.Context, request reconcile.R
 		// Secret does not exist, create it
 		if err := n.Client.Create(ctx, secretCopy); err != nil {
 			_log.Info("Created private registry secret")
+
 			return reconcile.Result{}, err
 		}
 	}

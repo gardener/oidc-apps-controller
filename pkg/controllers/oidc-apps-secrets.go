@@ -87,6 +87,7 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 		configuration.WithNamespace(targetNamespace),
 		configuration.WithSubresource(object.GetName()),
 	).Parse()
+
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.SecretNameResourceAttributes + "-" + suffix,
@@ -127,6 +128,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 			},
 			StringData: map[string]string{"kubeconfig": string(kubeconfig)},
 		}
+
 		return secret, nil
 	}
 
@@ -209,6 +211,7 @@ func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 			},
 			StringData: map[string]string{"ca.crt": oidcCABundle},
 		}
+
 		return secret, nil
 	}
 

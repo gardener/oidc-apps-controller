@@ -237,6 +237,7 @@ func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
 			_log.Info("Set domain name env variable", constants.GARDEN_SEED_DOMAIN_NAME, h)
 		}
 	}
+
 	return nil
 }
 
@@ -250,36 +251,44 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 					CreateFunc: func(e event.CreateEvent) bool {
 						if extensionConfig.Match(e.Object) {
 							_log.V(9).Info("create event", "name", e.Object.GetName(), "namespace", e.Object.GetNamespace())
+
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
+
 						return found
 					},
 					DeleteFunc: func(e event.DeleteEvent) bool {
 						if extensionConfig.Match(e.Object) {
 							_log.V(9).Info("delete event", "name", e.Object.GetName(), "namespace",
 								e.Object.GetNamespace())
+
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
+
 						return found
 					},
 					UpdateFunc: func(e event.UpdateEvent) bool {
 						if extensionConfig.Match(e.ObjectNew) {
 							_log.V(9).Info("update event", "name", e.ObjectNew.GetName(), "namespace",
 								e.ObjectNew.GetNamespace())
+
 							return true
 						}
 						_, found := e.ObjectNew.GetLabels()[constants.LabelKey]
+
 						return found
 					},
 					GenericFunc: func(e event.GenericEvent) bool {
 						if extensionConfig.Match(e.Object) {
 							_log.V(9).Info("generic event", "name", e.Object.GetName(), "namespace",
 								e.Object.GetNamespace())
+
 							return true
 						}
 						_, found := e.Object.GetLabels()[constants.LabelKey]
+
 						return found
 					},
 				},
@@ -300,6 +309,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 			if value, exists := secret.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
+
 			return nil
 		},
 	); err != nil {
@@ -315,6 +325,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 			if value, exists := service.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
+
 			return nil
 		},
 	); err != nil {
@@ -330,11 +341,13 @@ func initializeManagerIndices(mgr manager.Manager) error {
 			if value, exists := ingress.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
+
 			return nil
 		},
 	); err != nil {
 		return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", networkingv1.Ingress{}, err)
 	}
+
 	return nil
 }
 
@@ -414,6 +427,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOpti
 		if err != nil {
 			return err
 		}
+
 		return mgr.Add(certManager)
 	}
 
@@ -434,8 +448,10 @@ func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 			filepath.Join(kubeconfigPath, "kubeconfig"),
 			filepath.Join(tokenPath, "token"),
 		)
+
 		return mgr.Add(accessTokenNotifier)
 	}
+
 	return nil
 }
 
@@ -480,6 +496,7 @@ func addPrivateRegistrySecretControllers(mgr manager.Manager, o *OidcAppsControl
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -513,7 +530,6 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 
 	// Add the server to the manager
 	return mgr.Add(webhookServer)
-
 }
 
 // IsOidcAppsPod returns true if the pod is an oidc-apps enabled pod
@@ -521,9 +537,11 @@ func IsOidcAppsPod(pod *corev1.Pod) bool {
 	for _, c := range pod.Spec.Containers {
 		if c.Name == constants.ContainerNameOauth2Proxy || c.Name == constants.ContainerNameKubeRbacProxy {
 			_log.V(9).Info("oidc-apps enabled pod", "pod", pod.Name)
+
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -554,6 +572,7 @@ func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj 
 					_log.Error(err, "could not get deployment", "name", d.Name, "namespace", rs.Namespace)
 				}
 				_log.V(9).Info("enqueue deployment", "name", deployment.Name, "namespace", deployment.Namespace)
+
 				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}}}
 			}
 		}
@@ -590,9 +609,11 @@ func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 				}
 				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace",
 					statefulset.Namespace)
+
 				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
 			}
 		}
+
 		return nil
 	}
 }
@@ -624,6 +645,7 @@ func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
 				}
 				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
+
 				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
 			}
 		}

@@ -136,5 +136,6 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
 		ingress.Annotations = annotations
 	}
+
 	return ingress, nil
 }

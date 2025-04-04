@@ -149,6 +149,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 		}
 
 	})
+
 	return config
 }
 
@@ -167,6 +168,7 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -286,8 +288,10 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 		if decodedBytes, err = base64.StdEncoding.DecodeString(t.Configuration.OidcCABundle); err != nil {
 			c.log.Error(err, "failed to decode oidc ca bundle")
+
 			return ""
 		}
+
 		return string(decodedBytes)
 	}
 	if c.Configuration.OidcCABundle != "" {
@@ -296,8 +300,10 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 	if decodedBytes, err = base64.StdEncoding.DecodeString(oidcCABundle); err != nil {
 		c.log.Error(err, "failed to decode oidc ca bundle")
+
 		return ""
 	}
+
 	return string(decodedBytes)
 }
 
@@ -336,6 +342,7 @@ func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string
 		c.Configuration.Oauth2Proxy.OidcIssuerURL != "" {
 		return c.Configuration.Oauth2Proxy.OidcIssuerURL
 	}
+
 	return ""
 }
 
@@ -352,6 +359,7 @@ func (c *OIDCAppsControllerConfig) GetClientSecret(object client.Object) string 
 		c.Configuration.Oauth2Proxy.ClientSecret != "" {
 		return c.Configuration.Oauth2Proxy.ClientSecret
 	}
+
 	return ""
 }
 
@@ -367,6 +375,7 @@ func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
 		c.Configuration.Oauth2Proxy.Scope != "" {
 		return c.Configuration.Oauth2Proxy.Scope
 	}
+
 	return ""
 }
 
@@ -417,6 +426,7 @@ func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object
 		c.Configuration.Oauth2Proxy.SSLInsecureSkipVerify != nil {
 		return ptr.Deref(c.Configuration.Oauth2Proxy.SSLInsecureSkipVerify, false)
 	}
+
 	return false
 }
 
@@ -433,6 +443,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
 
 	}
+
 	return false
 }
 
@@ -449,6 +460,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object
 		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
 
 	}
+
 	return false
 }
 
@@ -458,6 +470,7 @@ func (c *OIDCAppsControllerConfig) GetIngressTLSSecretName(object client.Object)
 	if t.Ingress != nil && t.Ingress.TLSSecretRef.Name != "" {
 		return t.Ingress.TLSSecretRef.Name
 	}
+
 	return ""
 }
 
@@ -467,6 +480,7 @@ func (c *OIDCAppsControllerConfig) GetIngressClassName(object client.Object) str
 	if t.Ingress != nil {
 		return t.Ingress.IngressClassName
 	}
+
 	return ""
 }
 
@@ -476,6 +490,7 @@ func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) m
 	if t.Ingress != nil && t.Ingress.Annotations != nil {
 		return t.Ingress.Annotations
 	}
+
 	return nil
 }
 
@@ -495,6 +510,7 @@ func (c *OIDCAppsControllerConfig) fetchTarget(o client.Object) Target {
 	if len(targets) > 0 {
 		return targets[0]
 	}
+
 	return Target{}
 }
 
@@ -526,6 +542,7 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 		// We don't have a label selector for this target, matching only the namespace selector
 		return namespaceSelector.Matches(labels.Set(namespace.GetLabels()))
 	}
+
 	return selector.Matches(labels.Set(o.GetLabels())) && namespaceSelector.Matches(labels.Set(namespace.GetLabels()))
 }
 

@@ -31,6 +31,7 @@ func isAnOwnedResource(owner, owned client.Object) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -67,5 +68,6 @@ func deleteOwnedResources(ctx context.Context, c client.Client, object client.Ob
 		}
 		_log.V(9).Info("Deleted", "name", s.Name, "namespace", s.Namespace)
 	}
+
 	return nil
 }

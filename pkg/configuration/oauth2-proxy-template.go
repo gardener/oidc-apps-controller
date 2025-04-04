@@ -95,6 +95,7 @@ func (o *oauth2Config) Parse() string {
 	}
 
 	b := builder.String()
+
 	return strings.TrimSuffix(b, "\n")
 }
 
@@ -104,6 +105,7 @@ func NewOAuth2Config(opts ...optOauth2) configParser {
 	for _, o := range opts {
 		o(&cfg)
 	}
+
 	return &cfg
 }
 

@@ -100,6 +100,7 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	if err != nil {
 		_log.Info("Unable to marshal vpa")
 	}
+
 	return admission.PatchResponseFromRaw(original, patched)
 }
 
@@ -109,16 +110,20 @@ func isTargetRefMatched(ctx context.Context, c client.Client, namespace string, 
 		deployment := &appsv1.Deployment{}
 		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, deployment); err != nil {
 			log.FromContext(ctx).V(9).Info("unable to get deployment", "name", ref.Name)
+
 			return false
 		}
+
 		return configuration.GetOIDCAppsControllerConfig().Match(deployment)
 
 	case "StatefulSet":
 		statefulset := &appsv1.StatefulSet{}
 		if err := c.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: namespace}, statefulset); err != nil {
 			log.FromContext(ctx).V(9).Info("unable to get statefulset", "name", ref.Name)
+
 			return false
 		}
+
 		return configuration.GetOIDCAppsControllerConfig().Match(statefulset)
 	}
 
