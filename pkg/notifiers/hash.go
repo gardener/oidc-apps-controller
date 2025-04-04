@@ -37,16 +37,19 @@ func getFileSha256(filePath string) string {
 	hash := sha256.New()
 	filePath = filepath.Clean(filePath)
 	f, err := os.Open(filePath)
+
 	defer func() {
 		if err = f.Close(); err != nil {
 			_log.Error(err, "error closing file", "path", filePath)
 		}
 	}()
+
 	if err != nil {
 		_log.Error(err, "error opening file", "path", filePath)
 
 		return ""
 	}
+
 	if _, err = io.Copy(hash, f); err != nil {
 		_log.Error(err, "error reading file", "path", filePath)
 

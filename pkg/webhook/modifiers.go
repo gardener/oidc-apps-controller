@@ -40,17 +40,21 @@ func addAnnotations(object client.Object) {
 	if len(annotations) == 0 {
 		annotations = make(map[string]string, 5)
 	}
+
 	annotations[constants.AnnotationKey] = object.GetName()
 	annotations[constants.AnnotationHostKey] = configuration.GetOIDCAppsControllerConfig().GetHost(object)
 	annotations[constants.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
 	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
 	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
+
 	object.SetAnnotations(annotations)
 }
 
 func get2ProxySecretChecksum(object client.Object) string {
-	extConfig := configuration.GetOIDCAppsControllerConfig()
 	var cfg string
+
+	extConfig := configuration.GetOIDCAppsControllerConfig()
+
 	switch extConfig.GetClientSecret(object) {
 	case "":
 		cfg = configuration.NewOAuth2Config(
@@ -87,13 +91,16 @@ func addPodLabels(pod *corev1.Pod, lbls map[string]string) {
 	if len(labels) == 0 {
 		labels = make(map[string]string, 2)
 	}
+
 	labels[constants.GardenerPublicLabelsKey] = "allowed"
 	labels[constants.GardenerPrivateLabelsKey] = "allowed"
+
 	if len(lbls) == 0 {
 		pod.SetLabels(labels)
 
 		return
 	}
+
 	maps.Copy(labels, lbls)
 	pod.SetLabels(labels)
 }
@@ -109,6 +116,7 @@ func addPodAnnotations(pod *corev1.Pod, ann map[string]string) {
 
 		return
 	}
+
 	maps.Copy(annotations, ann)
 	pod.SetAnnotations(annotations)
 }
@@ -143,6 +151,7 @@ func addImagePullSecret(secretName string, podSpec *corev1.PodSpec) {
 func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *corev1.PodSpec) {
 	volume := corev1.Volume{Name: volumeName}
 	appendVolume := true // Assume that there is no such volume
+
 	for i, v := range podSpec.Volumes {
 		if v.Name == volumeName {
 			volume = podSpec.Volumes[i] // Fetch the volume if it is present
@@ -191,6 +200,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	for _, source := range volume.Projected.Sources {
 		if source.Secret.Name == secretName {
 			source.Secret = secret
+
 			if appendVolume {
 				podSpec.Volumes = append(podSpec.Volumes, volume)
 			}
@@ -250,10 +260,12 @@ func fetchTargetSuffix(object client.Object) string {
 	if len(objectAnnotations) == 0 {
 		objectAnnotations = make(map[string]string, 1)
 	}
+
 	suffix, ok := objectAnnotations[constants.AnnotationSuffixKey]
 	if !ok {
 		suffix = rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 		objectAnnotations[constants.AnnotationSuffixKey] = suffix
+
 		object.SetAnnotations(objectAnnotations)
 	}
 
@@ -262,10 +274,12 @@ func fetchTargetSuffix(object client.Object) string {
 
 func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 	before, after, _ := strings.Cut(target, ",")
+
 	protocol, f := strings.CutPrefix(before, "protocol=")
 	if !f {
 		protocol = "http"
 	}
+
 	port, _ := strings.CutPrefix(after, " port=")
 
 	if len(port) == 0 {
@@ -291,6 +305,7 @@ func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 
 func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
 	image, _ := imagevector.ImageVector().FindImage("kube-rbac-proxy-watcher")
+
 	if pod == nil {
 		return corev1.Container{}
 	}
@@ -331,15 +346,18 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 			"memory": resource.MustParse("32Mi"),
 		},
 	}
+
 	for _, c := range pod.Spec.Containers {
 		if c.Name != constants.ContainerNameKubeRbacProxy {
 			continue
 		}
+
 		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
 			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
 				containerResourceRequirements.Limits = c.Resources.Limits
 			}
 		}
+
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
 			if c.Resources.Requests.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
 				containerResourceRequirements.Requests = c.Resources.Requests
@@ -407,15 +425,18 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 			"memory": resource.MustParse("32Mi"),
 		},
 	}
+
 	for _, c := range pod.Containers {
 		if c.Name != constants.ContainerNameOauth2Proxy {
 			continue
 		}
+
 		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
 			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
 				containerResourceRequirements.Limits = c.Resources.Limits
 			}
 		}
+
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
 			if c.Resources.Requests.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
 				containerResourceRequirements.Requests = c.Resources.Requests
@@ -465,7 +486,6 @@ func shallAddKubeConfigSecretName(object client.Object) bool {
 	// 2. The controller is running as a gardener extension, meaning that there is a mounted secret in the controller pod.
 	// If either of these is missing the kube-rbac-proxy sidecar will be started without --kubeconfig setting using
 	// the pod service account to creat the SubjectAccessReview requests
-
 	if configuration.GetOIDCAppsControllerConfig().GetKubeConfigStr(object) != "" {
 		return true
 	}
@@ -473,10 +493,13 @@ func shallAddKubeConfigSecretName(object client.Object) bool {
 	if configuration.GetOIDCAppsControllerConfig().GetKubeSecretName(object) != "" {
 		return true
 	}
+
 	d := filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
+
 	if _, err := os.Stat(filepath.Join(d, "kubeconfig")); err != nil {
 		return false
 	}
+
 	if _, err := os.Stat(filepath.Join(d, "token")); err != nil {
 		return false
 	}

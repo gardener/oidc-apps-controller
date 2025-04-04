@@ -35,10 +35,11 @@ import (
 var errSecretDoesNotExist = errors.New("secret does not exist")
 
 func createOauth2Secret(object client.Object) (corev1.Secret, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
-
-	extConfig := configuration.GetOIDCAppsControllerConfig()
 	var cfg string
+
+	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	extConfig := configuration.GetOIDCAppsControllerConfig()
+
 	switch extConfig.GetClientSecret(object) {
 	case "":
 		cfg = configuration.NewOAuth2Config(
@@ -115,6 +116,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		if err = yaml.Unmarshal(decodestr, &kubeConfig); err != nil {
 			return corev1.Secret{}, fmt.Errorf("kubeconfig %s, is not in the expected format: %w", decodestr, err)
 		}
+
 		kubeconfig, _ := yaml.Marshal(kubeConfig)
 
 		secret := corev1.Secret{
@@ -137,11 +139,14 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		kcfg, token []byte
 		err         error
 	)
+
 	path = filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
 	kcfg, err = os.ReadFile(filepath.Join(filepath.Clean(path), "kubeconfig"))
+
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
+
 	if err != nil {
 		return corev1.Secret{}, fmt.Errorf("error creating kubeconfig secret: %w", err)
 	}
@@ -156,6 +161,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, nil
 	}
+
 	if err != nil {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
@@ -168,10 +174,12 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 	if err != nil {
 		return corev1.Secret{}, fmt.Errorf("rror creating kubeconfig secret: %w", err)
 	}
+
 	for i, n := range kubeConfig.AuthInfos {
 		if n.Name != "extension" {
 			continue
 		}
+
 		kubeConfig.AuthInfos[i].AuthInfo.TokenFile = ""
 		kubeConfig.AuthInfos[i].AuthInfo.Token = string(token)
 	}
@@ -196,6 +204,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 
 func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+
 	oidcCABundle := configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object)
 	if len(oidcCABundle) > 0 {
 		// TODO: verify the oidcCABundle str, it shall be CA certificates in PEM format

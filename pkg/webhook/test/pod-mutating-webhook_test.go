@@ -558,7 +558,9 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 
 func patchPod(pod *corev1.Pod) *corev1.Pod {
 	raw, err := json.Marshal(pod)
+
 	Expect(err).NotTo(HaveOccurred())
+
 	req := admission.Request{
 		AdmissionRequest: adminssionv1.AdmissionRequest{
 			UID:       "uid-request",
@@ -584,7 +586,9 @@ func patchPod(pod *corev1.Pod) *corev1.Pod {
 	// Apply the patch
 	patchPodBytes, err := decodedPatch.Apply(raw)
 	Expect(err).NotTo(HaveOccurred())
+
 	var patchedPod = &corev1.Pod{}
+
 	err = json.Unmarshal(patchPodBytes, &patchedPod)
 	Expect(err).NotTo(HaveOccurred())
 

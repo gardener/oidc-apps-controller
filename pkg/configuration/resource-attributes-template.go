@@ -64,6 +64,7 @@ func NewResourceAttributes(opt ...optRAttributes) configParser {
 		},
 	}
 	_ = yaml.Unmarshal([]byte(rbac), &root)
+
 	for _, o := range opt {
 		o(&root.Authorization.ResourceAttributes)
 	}

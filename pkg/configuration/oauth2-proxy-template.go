@@ -45,6 +45,7 @@ type oauth2Config struct {
 // Parse returns the parsed oauth2 config
 func (o *oauth2Config) Parse() string {
 	var builder strings.Builder
+
 	scanner := bufio.NewScanner(strings.NewReader(oauth2))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -87,6 +88,7 @@ func (o *oauth2Config) Parse() string {
 				}
 			}
 		}
+
 		if len(line) > 0 {
 			builder.WriteString(line + "\n")
 		}

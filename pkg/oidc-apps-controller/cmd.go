@@ -87,11 +87,13 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 
 	// Limit the cache
 	oidcAppsSelector := labels.Everything()
+
 	if len(o.cacheSelectorString) > 0 {
 		var err error
 		if oidcAppsSelector, err = labels.Parse(o.cacheSelectorString); err != nil {
 			return fmt.Errorf("could not parse the cache selector: %w", err)
 		}
+
 		_log.Info("Using cache selector", "selector", oidcAppsSelector.String())
 	}
 
@@ -122,6 +124,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		if err := gardenextensionsv1alpha1.AddToScheme(sch); err != nil {
 			return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 		}
+
 		cluster := &gardenextensionsv1alpha1.Cluster{}
 		cacheOptions.ByObject[cluster] = cache.ByObject{}
 	}
@@ -224,16 +227,19 @@ func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
 	if err != nil {
 		return fmt.Errorf("could not initialize the controller-runtime client: %w", err)
 	}
+
 	ingress := &networkingv1.Ingress{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, ingress); err != nil {
 		return fmt.Errorf("could not get kube-apiserver ingress: %w", err)
 	}
+
 	if len(ingress.Spec.Rules) > 0 {
 		_, h, ok := strings.Cut(ingress.Spec.Rules[0].Host, ".")
 		if ok {
 			if err := os.Setenv(constants.GARDEN_SEED_DOMAIN_NAME, h); err != nil {
 				return fmt.Errorf("could not set the garden domain name: %w", err)
 			}
+
 			_log.Info("Set domain name env variable", constants.GARDEN_SEED_DOMAIN_NAME, h)
 		}
 	}
@@ -436,6 +442,7 @@ func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 	// Add garden-secret-notifier if the GARDEN environment variables are present
 	if os.Getenv(constants.GARDEN_KUBECONFIG) != "" || os.Getenv(constants.GARDEN_ACCESS_TOKEN) != "" {
 		kubeconfigPath := filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
+
 		tokenPath := os.Getenv(constants.GARDEN_ACCESS_TOKEN)
 		if tokenPath == "" {
 			tokenPath = filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
@@ -517,6 +524,7 @@ func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
 	if err := autoscalingv1.AddToScheme(s); err != nil {
 		return err
 	}
+
 	webhookServer.Register(
 		constants.VpaWebHookPath,
 		&webhook.Admission{Handler: &oidcappswebhook.VPAMutator{
@@ -550,11 +558,14 @@ func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj 
 		if !IsOidcAppsPod(pod) {
 			return nil
 		}
+
 		c := mgr.GetClient()
+
 		for _, r := range pod.GetOwnerReferences() {
 			if r.Kind != "ReplicaSet" {
 				continue
 			}
+
 			rs := &appsv1.ReplicaSet{}
 			if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, rs); client.IgnoreNotFound(err) != nil {
 				_log.Error(err, "could not get replicaset", "name", r.Name, "namespace", pod.Namespace)
@@ -564,10 +575,12 @@ func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj 
 				if d.Kind != "Deployment" {
 					continue
 				}
+
 				deployment := &appsv1.Deployment{}
 				if err := c.Get(ctx, types.NamespacedName{Name: d.Name, Namespace: rs.Namespace}, deployment); client.IgnoreNotFound(err) != nil {
 					_log.Error(err, "could not get deployment", "name", d.Name, "namespace", rs.Namespace)
 				}
+
 				_log.V(9).Info("enqueue deployment", "name", deployment.Name, "namespace", deployment.Namespace)
 
 				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}}}
@@ -584,14 +597,17 @@ func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		ingress := obj.(*networkingv1.Ingress)
 		c := mgr.GetClient()
+
 		for _, o := range ingress.GetOwnerReferences() {
 			if o.Kind != "Pod" {
 				continue
 			}
+
 			pod := &corev1.Pod{}
 			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: ingress.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 				_log.Error(err, "could not get pod", "name", o.Name, "namespace", ingress.Namespace)
 			}
+
 			if len(pod.Name) == 0 {
 				continue
 			}
@@ -600,10 +616,12 @@ func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 				if r.Kind != "StatefulSet" {
 					continue
 				}
+
 				statefulset := &appsv1.StatefulSet{}
 				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
 					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
 				}
+
 				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace",
 					statefulset.Namespace)
 
@@ -621,14 +639,17 @@ func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		service := obj.(*corev1.Service)
 		c := mgr.GetClient()
+
 		for _, o := range service.GetOwnerReferences() {
 			if o.Kind != "Pod" {
 				continue
 			}
+
 			pod := &corev1.Pod{}
 			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: service.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 				_log.Error(err, "could not get pod", "name", o.Name, "namespace", service.Namespace)
 			}
+
 			if len(pod.Name) == 0 {
 				continue
 			}
@@ -637,10 +658,12 @@ func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 				if r.Kind != "StatefulSet" {
 					continue
 				}
+
 				statefulset := &appsv1.StatefulSet{}
 				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
 					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
 				}
+
 				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
 
 				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}

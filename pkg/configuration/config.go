@@ -135,6 +135,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 				log.SetLogger(zap.New(zap.UseDevMode(true)))
 				config.log = log.Log.WithName("oidcAppsExtensionConfig")
 			}
+
 			config.log.Error(err, "failed to read extension configuration", "path", path)
 			os.Exit(1)
 		}
@@ -144,6 +145,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 				log.SetLogger(zap.New(zap.UseDevMode(true)))
 				config.log = log.Log.WithName("oidcAppsExtensionConfig")
 			}
+
 			config.log.Error(err, "failed to unmarshal extension configuration")
 			os.Exit(1)
 		}
@@ -162,6 +164,7 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 	if c == nil || c.Targets == nil || len(c.Targets) == 0 {
 		return false
 	}
+
 	for _, t := range c.Targets {
 		if c.targetMatchesLabels(t, o) {
 			return true
@@ -184,6 +187,7 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 	if t.Ingress != nil && t.Ingress.HostPrefix != "" {
 		prefix = t.Ingress.HostPrefix + "-" + rand.GenerateSha256(object.GetName()+"-"+object.GetNamespace())
 	}
+
 	if t.Ingress != nil && t.Ingress.Host != "" {
 		prefix, domain, _ = strings.Cut(t.Ingress.Host, ".")
 	}
@@ -197,12 +201,14 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 
 // GetUpstreamTarget returns the protocol and port tuple of the target workload
 func (c *OIDCAppsControllerConfig) GetUpstreamTarget(object client.Object) string {
-	t := c.fetchTarget(object)
 	b := strings.Builder{}
 	protocol := "http"
+
+	t := c.fetchTarget(object)
 	if t.TargetProtocol == "https" {
 		protocol = "https"
 	}
+
 	b.Grow(9)
 	b.WriteString("protocol=")
 	b.Grow(len(protocol))
@@ -218,6 +224,7 @@ func (c *OIDCAppsControllerConfig) GetUpstreamTarget(object client.Object) strin
 // GetKubeSecretName returns the kubeconfig secret name of the target workload
 func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) string {
 	secretName := ""
+
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
 		t.Configuration.KubeRbacProxy != nil &&
@@ -225,6 +232,7 @@ func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) strin
 		t.Configuration.KubeRbacProxy.KubeSecretRef.Name != "" {
 		return t.Configuration.KubeRbacProxy.KubeSecretRef.Name
 	}
+
 	if c.Configuration.KubeRbacProxy != nil &&
 		c.Configuration.KubeRbacProxy.KubeSecretRef != nil &&
 		c.Configuration.KubeRbacProxy.KubeSecretRef.Name != "" {
@@ -237,12 +245,14 @@ func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) strin
 // GetKubeConfigStr returns the kubeconfig string of the target workload
 func (c *OIDCAppsControllerConfig) GetKubeConfigStr(object client.Object) string {
 	kubeConfig := ""
+
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
 		t.Configuration.KubeRbacProxy != nil &&
 		t.Configuration.KubeRbacProxy.KubeConfigStr != "" {
 		return t.Configuration.KubeRbacProxy.KubeConfigStr
 	}
+
 	if c.Configuration.KubeRbacProxy != nil &&
 		c.Configuration.KubeRbacProxy.KubeConfigStr != "" {
 		kubeConfig = c.Configuration.KubeRbacProxy.KubeConfigStr
@@ -254,6 +264,7 @@ func (c *OIDCAppsControllerConfig) GetKubeConfigStr(object client.Object) string
 // GetOidcCASecretName returns the secret name holding the trusts CA certificate of the OIDC Provider
 func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) string {
 	secretName := ""
+
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
 		t.Configuration.OidcCASecretRef != nil &&
@@ -271,9 +282,11 @@ func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) str
 
 // GetOidcCABundle returns the trusted CA bundle certificates of the OIDC Provider
 func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string {
-	oidcCABundle := ""
-	var decodedBytes []byte
-	var err error
+	var (
+		decodedBytes []byte
+		err          error
+		oidcCABundle string
+	)
 
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
@@ -286,6 +299,7 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 		return string(decodedBytes)
 	}
+
 	if c.Configuration.OidcCABundle != "" {
 		oidcCABundle = c.Configuration.OidcCABundle
 	}
@@ -410,6 +424,7 @@ func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object
 		t.Configuration.Oauth2Proxy.SSLInsecureSkipVerify != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.SSLInsecureSkipVerify, false)
 	}
+
 	if c.Configuration.Oauth2Proxy != nil &&
 		c.Configuration.Oauth2Proxy.SSLInsecureSkipVerify != nil {
 		return ptr.Deref(c.Configuration.Oauth2Proxy.SSLInsecureSkipVerify, false)
@@ -425,6 +440,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 		t.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
 	}
+
 	if c.Configuration.Oauth2Proxy != nil &&
 		c.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
 		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
@@ -440,6 +456,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object
 		t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
 	}
+
 	if c.Configuration.Oauth2Proxy != nil &&
 		c.Configuration.Oauth2Proxy.InsecureOidcSkipNonce != nil {
 		return ptr.Deref(c.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
@@ -480,15 +497,18 @@ func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) m
 
 func (c *OIDCAppsControllerConfig) fetchTarget(o client.Object) Target {
 	var targets []Target
+
 	for _, t := range c.Targets {
 		target := t
 		if c.targetMatchesLabels(target, o) {
 			targets = append(targets, target)
 		}
 	}
+
 	if len(targets) > 1 {
 		c.log.Info("Multiple targets are fetched", "count", len(targets), "object", o.GetNamespace()+"/"+o.GetName())
 	}
+
 	if len(targets) > 0 {
 		return targets[0]
 	}
@@ -502,6 +522,7 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 	if err != nil {
 		return false
 	}
+
 	if t.NamespaceSelector.Size() == 0 {
 		return selector.Matches(labels.Set(o.GetLabels()))
 	}
@@ -510,11 +531,14 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 	if c.client == nil {
 		return false
 	}
+
 	namespace := &corev1.Namespace{}
+
 	err = c.client.Get(context.TODO(), client.ObjectKey{Name: o.GetNamespace()}, namespace)
 	if err != nil {
 		return false
 	}
+
 	namespaceSelector, err := metav1.LabelSelectorAsSelector(t.NamespaceSelector)
 	if err != nil {
 		return false

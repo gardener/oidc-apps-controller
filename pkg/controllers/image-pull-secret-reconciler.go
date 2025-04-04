@@ -70,12 +70,14 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 		imagePullSecret.StringData = map[string]string{
 			DOCKERCONFIGJSON: secret.StringData[DOCKERCONFIGJSON],
 		}
+
 		if err := r.Client.Update(ctx, secret); err != nil {
 			_log.Error(err, "Cannot update secret",
 				"name", secret.GetName(),
 				"namespace", secret.GetNamespace(),
 			)
 		}
+
 		_log.V(9).Info("Updated", "name", secret.GetName(), "namespace", secret.GetNamespace())
 	}
 

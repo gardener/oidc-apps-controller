@@ -86,10 +86,13 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	}
 
 	var cancel context.CancelFunc
+
 	runnable.ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer cancel()
 
 	dnsNames := []string{name}
+
 	if namespace != "" {
 		prefix := name + "." + namespace
 		dnsNames = append(dnsNames,
@@ -99,6 +102,7 @@ func New(certPath string, name string, namespace string, c client.Client, config
 			prefix+".svc.cluster.local",
 		)
 	}
+
 	runnable.dnsNames = dnsNames
 
 	var err error
@@ -107,9 +111,11 @@ func New(certPath string, name string, namespace string, c client.Client, config
 		if err != nil {
 			_log.Error(err, "Failed loading CA certificate from disk, generating a new one")
 		}
+
 		if runnable.ca, err = generateCACert(certPath, realCertOps{}); err != nil {
 			return nil, err
 		}
+
 		if err = runnable.setupWebhooksCABundles(runnable.ctx, config); err != nil {
 			return nil, err
 		}
@@ -120,6 +126,7 @@ func New(certPath string, name string, namespace string, c client.Client, config
 		if err != nil {
 			_log.Error(err, "Failed loading certificate from disk, generating a new one")
 		}
+
 		if runnable.tls, err = generateTLSCert(certPath, realCertOps{}, dnsNames, runnable.ca); err != nil {
 			return nil, err
 		}
@@ -136,24 +143,34 @@ func (c *certManager) NeedLeaderElection() bool {
 
 func (c *certManager) Start(ctx context.Context) error {
 	_log.Info("Starting webhook certificate manager")
+
 	c.ctx = ctx
 	runnableWaitGroup := &sync.WaitGroup{} // Wait group for the certificate manager
+
 	runnableWaitGroup.Add(1)
+
 	go func() {
 		defer runnableWaitGroup.Done()
+
 		wg := &sync.WaitGroup{}
 		wg.Add(3)
+
 		go c.syncWebhookCaBundle(ctx, wg) // Start the webhook CA bundle check
 		go c.rotateCACert(ctx, wg)        // Start the CA bundle rotation
 		go c.rotateTLSCert(ctx, wg)       // Start the TLS bundle rotation
 		<-ctx.Done()                      // Waiting for the controller-runtime.Manager to close the context
+
 		_log.Info("Shutting down the webhook certificate manager")
+
 		wg.Wait()
 	}()
 
 	runnableWaitGroup.Wait() // Done with the certificate manager
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer cancel()
+
 	c.cleanUpMutatingWebhookConfiguration(ctx) // Clean up the webhook CABundles
 
 	return nil
@@ -173,7 +190,9 @@ func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.C
 		if err != nil {
 			return fmt.Errorf("error getting webhook: %w", err)
 		}
+
 		_log.Info("Fetched webhook CA bundle", "webhook", c.webhookName, "resourceVersion", mutatingWebhook.GetResourceVersion())
+
 		for i, w := range mutatingWebhook.Webhooks {
 			if w.Name != c.webhookName+vpasWebhookSuffix &&
 				w.Name != c.webhookName+podsWebhookSuffix {
@@ -186,8 +205,10 @@ func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.C
 
 				break
 			}
+
 			mutatingWebhook.Webhooks[i].ClientConfig.CABundle = b
 		}
+
 		updatedWebhook, err := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Update(context.
 			Background(),
 			mutatingWebhook, metav1.UpdateOptions{})
@@ -211,6 +232,7 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 		if err := c.client.Get(c.ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 			return err
 		}
+
 		for i, w := range webhook.Webhooks {
 			if w.Name != c.webhookName+vpasWebhookSuffix &&
 				w.Name != c.webhookName+podsWebhookSuffix {
@@ -223,8 +245,10 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 
 				break
 			}
+
 			webhook.Webhooks[i].ClientConfig.CABundle = b
 		}
+
 		_log.Info("Updating webhook CA bundle", "webhook", c.webhookName)
 
 		return c.client.Update(ctx, webhook)
@@ -234,8 +258,11 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 // rotateTLSCert is a loops over expirationTicker and checks if the TLS bundle is expired.
 func (c *certManager) rotateTLSCert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	tlsTicker := time.NewTicker(expirationTicker)
+
 	defer tlsTicker.Stop()
+
 	ops := realCertOps{}
 OuterLoop:
 	for {
@@ -265,8 +292,11 @@ OuterLoop:
 // rotateCACert is a loops over expirationTicker and checks if the CA bundle is expired.
 func (c *certManager) rotateCACert(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	caTicker := time.NewTicker(expirationTicker)
+
 	defer caTicker.Stop()
+
 	ops := realCertOps{}
 OuterLoop:
 	for {
@@ -304,7 +334,9 @@ OuterLoop:
 
 func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, error) {
 	_log.V(9).Info("Updating webhook CA bundle", "webhook", name)
+
 	updatedCAs, currentCAs := []x509.Certificate{}, []x509.Certificate{}
+
 	for len(caBundle) > 0 {
 		var block *pem.Block
 		block, caBundle = pem.Decode(caBundle)
@@ -335,12 +367,14 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 
 			continue
 		}
+
 		updatedCAs = append(updatedCAs, ca)
 	}
 	// add the new CA bundle
 	updatedCAs = append(updatedCAs, *c.ca.cert)
 
 	var caBundleSlice []byte
+
 	for _, ca := range updatedCAs {
 		block := &pem.Block{
 			Type:  "CERTIFICATE",
@@ -356,6 +390,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 			"size", len(caBundleSlice),
 		)
 	}
+
 	_log.Info("Certificate CA Bundle length", "length", len(updatedCAs))
 
 	return caBundleSlice, nil
@@ -391,12 +426,14 @@ func (c *certManager) cleanWebhookCABundles(oidcWebhook *v1.MutatingWebhookConfi
 
 			break
 		}
+
 		oidcWebhook.Webhooks[i].ClientConfig.CABundle = b
 	}
 }
 
 func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, error) {
 	currentCAs := []x509.Certificate{}
+
 	for len(caBundle) > 0 {
 		var block *pem.Block
 		block, caBundle = pem.Decode(caBundle)
@@ -422,6 +459,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 	}
 
 	var caBundleSlice []byte
+
 	for _, ca := range currentCAs {
 		block := &pem.Block{
 			Type:  "CERTIFICATE",
@@ -430,6 +468,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 
 		caBundleSlice = append(caBundleSlice, pem.EncodeToMemory(block)...)
 	}
+
 	_log.Info("Certificate CA Bundle length", "webhook", name, "length", len(currentCAs))
 
 	return caBundleSlice, nil
@@ -437,7 +476,9 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 
 func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+
 	caTicker := time.NewTicker(syncTicker)
+
 	defer caTicker.Stop()
 
 	for {
@@ -447,8 +488,10 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 			if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 				_log.Error(err, "Error fetching webhook")
 			}
+
 			for _, w := range webhook.Webhooks {
 				_log.V(9).Info("CA Bundle", "webhook", w.Name, "size", len(w.ClientConfig.CABundle))
+
 				if !caBundleFound(w.ClientConfig.CABundle, c.ca.cert) {
 					if err := c.updateWebhookConfiguration(ctx); err != nil {
 						_log.Error(err, "Error updating webhook CA bundle")
@@ -482,6 +525,7 @@ func caBundleFound(caBundle []byte, cert *x509.Certificate) bool {
 		if err != nil {
 			return false
 		}
+
 		if cert.SerialNumber.String() == crt.SerialNumber.String() {
 			return true
 		}

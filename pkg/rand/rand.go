@@ -28,13 +28,16 @@ const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 // GenerateRandomString generates a random string with a given length
 func GenerateRandomString(length int) string {
 	var b strings.Builder
+
 	b.Grow(length)
+
 	charsetLength := big.NewInt(int64(len(charset)))
 	for i := 0; i < length; i++ {
 		index, err := rand.Int(rand.Reader, charsetLength)
 		if err != nil {
 			return ""
 		}
+
 		b.WriteByte(charset[index.Int64()])
 	}
 
@@ -47,6 +50,7 @@ func GenerateSha256(key string) string {
 	if _, err := io.Copy(hash, strings.NewReader(key)); err != nil {
 		return ""
 	}
+
 	s := fmt.Sprintf("%x", hash.Sum(nil))
 	if len(s) > 6 {
 		return s[:6]
