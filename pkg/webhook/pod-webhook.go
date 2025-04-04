@@ -187,7 +187,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 }
 
 func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, client.Object) {
-	//1. Identify the workload
+	// Identify the workload
 	owners := pod.GetOwnerReferences()
 	if len(owners) == 0 {
 		return false, nil

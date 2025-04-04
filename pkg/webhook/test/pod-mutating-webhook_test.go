@@ -308,8 +308,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 					n := strings.SplitAfter(image, "/")
 					Expect(n[len(n)-1]).To(BeElementOf(expectedContainerImages))
 				}
-			}) //By
-		}) //It
+			}) // By
+		}) // It
 		It("there shall be a secret volumes in the target pod", func() {
 			patchedPod := patchPod(targetPod)
 			_log.Info("patched pod volumes", "patched pod", patchedPod.Spec.Volumes)
@@ -438,7 +438,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 						},
 					},
 				))
-			}) //It
+			}) // It
 		}) // When
 		When("the target configuration has a oidcCABundle", func() {
 			It("there shall be a projected secret volume in the pod spec containing oidc-ca secret", func() {
@@ -472,8 +472,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 						},
 					},
 				))
-			}) //It
-		}) //When
+			}) // It
+		}) // When
 		When("there is a container resource defined in the incoming request which are less than default", func() {
 			It("shall modify the container resources", func() {
 				pp := patchPod(podWithLessResources)
@@ -496,7 +496,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 					}
 				}
 			})
-		}) //When there is a container resource defined in the incoming request
+		}) // When there is a container resource defined in the incoming request
 		When("there is a container resource defined in the incoming request which are bigger than default", func() {
 			It("shall not modify the container resources", func() {
 				pp := patchPod(podWithMoreResources)
@@ -509,7 +509,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 					}
 				}
 			})
-		}) //
+		})
 		When("there isn't any container resource defined in the incoming request", func() {
 			It("shall set the default container resources", func() {
 				pp := patchPod(podWithLessResources)
@@ -531,8 +531,8 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 					}
 				}
 			})
-		}) //When there isn't any container resource defined in the incoming request
-	}) //Context
+		}) // When there isn't any container resource defined in the incoming request
+	}) // Context
 	Context("when a pod does not belong to a target", func() {
 		It("there shall be no auth & authz proxies in the pod templates spec", func() {
 			raw, err := json.Marshal(nonTargetPod)
@@ -553,9 +553,9 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			_log.Info("response", "response", resp.String())
 			Expect(resp.Allowed).To(BeTrue())
 			Expect(resp.Patches).To(BeNil())
-		}) //It
-	}) //Context when a pod does not belong to a target
-}) //Describe
+		}) // It
+	}) // Context when a pod does not belong to a target
+}) // Describe
 
 func patchPod(pod *corev1.Pod) *corev1.Pod {
 	raw, err := json.Marshal(pod)

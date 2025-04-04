@@ -8,6 +8,7 @@ linters:
   defaults: none
   enable:
     - errcheck
+    - gocritic
     - govet
     - revive
     - staticcheck

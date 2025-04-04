@@ -173,7 +173,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			_log.Info("response", "response", resp.String())
 			Expect(resp.Allowed).To(BeTrue())
 			Expect(resp.Patches).To(BeNil())
-		}) //It
+		}) // It
 	})
 
 })

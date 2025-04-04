@@ -85,7 +85,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
 	}
 
-	//Limit the cache
+	// Limit the cache
 	oidcAppsSelector := labels.Everything()
 	if len(o.cacheSelectorString) > 0 {
 		var err error

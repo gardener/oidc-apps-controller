@@ -68,7 +68,7 @@ func (g *gardenerAccessTokenNotifier) Start(ctx context.Context) error {
 		}
 	}(ctx)
 
-	//Updating secrets upon controller restart
+	// Updating secrets upon controller restart
 	g.updateSecrets(ctx)
 	return nil
 }
@@ -146,8 +146,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 		return
 	}
 	for _, secret := range kubeConfigList.Items {
-
-		//Check if there is a difference between the target secret and the current kubeconfig
+		// Check if there is a difference between the target secret and the current kubeconfig
 		if targetKubeconfig, ok := secret.Data["kubeconfig"]; ok {
 			if bytes.Equal(targetKubeconfig, kubeconfigBytes) {
 				_log.V(9).Info("No kubeconfig change in the target secret, skipping",
