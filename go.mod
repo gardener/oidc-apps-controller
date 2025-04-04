@@ -3,12 +3,11 @@ module github.com/gardener/oidc-apps-controller
 go 1.24.2
 
 tool (
+	github.com/daixiang0/gci
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
-	github.com/incu6us/goimports-reviser/v3
 	github.com/securego/gosec/v2/cmd/gosec
 	go.uber.org/mock/mockgen
-	golang.org/x/tools/cmd/goimports
 	golang.org/x/vuln/cmd/govulncheck
 	gotest.tools/gotestsum
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
@@ -136,7 +135,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
-	github.com/incu6us/goimports-reviser/v3 v3.8.2 // indirect
 	github.com/jgautheron/goconst v1.7.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.4 // indirect

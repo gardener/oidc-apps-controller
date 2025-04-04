@@ -25,10 +25,15 @@ BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64
 TOOLS_DIR                   := $(REPO_ROOT)/tools
 ENVTEST_K8S_VERSION         ?= 1.32.0
 
+GCI_OPT                     ?= -s standard -s default -s "prefix($(shell go list -m))" --skip-generated
+
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
 IMAGE_TAG                   := $(EFFECTIVE_VERSION)
+
+$(TOOLS_DIR):
+	@mkdir -p $(TOOLS_DIR)
 
 #########################################
 # Targets                                 #
@@ -41,9 +46,6 @@ verify: check test envtest sast
 
 .PHONY: verify-extended
 verify-extended: check test envtest sast-report
-
-.PHONY: goimports
-goimports: goimports_tool goimports-reviser_tool
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -73,6 +75,11 @@ build: tidy check
 	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
+.PHONY: gci
+gci: tidy
+	@echo "Running gci..."
+	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
+
 .PHONY: clean
 clean:
 	@echo "Running $@..."
@@ -88,12 +95,12 @@ fmt: tidy
     	$(SRC_DIRS)
 
 .PHONY: check
-check: tidy fmt lint
+check: tidy fmt gci lint
 
 .PHONY: lint
 lint: tidy
 	@echo "Running $@..."
-	 @go tool golangci-lint run \
+	@go tool golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
 
@@ -104,7 +111,6 @@ test: tidy
 
 .PHONY: envtest
 envtest: tidy
-	@mkdir -p $(TOOLS_DIR)
 	@KUBEBUILDER_ASSETS=$(shell \
 		go tool setup-envtest \
 		use $(ENVTEST_K8S_VERSION) \
@@ -115,19 +121,6 @@ envtest: tidy
 			$(REPO_ROOT)/test/... \
 			--ginkgo.v \
 			-timeout 10m
-
-.PHONY: goimports_tool
-goimports_tool: tidy
-	@for dir in $(SRC_DIRS); do \
-		go tool goimports -w $$dir/; \
-	done
-
-.PHONY: goimports-reviser_tool
-goimports-reviser_tool: tidy
-	@for dir in $(SRC_DIRS); do \
-		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
-		go tool goimports-reviser -recursive $$dir/; \
-	done
 
 .PHONY: add-license-headers
 add-license-headers: tidy
