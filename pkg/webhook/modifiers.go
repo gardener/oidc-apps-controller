@@ -15,7 +15,6 @@
 package webhook
 
 import (
-	_ "embed"
 	"maps"
 	"os"
 	"path/filepath"
@@ -34,9 +33,6 @@ import (
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
-
-//go:embed oidc-check.sh
-var oidcInitCheck string
 
 // Add an annotation to target workload.
 func addAnnotations(object client.Object) {
@@ -140,33 +136,6 @@ func addImagePullSecret(secretName string, podSpec *corev1.PodSpec) {
 			Name: secretName,
 		},
 	)
-}
-
-// Add secret source volume to the target pods.
-func addSecretSourceVolume(name, secretName string, podSpec *corev1.PodSpec) {
-	// Remove if present and later recreate appropriately
-	volumes := podSpec.Volumes
-	for i, v := range volumes {
-		if v.Name == name {
-			volumes = slices.Delete(volumes, i, i+1)
-			break
-		}
-	}
-
-	// Add the volume
-	volumes = append(
-		volumes,
-		corev1.Volume{
-			Name: name,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: secretName,
-					Optional:   ptr.To(false),
-				},
-			},
-		},
-	)
-	podSpec.Volumes = volumes
 }
 
 func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *corev1.PodSpec) {

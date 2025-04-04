@@ -20,57 +20,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
-	"sync"
 )
-
-func getTotalHash(watchedDir string) string {
-
-	// Contains folder file names as keys and corresponding hashes as values
-	filesMap := map[string]string{}
-	// synchronization on parallel calculation of files hashes
-	wg := sync.WaitGroup{}
-	// synchronizing map access
-	mapMutex := sync.RWMutex{}
-
-	dir, err := os.ReadDir(watchedDir)
-	if err != nil {
-		_log.Error(err, "Error reading directory", "directory", watchedDir)
-		return ""
-	}
-
-	for _, f := range dir {
-		wg.Add(1)
-		go func(filePath string) {
-			mapMutex.Lock()
-			defer mapMutex.Unlock()
-			if s := getFileSha256(filePath); s != "" {
-				filesMap[filePath] = s
-			}
-			wg.Done()
-		}(filepath.Join(watchedDir, f.Name()))
-	}
-
-	// Waiting for hash calculations to finish
-	wg.Wait()
-
-	mapMutex.RLock()
-	keys := make([]string, len(filesMap))
-	for k := range filesMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	builder := strings.Builder{}
-	for _, k := range keys {
-		builder.Grow(len(filesMap[k]))
-		builder.WriteString(filesMap[k])
-	}
-
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(builder.String())))
-	mapMutex.RUnlock()
-	return hash
-}
 
 func getFileSha256(filePath string) string {
 
