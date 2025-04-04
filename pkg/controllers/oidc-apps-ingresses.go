@@ -86,10 +86,12 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	suffix := rand.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
 	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
+
 	hostPrefix, ok := pod.GetAnnotations()[constants.AnnotationHostKey]
 	if !ok {
 		return networkingv1.Ingress{}, fmt.Errorf("host annotation not found in pod %s/%s", pod.GetNamespace(), pod.GetName())
 	}
+
 	host, domain, _ := strings.Cut(hostPrefix, ".")
 	index := fetchStrIndexIfPresent(pod)
 

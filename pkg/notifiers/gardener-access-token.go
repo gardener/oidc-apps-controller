@@ -89,6 +89,7 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 
 					continue
 				}
+
 				tokenHash := getFileSha256(g.tokenPath)
 				if tokenHash != g.hashes["token"] {
 					g.hashes["token"] = tokenHash
@@ -113,16 +114,19 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 		return
 	}
+
 	tokenBytes = bytes.TrimSpace(tokenBytes)
 	kubeConfigBytes, err := os.ReadFile(g.kubeconfigPath)
+
 	if err != nil {
 		_log.Error(err, "error reading kubeconfig")
 
 		return
 	}
-	kubeConfigBytes = bytes.TrimSpace(kubeConfigBytes)
 
+	kubeConfigBytes = bytes.TrimSpace(kubeConfigBytes)
 	kubeConfig := clientcmdv1.Config{}
+
 	if err = yaml.Unmarshal(kubeConfigBytes, &kubeConfig); err != nil {
 		_log.Error(err, "error unmarshaling kubeconfig")
 	}
@@ -131,6 +135,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 		if n.Name != "extension" {
 			continue
 		}
+
 		kubeConfig.AuthInfos[i].AuthInfo.TokenFile = ""
 		kubeConfig.AuthInfos[i].AuthInfo.Token = string(tokenBytes)
 	}
@@ -150,6 +155,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 		return
 	}
+
 	for _, secret := range kubeConfigList.Items {
 		// Check if there is a difference between the target secret and the current kubeconfig
 		if targetKubeconfig, ok := secret.Data["kubeconfig"]; ok {
@@ -168,6 +174,7 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 				"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 			)
 		}
+
 		_log.Info("Secret is updated",
 			"secret namespace/name", secret.GetNamespace()+"/"+secret.GetName(),
 		)

@@ -37,6 +37,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 	if err := s.Client.Get(ctx, request.NamespacedName, reconciledStatefulSet); client.IgnoreNotFound(err) != nil {
 		return reconcile.Result{}, err
 	}
+
 	_log := log.FromContext(ctx).WithValues("resourceVersion", reconciledStatefulSet.GetResourceVersion())
 
 	if reconciledStatefulSet.GetName() == "" && reconciledStatefulSet.GetNamespace() == "" {
@@ -60,6 +61,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 	// Check for deletion & handle cleanup of the dependencies
 	if !reconciledStatefulSet.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")
+
 		if err := deleteOwnedResources(ctx, s.Client, reconciledStatefulSet); err != nil {
 			return reconcile.Result{}, err
 		}

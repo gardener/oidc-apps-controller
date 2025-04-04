@@ -180,7 +180,9 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 
 func patchVpa(vpa *autoscalerv1.VerticalPodAutoscaler) *autoscalerv1.VerticalPodAutoscaler {
 	raw, err := json.Marshal(vpa)
+
 	Expect(err).NotTo(HaveOccurred())
+
 	req := admission.Request{
 		AdmissionRequest: adminssionv1.AdmissionRequest{
 			UID:       "uid-request",
@@ -206,7 +208,9 @@ func patchVpa(vpa *autoscalerv1.VerticalPodAutoscaler) *autoscalerv1.VerticalPod
 	// Apply the patch
 	patchVpaBytes, err := decodedPatch.Apply(raw)
 	Expect(err).NotTo(HaveOccurred())
+
 	var patchedVpa = &autoscalerv1.VerticalPodAutoscaler{}
+
 	err = json.Unmarshal(patchVpaBytes, &patchedVpa)
 	Expect(err).NotTo(HaveOccurred())
 

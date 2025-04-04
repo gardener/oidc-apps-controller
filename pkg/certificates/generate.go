@@ -54,10 +54,12 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error generating the CA private key: %w", err)
 	}
+
 	serial, err := generateSerial()
 	if err != nil {
 		return nil, fmt.Errorf("error generating bundle serial number: %w", err)
 	}
+
 	certTmpl := &x509.Certificate{
 		SerialNumber: serial,
 		Subject: pkix.Name{
@@ -113,26 +115,32 @@ func writeBundle(path string, b *bundle) error {
 	if err != nil {
 		return err
 	}
+
 	keyPEM, err := rsaToPem(b.key.(*rsa.PrivateKey))
 	if err != nil {
 		return err
 	}
+
 	switch {
 	case b.cert.IsCA:
 		locationCrt := filepath.Join(path, string(certCAType)+".crt")
 		locationKey := filepath.Join(path, string(certCAType)+".key")
+
 		if err = k8s_cert.WriteCert(locationCrt, certPEM); err != nil {
 			return fmt.Errorf("error saving bundle public key: %w", err)
 		}
+
 		if err = k8s_cert.WriteCert(locationKey, keyPEM); err != nil {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
 	case !b.cert.IsCA:
 		locationCrt := filepath.Join(path, string(certTLSType)+".crt")
 		locationKey := filepath.Join(path, string(certTLSType)+".key")
+
 		if err = k8s_cert.WriteCert(locationCrt, certPEM); err != nil {
 			return fmt.Errorf("error saving bundle public key: %w", err)
 		}
+
 		if err = k8s_cert.WriteCert(locationKey, keyPEM); err != nil {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
@@ -147,6 +155,7 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 	if err != nil {
 		return nil, fmt.Errorf("error generating the TLS private key: %w", err)
 	}
+
 	serial, err := generateSerial()
 	if err != nil {
 		return nil, fmt.Errorf("error generating bundle serial number: %w", err)
@@ -180,6 +189,7 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 	if err = writeBundle(path, b); err != nil {
 		return nil, err
 	}
+
 	_log.Info("TLS certificate generated", "commonName", certTmpl.Subject.CommonName)
 
 	return b, nil
@@ -190,6 +200,7 @@ func generateSerial() (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	serial = new(big.Int).Add(serial, big.NewInt(1))
 
 	return serial, nil
@@ -203,21 +214,27 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 		cert     *x509.Certificate
 		k        any
 	)
+
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".crt")); err != nil {
 		return nil, err
 	}
+
 	if block, _ = pem.Decode(crt); block == nil {
 		return nil, errors.New("no PEM block found")
 	}
+
 	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
+
 	if key, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".key")); err != nil {
 		return nil, err
 	}
+
 	if block, _ = pem.Decode(key); block == nil {
 		return nil, errors.New("no PEM block found")
 	}
+
 	if k, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		return nil, err
 	}
@@ -236,21 +253,27 @@ func loadCAFromDisk(path string) (*bundle, error) {
 		cert     *x509.Certificate
 		k        any
 	)
+
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".crt")); err != nil {
 		return nil, err
 	}
+
 	if block, _ = pem.Decode(crt); block == nil {
 		return nil, errors.New("no PEM block found")
 	}
+
 	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
+
 	if key, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".key")); err != nil {
 		return nil, err
 	}
+
 	if block, _ = pem.Decode(key); block == nil {
 		return nil, errors.New("no PEM block found")
 	}
+
 	if k, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		return nil, err
 	}

@@ -66,6 +66,7 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 			return webhook.Allowed("vpa not matched")
 		}
 	}
+
 	_log.Info("handling vpa admission request")
 
 	// Simply return if it is a delete operation
@@ -75,12 +76,14 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 
 	patch := vpa.DeepCopy()
 	policies := make([]autoscalerv1.ContainerResourcePolicy, 0)
+
 	for i, policy := range patch.Spec.ResourcePolicy.ContainerPolicies {
 		if policy.ContainerName != constants.ContainerNameOauth2Proxy &&
 			policy.ContainerName != constants.ContainerNameKubeRbacProxy {
 			policies = append(policies, patch.Spec.ResourcePolicy.ContainerPolicies[i])
 		}
 	}
+
 	policies = append(policies, autoscalerv1.ContainerResourcePolicy{
 		ContainerName: constants.ContainerNameOauth2Proxy,
 		Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
@@ -91,6 +94,7 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	})
 
 	patch.Spec.ResourcePolicy.ContainerPolicies = policies
+
 	original, err := json.Marshal(vpa)
 	if err != nil {
 		_log.Info("Unable to marshal vpa")

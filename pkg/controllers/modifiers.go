@@ -56,6 +56,7 @@ func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.O
 	}
 
 	ownedServices := make([]corev1.Service, 0, len(oidcService.Items))
+
 	for _, service := range oidcService.Items {
 		if isAnOwnedResource(object, &service) {
 			ownedServices = append(ownedServices, service)
@@ -81,6 +82,7 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 	}
 
 	ownedIngresses := make([]networkingv1.Ingress, 0, len(oidcIngress.Items))
+
 	for _, ingress := range oidcIngress.Items {
 		if isAnOwnedResource(object, &ingress) {
 			ownedIngresses = append(ownedIngresses, ingress)
@@ -107,6 +109,7 @@ func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Ob
 	}
 
 	ownedSecrets := make([]corev1.Secret, 0, len(oidcSecrets.Items))
+
 	for _, secret := range oidcSecrets.Items {
 		if isAnOwnedResource(object, &secret) {
 			ownedSecrets = append(ownedSecrets, secret)
@@ -139,12 +142,15 @@ func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, obje
 		if cluster.GetName() != object.GetNamespace() {
 			continue
 		}
+
 		var shoot gardencorev1beta1.Shoot
+
 		if err := json.Unmarshal(cluster.Spec.Shoot.Raw, &shoot); err != nil {
 			_log.Error(err, "Failed to parse the shoot raw extension", "cluster", cluster.Name)
 
 			return ""
 		}
+
 		_log.Info("Fetched resource_attribute", "namespace", shoot.GetNamespace(), "shoot", shoot.GetName())
 
 		return shoot.GetNamespace()
@@ -181,9 +187,11 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if oauth2Secret, err = createOauth2Secret(object); err != nil {
 		return fmt.Errorf("failed to create oauth2 secret: %w", err)
 	}
+
 	if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 	}
+
 	if err = createOrPatchObject(ctx, c, &oauth2Secret); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 secret: %w", err)
 	}
@@ -193,9 +201,11 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if oauth2Service, err = createOauth2Service(selectors.MatchLabels, object); err != nil {
 		return fmt.Errorf("failed to create oauth2 service: %w", err)
 	}
+
 	if err := controllerutil.SetOwnerReference(object, &oauth2Service, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 	}
+
 	if err = createOrPatchObject(ctx, c, &oauth2Service); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 	}
@@ -205,9 +215,11 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if rbacSecret, err = createResourceAttributesSecret(object, ns); err != nil {
 		return fmt.Errorf("failed to create resource attributes secret: %w", err)
 	}
+
 	if err := controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
 	}
+
 	if err = createOrPatchObject(ctx, c, &rbacSecret); err != nil {
 		return fmt.Errorf("failed to create or update rbac secret: %w", err)
 	}
@@ -216,10 +228,12 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if kubeConfig, err = createKubeconfigSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
 		return fmt.Errorf("failed to create kubeconfig secret: %w", err)
 	}
+
 	if !errors.Is(err, errSecretDoesNotExist) {
 		if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 		}
+
 		if err = createOrPatchObject(ctx, c, &kubeConfig); err != nil {
 			return fmt.Errorf("failed to create or update kubecofig secret: %w", err)
 		}
@@ -229,10 +243,12 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if oidcCABundleSecret, err = createOidcCaBundleSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
 		return fmt.Errorf("failed to create oidc ca bundle secret: %w", err)
 	}
+
 	if !errors.Is(err, errSecretDoesNotExist) {
 		if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
 		}
+
 		if err = createOrPatchObject(ctx, c, &oidcCABundleSecret); err != nil {
 			return fmt.Errorf("failed to create or update oidc caBundle secret: %w", err)
 		}
@@ -242,6 +258,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	if oauth2Ingress, err = createIngressForDeployment(object); err != nil {
 		return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 	}
+
 	if err = controllerutil.SetOwnerReference(object, &oauth2Ingress, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
 	}
@@ -279,6 +296,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if oauth2Secret, err = createOauth2Secret(object); err != nil {
 		return fmt.Errorf("failed to create oauth2 secret: %w", err)
 	}
+
 	if err = controllerutil.SetOwnerReference(object, &oauth2Secret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to oauth secret: %w", err)
 	}
@@ -289,6 +307,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 	// For each pod in the statefulset
 	podList := &corev1.PodList{}
+
 	labelSelector := client.MatchingLabels(object.Spec.Selector.MatchLabels)
 	if err := c.List(ctx, podList, labelSelector, client.InNamespace(object.GetNamespace())); err != nil {
 		return fmt.Errorf("failed to list pods: %w", err)
@@ -296,6 +315,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 	for _, pod := range podList.Items {
 		log.FromContext(ctx).V(9).Info("Reconciling pod", "pod", pod.GetName(), "annotations", pod.GetAnnotations())
+
 		_, found := pod.GetAnnotations()[constants.AnnotationHostKey]
 		if !found {
 			continue
@@ -306,12 +326,15 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod) != nil {
 			selectors = configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod).MatchLabels
 		}
+
 		if statefulSetPodNameLabel, ok := pod.GetLabels()["statefulset.kubernetes.io/pod-name"]; ok {
 			selectors = map[string]string{"statefulset.kubernetes.io/pod-name": statefulSetPodNameLabel}
 		}
+
 		if oauth2Service, err = createOauth2Service(selectors, &pod); err != nil {
 			return fmt.Errorf("failed to create oauth2 service: %w", err)
 		}
+
 		if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 		}
@@ -324,6 +347,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if oauth2Ingress, err = createIngressForStatefulSetPod(&pod, object); err != nil {
 			return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 		}
+
 		if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
 		}
@@ -338,9 +362,11 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if rbacSecret, err = createResourceAttributesSecret(object, ns); err != nil {
 		return fmt.Errorf("failed to create resource attributes secret: %w", err)
 	}
+
 	if err = controllerutil.SetOwnerReference(object, &rbacSecret, c.Scheme()); err != nil {
 		return fmt.Errorf("failed to set owner reference to resource attributes secret: %w", err)
 	}
+
 	if err = createOrPatchObject(ctx, c, &rbacSecret); err != nil {
 		return fmt.Errorf("failed to create or update rbac secret: %w", err)
 	}
@@ -349,10 +375,12 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if kubeConfig, err = createKubeconfigSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
 		return fmt.Errorf("failed to create kubeconfig secret: %w", err)
 	}
+
 	if !errors.Is(err, errSecretDoesNotExist) {
 		if err = controllerutil.SetOwnerReference(object, &kubeConfig, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to kubeconfig secret: %w", err)
 		}
+
 		if err = createOrPatchObject(ctx, c, &kubeConfig); err != nil {
 			return fmt.Errorf("failed to create or update kubeconfig secret: %w", err)
 		}
@@ -362,10 +390,12 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	if oidcCABundleSecret, err = createOidcCaBundleSecret(object); err != nil && !errors.Is(err, errSecretDoesNotExist) {
 		return fmt.Errorf("failed to create oidc ca bundle secret: %w", err)
 	}
+
 	if !errors.Is(err, errSecretDoesNotExist) {
 		if err = controllerutil.SetOwnerReference(object, &oidcCABundleSecret, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oidc ca bundle secret: %w", err)
 		}
+
 		if err = createOrPatchObject(ctx, c, &oidcCABundleSecret); err != nil {
 			return fmt.Errorf("failed to create or update oidc caBundle secret: %w", err)
 		}
@@ -384,6 +414,7 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 	case *networkingv1.Ingress:
 		return createOrPatchIngress(ctx, c, *p)
 	}
+
 	log.FromContext(ctx).Info("unknown object type", "object", patch)
 
 	return nil
@@ -489,9 +520,11 @@ func patchVpa(ctx context.Context, c client.Client, object client.Object) error 
 			if policy.ContainerName == constants.ContainerNameOauth2Proxy || policy.ContainerName == constants.ContainerNameKubeRbacProxy {
 				continue
 			}
+
 			if err := c.Patch(ctx, &vpa.Items[i], client.RawPatch(types.MergePatchType, []byte(`{}`))); err != nil {
 				return fmt.Errorf("failed to patch vpa: %w", err)
 			}
+
 			log.FromContext(ctx).Info("trigger patch", "vpa", v.GetName())
 		}
 	}
@@ -504,10 +537,12 @@ func patchVpa(ctx context.Context, c client.Client, object client.Object) error 
 
 			return nil
 		}
+
 		if prometheusVpa.GetName() == "prometheus-vpa" {
 			if err := c.Patch(ctx, prometheusVpa, client.RawPatch(types.MergePatchType, []byte(`{}`))); err != nil {
 				return fmt.Errorf("failed to patch vpa: %w", err)
 			}
+
 			log.FromContext(ctx).Info("trigger patch", "vpa", prometheusVpa.GetName())
 		}
 	}
@@ -519,10 +554,12 @@ func addOptionalIndex(idx string) string {
 	if idx == "-" {
 		return ""
 	}
+
 	idxStr, ok := strings.CutSuffix(idx, "-")
 	if !ok {
 		return ""
 	}
+
 	i, err := strconv.ParseInt(idxStr, 0, 32)
 	if err != nil {
 		return ""
@@ -533,6 +570,7 @@ func addOptionalIndex(idx string) string {
 
 func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object) bool {
 	_log := log.FromContext(ctx)
+
 	podList := &corev1.PodList{}
 	if err := c.List(ctx, podList, client.InNamespace(object.GetNamespace())); err != nil {
 		_log.Error(err, "unable to list pods", "namespace", object.GetNamespace())
@@ -558,6 +596,7 @@ func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object)
 
 					return false
 				}
+
 				for _, d := range rs.OwnerReferences {
 					if d.Kind == "Deployment" && d.UID == object.GetUID() {
 						return true

@@ -24,9 +24,10 @@ import (
 )
 
 func TestUpdateCABundles(t *testing.T) {
+	var err error
+
 	ops := realCertOps{}
 	c := certManager{}
-	var err error
 
 	// Generate CA bundle
 	c.ca, err = generateCACert(tmp, ops)
@@ -70,15 +71,17 @@ func TestUpdateCABundles(t *testing.T) {
 
 		foundSerials = append(foundSerials, *crt.SerialNumber)
 	}
+
 	assert.Equal(t, 2, len(foundSerials))
 	assert.Contains(t, foundSerials, *c.ca.cert.SerialNumber)
 	assert.Contains(t, foundSerials, *caCert.cert.SerialNumber)
 }
 
 func TestRemoveCABundles(t *testing.T) {
+	var err error
+
 	ops := realCertOps{}
 	c := certManager{}
-	var err error
 
 	// Generate CA bundle
 	c.ca, err = generateCACert(tmp, ops)
@@ -125,6 +128,7 @@ func TestRemoveCABundles(t *testing.T) {
 			foundSerials, crt.SerialNumber.String(),
 		)
 	}
+
 	assert.Equal(t, 1, len(foundSerials))
 	// The first CA certificate part of the manager should be gone
 	assert.NotContains(t, foundSerials, c.ca.cert.SerialNumber.String())
@@ -133,9 +137,10 @@ func TestRemoveCABundles(t *testing.T) {
 }
 
 func TestSaveAndLoadCABundle(t *testing.T) {
+	var err error
+
 	ops := realCertOps{}
 	c := certManager{}
-	var err error
 
 	// Generate CA bundle
 	c.ca, err = generateCACert(tmp, ops)
@@ -148,18 +153,23 @@ func TestSaveAndLoadCABundle(t *testing.T) {
 }
 
 func TestSaveAndLoadTLSBundle(t *testing.T) {
+	var err error
+
 	ops := realCertOps{}
 	c := certManager{}
-	var err error
 
 	// Generate CA bundle
 	c.ca, err = generateCACert(tmp, ops)
 	assert.Nil(t, err)
+
 	c.tls, err = generateTLSCert(tmp, ops, []string{"test"}, c.ca)
 	assert.Nil(t, err)
+
 	err = writeBundle(tmp, c.tls)
 	assert.Nil(t, err)
+
 	loaded, err := loadTLSFromDisk(tmp)
+
 	assert.Nil(t, err)
 	assert.Equal(t, c.tls.cert.SerialNumber, loaded.cert.SerialNumber)
 }

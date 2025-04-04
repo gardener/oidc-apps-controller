@@ -101,6 +101,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		constants.SecretNameOauth2Proxy+"-"+suffix,
 		&patch.Spec,
 	)
+
 	if shallAddOidcCaSecretName(owner) {
 		addProjectedSecretSourceVolume(
 			constants.Oauth2VolumeName,
@@ -149,11 +150,13 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	podIndex, present := patch.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
 	if present {
 		hostPrefix := configuration.GetOIDCAppsControllerConfig().GetHost(owner)
+
 		host, domain, found := strings.Cut(hostPrefix, ".")
 		if found {
 			l := strings.Split(podIndex, "-")
 			host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
 		}
+
 		_log.Info(fmt.Sprintf("host: %s", host))
 
 		for idx, container := range patch.Spec.Containers {
@@ -215,6 +218,7 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 
 				return false, nil
 			}
+
 			deployment := &appsv1.Deployment{}
 			if err := c.Get(ctx, client.ObjectKey{Name: replicaset.GetOwnerReferences()[0].Name,
 				Namespace: pod.GetNamespace()},

@@ -36,6 +36,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	if err := d.Client.Get(ctx, request.NamespacedName, reconciledDeployment); client.IgnoreNotFound(err) != nil {
 		return reconcile.Result{}, err
 	}
+
 	_log := log.FromContext(ctx).WithValues("resourceVersion", reconciledDeployment.GetResourceVersion())
 
 	// Skip resource without an identity
@@ -62,6 +63,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	// Check for deletion & handle cleanup of the dependencies
 	if !reconciledDeployment.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")
+
 		if err := deleteOwnedResources(ctx, d.Client, reconciledDeployment); err != nil {
 			return reconcile.Result{}, err
 		}

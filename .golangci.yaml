@@ -15,6 +15,7 @@ linters:
     - staticcheck
     - unused
     - whitespace
+    - wsl
   exclusions:
     generated: lax
     rules:
