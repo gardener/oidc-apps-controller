@@ -76,7 +76,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 	}
 
 	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
-		ingress.ObjectMeta.Annotations = annotations
+		ingress.Annotations = annotations
 	}
 
 	return ingress, nil
@@ -134,7 +134,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		},
 	}
 	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
-		ingress.ObjectMeta.Annotations = annotations
+		ingress.Annotations = annotations
 	}
 	return ingress, nil
 }

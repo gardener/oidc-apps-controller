@@ -190,8 +190,8 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	}
 
 	// Add the secret projected volume source in case there are no others
-	if volume.VolumeSource.Projected == nil {
-		volume.VolumeSource.Projected = &corev1.ProjectedVolumeSource{
+	if volume.Projected == nil {
+		volume.Projected = &corev1.ProjectedVolumeSource{
 			Sources: []corev1.VolumeProjection{
 				{Secret: secret},
 			},
@@ -203,8 +203,8 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	}
 
 	// Add the secret source in case there are no other sources in the projected volume
-	if len(volume.VolumeSource.Projected.Sources) == 0 {
-		volume.VolumeSource.Projected.Sources = []corev1.VolumeProjection{
+	if len(volume.Projected.Sources) == 0 {
+		volume.Projected.Sources = []corev1.VolumeProjection{
 			{Secret: secret},
 		}
 		if appendVolume {
@@ -214,7 +214,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	}
 
 	// Replace the secret source in case the secret source is present
-	for _, source := range volume.VolumeSource.Projected.Sources {
+	for _, source := range volume.Projected.Sources {
 		if source.Secret.Name == secretName {
 			source.Secret = secret
 			if appendVolume {
@@ -225,7 +225,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	}
 
 	// Append the secret source in case the secret source is not present
-	volume.VolumeSource.Projected.Sources = append(volume.VolumeSource.Projected.Sources,
+	volume.Projected.Sources = append(volume.Projected.Sources,
 		corev1.VolumeProjection{
 			Secret: secret,
 		},

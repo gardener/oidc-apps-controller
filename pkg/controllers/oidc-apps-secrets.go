@@ -141,7 +141,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
 	if err != nil {
-		return corev1.Secret{}, fmt.Errorf("Error creating kubeconfig secret: %w", err)
+		return corev1.Secret{}, fmt.Errorf("error creating kubeconfig secret: %w", err)
 	}
 
 	// Token is fetched from either the GARDEN_ACCESS_TOKEN environment variable if present, or from the GARDEN_KUBECONFIG
@@ -160,11 +160,11 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 
 	kubeConfig := clientcmdv1.Config{}
 	if err = yaml.Unmarshal(kcfg, &kubeConfig); err != nil {
-		return corev1.Secret{}, fmt.Errorf("Error unmarshalling kubeconfig: %v", err)
+		return corev1.Secret{}, fmt.Errorf("error unmarshalling kubeconfig: %v", err)
 	}
 
 	if err != nil {
-		return corev1.Secret{}, fmt.Errorf("Error creating kubeconfig secret: %w", err)
+		return corev1.Secret{}, fmt.Errorf("rror creating kubeconfig secret: %w", err)
 	}
 	for i, n := range kubeConfig.AuthInfos {
 		if n.Name != "extension" {
@@ -177,7 +177,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 
 	k, err := yaml.Marshal(kubeConfig)
 	if err != nil {
-		return corev1.Secret{}, fmt.Errorf("Error marshaling kubeconfig: %v", err)
+		return corev1.Secret{}, fmt.Errorf("error marshaling kubeconfig: %v", err)
 	}
 
 	return corev1.Secret{
