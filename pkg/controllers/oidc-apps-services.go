@@ -54,7 +54,9 @@ func fetchStrIndexIfPresent(object client.Object) string {
 	idx, present := object.GetLabels()["statefulset.kubernetes.io/pod-name"]
 	if present {
 		l := strings.Split(idx, "-")
+
 		return l[len(l)-1]
 	}
+
 	return ""
 }

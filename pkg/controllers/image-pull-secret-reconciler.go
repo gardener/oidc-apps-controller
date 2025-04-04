@@ -62,6 +62,7 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 		},
 	); err != nil {
 		_log.Error(err, "Error fetching image pull secrets")
+
 		return reconcile.Result{}, err
 	}
 

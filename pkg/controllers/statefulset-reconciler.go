@@ -42,6 +42,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 
 	if reconciledStatefulSet.GetName() == "" && reconciledStatefulSet.GetNamespace() == "" {
 		_log.V(9).Info("Reconciled statefulset is empty, returning ...")
+
 		return reconcile.Result{}, nil
 	}
 
@@ -49,6 +50,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 
 	if !configuration.GetOIDCAppsControllerConfig().Match(reconciledStatefulSet) {
 		_log.V(9).Info("Reconciled statefulset is not an oidc-application-controller target, returning ...")
+
 		return reconcile.Result{}, nil
 	}
 
@@ -62,6 +64,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 		if err := deleteOwnedResources(ctx, s.Client, reconciledStatefulSet); err != nil {
 			return reconcile.Result{}, err
 		}
+
 		return reconcile.Result{}, nil
 	}
 
@@ -70,6 +73,7 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 	}
 
 	_log.Info("reconciled statefulset successfully")
+
 	return reconcile.Result{}, nil
 
 }

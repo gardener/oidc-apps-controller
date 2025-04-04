@@ -44,6 +44,7 @@ type ResourceAttributes struct {
 func (r *root) Parse() string {
 	var parsed []byte
 	parsed, _ = yaml.Marshal(*r)
+
 	return string(parsed)
 }
 
@@ -66,6 +67,7 @@ func NewResourceAttributes(opt ...optRAttributes) configParser {
 	for _, o := range opt {
 		o(&root.Authorization.ResourceAttributes)
 	}
+
 	return root
 }
 

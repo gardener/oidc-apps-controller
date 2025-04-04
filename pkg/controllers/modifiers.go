@@ -86,6 +86,7 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 			ownedIngresses = append(ownedIngresses, ingress)
 		}
 	}
+
 	return &networkingv1.IngressList{Items: ownedIngresses}, nil
 }
 
@@ -141,11 +142,14 @@ func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, obje
 		var shoot gardencorev1beta1.Shoot
 		if err := json.Unmarshal(cluster.Spec.Shoot.Raw, &shoot); err != nil {
 			_log.Error(err, "Failed to parse the shoot raw extension", "cluster", cluster.Name)
+
 			return ""
 		}
 		_log.Info("Fetched resource_attribute", "namespace", shoot.GetNamespace(), "shoot", shoot.GetName())
+
 		return shoot.GetNamespace()
 	}
+
 	return ""
 }
 
@@ -382,6 +386,7 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 		return createOrPatchIngress(ctx, c, *p)
 	}
 	log.FromContext(ctx).Info("unknown object type", "object", patch)
+
 	return nil
 }
 
@@ -392,6 +397,7 @@ func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secr
 		if err = c.Create(ctx, &patch); err != nil {
 			return fmt.Errorf("failed to create ingress	: %w", err)
 		}
+
 		return nil
 	}
 
@@ -402,6 +408,7 @@ func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secr
 		if err != nil {
 			return fmt.Errorf("failed to get secret: %w", err)
 		}
+
 		return c.Patch(ctx, secret, _patch)
 	}); err != nil {
 		return fmt.Errorf("failed to patch secret: %w", err)
@@ -419,6 +426,7 @@ func createOrPatchIngress(ctx context.Context, c client.Client, patch networking
 		if err = c.Create(ctx, &patch); err != nil {
 			return fmt.Errorf("failed to create ingress	: %w", err)
 		}
+
 		return nil
 	}
 
@@ -429,6 +437,7 @@ func createOrPatchIngress(ctx context.Context, c client.Client, patch networking
 		if err != nil {
 			return fmt.Errorf("failed to get ingress: %w", err)
 		}
+
 		return c.Patch(ctx, ingress, _patch)
 	}); err != nil {
 		return fmt.Errorf("failed to patch ingress: %w", err)
@@ -444,6 +453,7 @@ func createOrPatchService(ctx context.Context, c client.Client, patch corev1.Ser
 		if err = c.Create(ctx, &patch); err != nil {
 			return fmt.Errorf("failed to create service	: %w", err)
 		}
+
 		return nil
 	}
 
@@ -454,6 +464,7 @@ func createOrPatchService(ctx context.Context, c client.Client, patch corev1.Ser
 		if err != nil {
 			return fmt.Errorf("failed to get service: %w", err)
 		}
+
 		return c.Patch(ctx, service, _patch)
 	}); err != nil {
 		return fmt.Errorf("failed to patch service: %w", err)
@@ -492,6 +503,7 @@ func patchVpa(ctx context.Context, c client.Client, object client.Object) error 
 		prometheusVpa := &autoscalerv1.VerticalPodAutoscaler{}
 		if err := c.Get(ctx, types.NamespacedName{Name: "prometheus-vpa", Namespace: object.GetNamespace()}, prometheusVpa); client.IgnoreNotFound(err) != nil {
 			log.FromContext(ctx).Error(err, "cannot get prometheus-vpa")
+
 			return nil
 		}
 		if prometheusVpa.GetName() == "prometheus-vpa" {
@@ -517,6 +529,7 @@ func addOptionalIndex(idx string) string {
 	if err != nil {
 		return ""
 	}
+
 	return fmt.Sprintf("%d-", i)
 }
 
@@ -525,6 +538,7 @@ func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object)
 	podList := &corev1.PodList{}
 	if err := c.List(ctx, podList, client.InNamespace(object.GetNamespace())); err != nil {
 		_log.Error(err, "unable to list pods", "namespace", object.GetNamespace())
+
 		return false
 	}
 
@@ -543,6 +557,7 @@ func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object)
 				rs := &v1.ReplicaSet{}
 				if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: object.GetNamespace()}, rs); client.IgnoreNotFound(err) != nil {
 					log.FromContext(ctx).Error(err, "cannot get replicaset", "name", ref.Name)
+
 					return false
 				}
 				for _, d := range rs.OwnerReferences {
@@ -563,5 +578,6 @@ func isOidcAppPod(pod corev1.Pod) bool {
 			return true
 		}
 	}
+
 	return false
 }

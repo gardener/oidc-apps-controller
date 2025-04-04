@@ -42,6 +42,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	// Skip resource without an identity
 	if reconciledDeployment.GetName() == "" && reconciledDeployment.GetNamespace() == "" {
 		_log.V(9).Info("reconciled deployment is empty, returning ...")
+
 		return reconcile.Result{}, nil
 	}
 
@@ -50,6 +51,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	if reconciledDeployment.GetLabels() != nil {
 		if !configuration.GetOIDCAppsControllerConfig().Match(reconciledDeployment) {
 			_log.V(9).Info("reconciled deployment is not an oidc-application-controller target, returning ...")
+
 			return reconcile.Result{}, nil
 		}
 	}
@@ -62,8 +64,10 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	if !reconciledDeployment.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")
 		if err := deleteOwnedResources(ctx, d.Client, reconciledDeployment); err != nil {
+
 			return reconcile.Result{}, err
 		}
+
 		return reconcile.Result{}, nil
 	}
 
@@ -72,6 +76,6 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	}
 
 	_log.Info("reconciled deployment successfully")
-	return reconcile.Result{}, nil
 
+	return reconcile.Result{}, nil
 }

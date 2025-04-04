@@ -27,6 +27,7 @@ func getFileSha256(filePath string) string {
 	stat, err := os.Stat(filePath)
 	if err != nil {
 		_log.Error(err, "cannot stat file path", "path", filePath)
+
 		return ""
 	}
 
@@ -44,13 +45,16 @@ func getFileSha256(filePath string) string {
 	}()
 	if err != nil {
 		_log.Error(err, "error opening file", "path", filePath)
+
 		return ""
 	}
 	if _, err = io.Copy(hash, f); err != nil {
 		_log.Error(err, "error reading file", "path", filePath)
+
 		return ""
 	}
 
 	s := fmt.Sprintf("%x", hash.Sum(nil))
+
 	return s
 }

@@ -37,6 +37,7 @@ func GenerateRandomString(length int) string {
 		}
 		b.WriteByte(charset[index.Int64()])
 	}
+
 	return b.String()
 }
 
@@ -50,6 +51,7 @@ func GenerateSha256(key string) string {
 	if len(s) > 6 {
 		return s[:6]
 	}
+
 	return s
 }
 
@@ -59,5 +61,6 @@ func GenerateFullSha256(key string) string {
 	if _, err := io.Copy(hash, strings.NewReader(key)); err != nil {
 		return ""
 	}
+
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }

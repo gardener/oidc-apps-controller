@@ -117,8 +117,10 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
 					}
+
 					return nil
 				}
+
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-0-"+podSuffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 
@@ -146,14 +148,15 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
 					}
+
 					return nil
 				}
+
 				return fmt.Errorf("An expected oidc-apps ingress: %s is not found", constants.IngressName+"-1-"+podSuffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 		})
 
 		It("there shall be oauth2 services per pod present in the statefulset namespace", func(ctx SpecContext) {
-
 			services := corev1.ServiceList{}
 			By("checking the service for the first pod")
 			Eventually(func() error {
@@ -172,6 +175,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return nil
 					}
 				}
+
 				return fmt.Errorf("An expected oidc-apps service: %s is not found",
 					constants.ServiceNameOauth2Service+"-0-"+podSuffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
@@ -193,13 +197,13 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return nil
 					}
 				}
+
 				return fmt.Errorf("An expected oidc-apps service: %s is not found",
 					constants.ServiceNameOauth2Service+"-0-"+podSuffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 		})
 
 		It("there shall be an oauth2 secret present in the statefulset namespace", func(ctx SpecContext) {
-
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
@@ -219,6 +223,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return nil
 					}
 				}
+
 				return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
 					constants.SecretNameOauth2Proxy+"-"+suffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
@@ -244,6 +249,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						return nil
 					}
 				}
+
 				return fmt.Errorf("An expected oidc-apps ressource-attributes secret: %s is not found",
 					constants.SecretNameResourceAttributes+"-"+suffix)
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())

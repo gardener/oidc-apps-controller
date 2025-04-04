@@ -86,6 +86,7 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	}
 
 	_log.Info("CA certificate generated", "commonName", certTmpl.Subject.CommonName)
+
 	return b, nil
 }
 
@@ -94,6 +95,7 @@ func rsaToPem(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling bundle private key: %w", err)
 	}
+
 	return pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: m}), nil
 }
 
@@ -102,6 +104,7 @@ func derToPem(cert *x509.Certificate) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parcing bundle: %w", err)
 	}
+
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDERBytes.Raw}), nil
 }
 
@@ -134,6 +137,7 @@ func writeBundle(path string, b *bundle) error {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -177,6 +181,7 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 		return nil, err
 	}
 	_log.Info("TLS certificate generated", "commonName", certTmpl.Subject.CommonName)
+
 	return b, nil
 }
 
@@ -186,6 +191,7 @@ func generateSerial() (*big.Int, error) {
 		return nil, err
 	}
 	serial = new(big.Int).Add(serial, big.NewInt(1))
+
 	return serial, nil
 }
 
@@ -215,6 +221,7 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 	if k, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		return nil, err
 	}
+
 	return &bundle{
 		cert: cert,
 		key:  k.(*rsa.PrivateKey),
@@ -247,6 +254,7 @@ func loadCAFromDisk(path string) (*bundle, error) {
 	if k, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		return nil, err
 	}
+
 	return &bundle{
 		cert: cert,
 		key:  k.(*rsa.PrivateKey),
