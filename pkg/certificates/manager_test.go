@@ -73,7 +73,6 @@ func TestUpdateCABundles(t *testing.T) {
 	assert.Equal(t, 2, len(foundSerials))
 	assert.Contains(t, foundSerials, *c.ca.cert.SerialNumber)
 	assert.Contains(t, foundSerials, *caCert.cert.SerialNumber)
-
 }
 
 func TestRemoveCABundles(t *testing.T) {
@@ -131,7 +130,6 @@ func TestRemoveCABundles(t *testing.T) {
 	assert.NotContains(t, foundSerials, c.ca.cert.SerialNumber.String())
 	// The second CA certificate should still be present
 	assert.Contains(t, foundSerials, caCert.cert.SerialNumber.String())
-
 }
 
 func TestSaveAndLoadCABundle(t *testing.T) {
@@ -147,7 +145,6 @@ func TestSaveAndLoadCABundle(t *testing.T) {
 	loaded, err := loadCAFromDisk(tmp)
 	assert.Nil(t, err)
 	assert.Equal(t, c.ca.cert.SerialNumber, loaded.cert.SerialNumber)
-
 }
 
 func TestSaveAndLoadTLSBundle(t *testing.T) {
@@ -165,5 +162,4 @@ func TestSaveAndLoadTLSBundle(t *testing.T) {
 	loaded, err := loadTLSFromDisk(tmp)
 	assert.Nil(t, err)
 	assert.Equal(t, c.tls.cert.SerialNumber, loaded.cert.SerialNumber)
-
 }

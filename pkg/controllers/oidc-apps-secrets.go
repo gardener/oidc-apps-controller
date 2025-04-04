@@ -174,7 +174,6 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		}
 		kubeConfig.AuthInfos[i].AuthInfo.TokenFile = ""
 		kubeConfig.AuthInfos[i].AuthInfo.Token = string(token)
-
 	}
 
 	k, err := yaml.Marshal(kubeConfig)

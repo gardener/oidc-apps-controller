@@ -44,7 +44,6 @@ var _log = logf.Log.WithName("gardener-access-token-notifier")
 
 // NewGardenerAccessTokenNotifier is a controller-runtime runnable used to propagate gardener access tokens to the targets
 func NewGardenerAccessTokenNotifier(c client.Client, kubeconfigPath, tokenPath string) manager.Runnable {
-
 	_log.Info("Creating notifier", "kubeconfig", kubeconfigPath, "token", tokenPath)
 
 	return &gardenerAccessTokenNotifier{
@@ -76,7 +75,6 @@ func (g *gardenerAccessTokenNotifier) Start(ctx context.Context) error {
 }
 
 func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context) <-chan string {
-
 	hashPathChan := make(chan string, 2)
 	ticker := time.NewTicker(3 * time.Second)
 
@@ -109,7 +107,6 @@ func (g *gardenerAccessTokenNotifier) startCalculateHashPath(ctx context.Context
 }
 
 func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
-
 	tokenBytes, err := os.ReadFile(g.tokenPath)
 	if err != nil {
 		_log.Error(err, "error reading access token")
@@ -132,7 +129,6 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 
 	for i, n := range kubeConfig.AuthInfos {
 		if n.Name != "extension" {
-
 			continue
 		}
 		kubeConfig.AuthInfos[i].AuthInfo.TokenFile = ""

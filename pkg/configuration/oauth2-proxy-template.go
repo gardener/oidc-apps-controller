@@ -84,9 +84,7 @@ func (o *oauth2Config) Parse() string {
 					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipIssuerVerification) + "\""
 				case "insecure_oidc_skip_nonce":
 					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipNonce) + "\""
-
 				}
-
 			}
 		}
 		if len(line) > 0 {

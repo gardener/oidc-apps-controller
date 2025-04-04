@@ -225,7 +225,6 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 			}
 
 			return configuration.GetOIDCAppsControllerConfig().Match(deployment), deployment
-
 		}
 	}
 

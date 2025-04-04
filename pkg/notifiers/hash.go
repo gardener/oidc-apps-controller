@@ -23,7 +23,6 @@ import (
 )
 
 func getFileSha256(filePath string) string {
-
 	stat, err := os.Stat(filePath)
 	if err != nil {
 		_log.Error(err, "cannot stat file path", "path", filePath)

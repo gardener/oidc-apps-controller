@@ -32,7 +32,6 @@ type StatefulSetReconciler struct {
 
 // Reconcile creates the auth & zutz secrets mounted to the target statefulset
 func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-
 	reconciledStatefulSet := &appsv1.StatefulSet{}
 
 	if err := s.Client.Get(ctx, request.NamespacedName, reconciledStatefulSet); client.IgnoreNotFound(err) != nil {
@@ -75,5 +74,4 @@ func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile
 	_log.Info("reconciled statefulset successfully")
 
 	return reconcile.Result{}, nil
-
 }

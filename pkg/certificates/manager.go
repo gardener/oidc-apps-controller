@@ -79,7 +79,6 @@ var _log = logf.Log.WithName("certificate-manager")
 // bundle rotation for the service endpoint of the mutating webhook
 func New(certPath string, name string, namespace string, c client.Client, config *rest.Config) (manager.Runnable,
 	error) {
-
 	runnable := &certManager{
 		certPath:    certPath,
 		client:      c,
@@ -206,7 +205,6 @@ func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.C
 // At this moment the client.Client is present, and we can use it to update the webhook CABundle resource without
 // creating a new client.
 func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
-
 	webhook := &v1.MutatingWebhookConfiguration{}
 
 	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
@@ -216,7 +214,6 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 		for i, w := range webhook.Webhooks {
 			if w.Name != c.webhookName+vpasWebhookSuffix &&
 				w.Name != c.webhookName+podsWebhookSuffix {
-
 				continue
 			}
 
@@ -232,7 +229,6 @@ func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
 
 		return c.client.Update(ctx, webhook)
 	})
-
 }
 
 // rotateTLSCert is a loops over expirationTicker and checks if the TLS bundle is expired.
@@ -380,15 +376,12 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
 		_log.Error(err, "Error updating webhook")
 		os.Exit(1)
 	}
-
 }
 
 func (c *certManager) cleanWebhookCABundles(oidcWebhook *v1.MutatingWebhookConfiguration) {
-
 	for i, w := range oidcWebhook.Webhooks {
 		if w.Name != c.webhookName+vpasWebhookSuffix &&
 			w.Name != c.webhookName+podsWebhookSuffix {
-
 			continue
 		}
 
@@ -436,7 +429,6 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 		}
 
 		caBundleSlice = append(caBundleSlice, pem.EncodeToMemory(block)...)
-
 	}
 	_log.Info("Certificate CA Bundle length", "webhook", name, "length", len(currentCAs))
 
@@ -474,7 +466,6 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 }
 
 func caBundleFound(caBundle []byte, cert *x509.Certificate) bool {
-
 	for len(caBundle) > 0 {
 		var block *pem.Block
 		block, caBundle = pem.Decode(caBundle)

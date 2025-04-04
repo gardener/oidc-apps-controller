@@ -77,7 +77,6 @@ func get2ProxySecretChecksum(object client.Object) string {
 	}
 
 	return rand.GenerateFullSha256(cfg)
-
 }
 
 // Add gardener specific labels to the target pods.
@@ -210,7 +209,6 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 	if appendVolume {
 		podSpec.Volumes = append(podSpec.Volumes, volume)
 	}
-
 }
 
 func addProxyContainer(name string, podSpec *corev1.PodSpec, container corev1.Container) {
@@ -292,7 +290,6 @@ func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 }
 
 func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
-
 	image, _ := imagevector.ImageVector().FindImage("kube-rbac-proxy-watcher")
 	if pod == nil {
 		return corev1.Container{}
@@ -463,7 +460,6 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 }
 
 func shallAddKubeConfigSecretName(object client.Object) bool {
-
 	// There are potentially two sources of the kubeconfig:
 	// 1. Configuration, meaning the kubeconfig secret reference is supplied with the oidc-apps-controller setup
 	// 2. The controller is running as a gardener extension, meaning that there is a mounted secret in the controller pod.

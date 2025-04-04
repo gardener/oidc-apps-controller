@@ -36,7 +36,6 @@ func TestMain(m *testing.M) {
 	}()
 
 	m.Run()
-
 }
 
 func TestGenerateInvalidCACert(t *testing.T) {
@@ -52,7 +51,6 @@ func TestGenerateInvalidCACert(t *testing.T) {
 	_, err := generateCACert(".", mockCertOps)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "x509: malformed certificate")
-
 }
 
 func TestGenerateCACert(t *testing.T) {
@@ -104,5 +102,4 @@ func TestGenerateTLSCert(t *testing.T) {
 	// Verify that the TLS bundle is signed by the CA's private key
 	_, err = tlsCert.cert.Verify(opts)
 	assert.Nil(t, err)
-
 }

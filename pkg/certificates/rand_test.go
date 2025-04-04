@@ -36,7 +36,6 @@ func TestGenerateCACommonName(t *testing.T) {
 }
 
 func TestGenerateTLSCommonName(t *testing.T) {
-
 	generatedName := generateTLSCommonName("oidc-apps-controller")
 	expectedPrefix := "oidc-apps-controller-webhook-"
 	assert.Contains(t, generatedName, expectedPrefix)

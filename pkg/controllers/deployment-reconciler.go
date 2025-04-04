@@ -32,7 +32,6 @@ type DeploymentReconciler struct {
 
 // Reconcile creates the auth & zutz secrets mounted to the target deployment
 func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-
 	reconciledDeployment := &appsv1.Deployment{}
 	if err := d.Client.Get(ctx, request.NamespacedName, reconciledDeployment); client.IgnoreNotFound(err) != nil {
 		return reconcile.Result{}, err
@@ -64,7 +63,6 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.
 	if !reconciledDeployment.GetDeletionTimestamp().IsZero() {
 		_log.V(9).Info("Remove owned resources")
 		if err := deleteOwnedResources(ctx, d.Client, reconciledDeployment); err != nil {
-
 			return reconcile.Result{}, err
 		}
 
