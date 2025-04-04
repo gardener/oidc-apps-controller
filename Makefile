@@ -36,7 +36,7 @@ $(TOOLS_DIR):
 	@mkdir -p $(TOOLS_DIR)
 
 #########################################
-# Targets                                 #
+# Targets                               #
 #########################################
 .DEFAULT_GOAL := all
 all: check test envtest build
@@ -70,22 +70,10 @@ docker-push:
 tidy:
 	@go mod tidy
 
-.PHONY: build
-build: tidy check
-	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
-	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
-
 .PHONY: gci
 gci: tidy
 	@echo "Running gci..."
 	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
-
-.PHONY: clean
-clean:
-	@echo "Running $@..."
-	@rm -f $(REPO_ROOT)/build/$(NAME)
-	@rm -f $(REPO_ROOT)/gosec-report.sarif
-	@go tool setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
 
 .PHONY: fmt
 fmt: tidy
@@ -103,6 +91,19 @@ lint: tidy
 	@go tool golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
+
+.PHONY: build
+build: tidy check
+	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
+	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
+
+.PHONY: clean
+clean:
+	@echo "Running $@..."
+	@rm -f $(REPO_ROOT)/build/$(NAME)
+	@rm -f $(REPO_ROOT)/gosec-report.sarif
+	@go tool setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
+
 
 .PHONY: test
 test: tidy
