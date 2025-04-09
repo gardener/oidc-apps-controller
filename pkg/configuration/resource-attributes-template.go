@@ -48,10 +48,11 @@ func (r *root) Parse() string {
 	return string(parsed)
 }
 
-type optRAttributes func(*ResourceAttributes)
+// OptRAttributes is a function that modifies the ResourceAttributes
+type OptRAttributes func(*ResourceAttributes)
 
 // NewResourceAttributes returns a new configParser for the ResourceAttributes
-func NewResourceAttributes(opt ...optRAttributes) configParser {
+func NewResourceAttributes(opt ...OptRAttributes) configParser {
 	root := &root{
 		Authorization: Authorization{
 			ResourceAttributes: ResourceAttributes{
@@ -73,14 +74,14 @@ func NewResourceAttributes(opt ...optRAttributes) configParser {
 }
 
 // WithNamespace sets the namespace for the ResourceAttributes
-func WithNamespace(namespace string) optRAttributes {
+func WithNamespace(namespace string) OptRAttributes {
 	return func(r *ResourceAttributes) {
 		r.Namespace = namespace
 	}
 }
 
 // WithSubresource sets the subresource for the ResourceAttributes
-func WithSubresource(subresource string) optRAttributes {
+func WithSubresource(subresource string) OptRAttributes {
 	return func(r *ResourceAttributes) {
 		r.Subresource = subresource
 	}

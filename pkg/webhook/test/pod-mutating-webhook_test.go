@@ -48,7 +48,6 @@ var targetPod, targetPodWithServiceAccount, podWithLessResources, podWithMoreRes
 var podWebhook *webhook.PodMutator
 
 var _ = BeforeEach(func() {
-
 	initNonTargetDeployment()
 	initTargetDeployment()
 
@@ -73,7 +72,6 @@ var _ = BeforeEach(func() {
 		Client:  fakeClient,
 		Decoder: admission.NewDecoder(s),
 	}
-
 })
 
 func initTargetDeployment() {
@@ -292,7 +290,6 @@ func initNonTargetDeployment() {
 }
 
 var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
-
 	Context("when a pod belongs to a target", func() {
 		It("there shall be auth & authz proxies in the patch pod spec", func() {
 			patchedPod := patchPod(targetPod)
@@ -381,8 +378,6 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 							ReadOnly:  true,
 							MountPath: "/etc/oauth2-proxy",
 						}))
-				}
-				switch c.Name {
 				case constants.ContainerNameKubeRbacProxy:
 					Expect(c.VolumeMounts).To(ContainElement(
 						corev1.VolumeMount{
@@ -479,8 +474,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				_log.Info("patched pod", "patched pod", pp)
 
 				for _, c := range pp.Spec.Containers {
-					switch c.Name {
-					case constants.ContainerNameOauth2Proxy:
+					if c.Name == constants.ContainerNameOauth2Proxy {
 						Expect(c.Resources).To(Equal(corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
 								"cpu":    resource.MustParse("100m"),
@@ -499,11 +493,11 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 		When("there is a container resource defined in the incoming request which are bigger than default", func() {
 			It("shall not modify the container resources", func() {
 				pp := patchPod(podWithMoreResources)
+
 				_log.Info("patched pod", "patched pod", pp)
 
 				for _, c := range pp.Spec.Containers {
-					switch c.Name {
-					case constants.ContainerNameOauth2Proxy:
+					if c.Name == constants.ContainerNameOauth2Proxy {
 						Expect(c.Resources).To(Equal(podWithMoreResources.Spec.Containers[1].Resources))
 					}
 				}
@@ -512,11 +506,11 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 		When("there isn't any container resource defined in the incoming request", func() {
 			It("shall set the default container resources", func() {
 				pp := patchPod(podWithLessResources)
+
 				_log.Info("patched pod", "patched pod", pp)
 
 				for _, c := range pp.Spec.Containers {
-					switch c.Name {
-					case constants.ContainerNameKubeRbacProxy:
+					if c.Name == constants.ContainerNameKubeRbacProxy {
 						expected := corev1.ResourceRequirements{
 							Limits: map[corev1.ResourceName]resource.Quantity{
 								"cpu":    resource.MustParse("100m"),

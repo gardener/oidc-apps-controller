@@ -143,8 +143,8 @@ func TestTargetGlobalConfiguration(t *testing.T) {
 	g.Expect(extensionConfig.GetClientID(target)).To(Equal("client-id"))
 	g.Expect(extensionConfig.GetScope(target)).To(Equal("openid email"))
 	g.Expect(extensionConfig.GetClientSecret(target)).To(Equal("client-secret"))
-	g.Expect(extensionConfig.GetRedirectUrl(target)).To(Equal("https://test-04-test.domain.org/oauth2/callback"))
-	g.Expect(extensionConfig.GetOidcIssuerUrl(target)).To(Equal("https://oidc-provider.org"))
+	g.Expect(extensionConfig.GetRedirectURL(target)).To(Equal("https://test-04-test.domain.org/oauth2/callback"))
+	g.Expect(extensionConfig.GetOidcIssuerURL(target)).To(Equal("https://oidc-provider.org"))
 	g.Expect(extensionConfig.GetSslInsecureSkipVerify(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(target)).To(BeFalse())
@@ -168,8 +168,8 @@ func TestTargetConfiguration(t *testing.T) {
 	g.Expect(extensionConfig.GetClientID(target)).To(Equal("client-id-target"))
 	g.Expect(extensionConfig.GetScope(target)).To(Equal("openid email target"))
 	g.Expect(extensionConfig.GetClientSecret(target)).To(Equal("client-secret-target"))
-	g.Expect(extensionConfig.GetRedirectUrl(target)).To(Equal("https://app.org/oauth2/callback"))
-	g.Expect(extensionConfig.GetOidcIssuerUrl(target)).To(Equal("https://oidc-provider-target.org"))
+	g.Expect(extensionConfig.GetRedirectURL(target)).To(Equal("https://app.org/oauth2/callback"))
+	g.Expect(extensionConfig.GetOidcIssuerURL(target)).To(Equal("https://oidc-provider-target.org"))
 	g.Expect(extensionConfig.GetOidcCASecretName(target)).To(Equal("target-oidc-ca"))
 	g.Expect(extensionConfig.GetSslInsecureSkipVerify(target)).To(BeTrue())
 	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(target)).To(BeTrue())
@@ -200,8 +200,8 @@ func TestGardenConfig(t *testing.T) {
 	host := extensionConfig.GetHost(target)
 	g.Expect(host).To(Equal("test-02-prefix-4396f8.seed.domain.org"))
 
-	clientId := extensionConfig.GetClientID(target)
-	g.Expect(clientId).To(Equal("seed-client-id"))
+	clientID := extensionConfig.GetClientID(target)
+	g.Expect(clientID).To(Equal("seed-client-id"))
 }
 
 func getDeployment(name string) *appsv1.Deployment {

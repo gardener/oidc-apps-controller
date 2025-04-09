@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidc_apps_controller
+package oidcappscontroller
 
 import (
 	"context"
@@ -69,7 +69,7 @@ var (
 )
 
 // RunController is the entry point for initialzing and starting the controller-runtime manager
-func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
+func RunController(ctx context.Context, o *Options) error {
 	printGardenEnvVars()
 
 	// Initialize a scheme which will contain the API definitions
@@ -119,7 +119,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 		}}
 
 	// Add additional scheme in case of running in gardener cluster
-	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 {
+	if len(os.Getenv(constants.GardenKubeconfig)) > 0 {
 		// Add gardener Cluster schemes
 		if err := gardenextensionsv1alpha1.AddToScheme(sch); err != nil {
 			return fmt.Errorf("could not initialize the runtime scheme: %w", err)
@@ -162,7 +162,7 @@ func RunController(ctx context.Context, o *OidcAppsControllerOptions) error {
 	}
 
 	// Set domain name if we are running in a gardener cluster
-	if len(os.Getenv(constants.GARDEN_KUBECONFIG)) > 0 && os.Getenv(constants.GARDEN_SEED_DOMAIN_NAME) == "" {
+	if len(os.Getenv(constants.GardenKubeconfig)) > 0 && os.Getenv(constants.GardenSeedDomainName) == "" {
 		if err := setGardenDomainNameEnvVar(ctx, mgr.GetConfig()); err != nil {
 			return fmt.Errorf("could not set the garden domain name: %w", err)
 		}
@@ -222,8 +222,8 @@ func printGardenEnvVars() {
 	}
 }
 
-func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
-	c, err := client.New(config, client.Options{})
+func setGardenDomainNameEnvVar(ctx context.Context, cfg *rest.Config) error {
+	c, err := client.New(cfg, client.Options{})
 	if err != nil {
 		return fmt.Errorf("could not initialize the controller-runtime client: %w", err)
 	}
@@ -236,11 +236,11 @@ func setGardenDomainNameEnvVar(ctx context.Context, config *rest.Config) error {
 	if len(ingress.Spec.Rules) > 0 {
 		_, h, ok := strings.Cut(ingress.Spec.Rules[0].Host, ".")
 		if ok {
-			if err := os.Setenv(constants.GARDEN_SEED_DOMAIN_NAME, h); err != nil {
+			if err := os.Setenv(constants.GardenSeedDomainName, h); err != nil {
 				return fmt.Errorf("could not set the garden domain name: %w", err)
 			}
 
-			_log.Info("Set domain name env variable", constants.GARDEN_SEED_DOMAIN_NAME, h)
+			_log.Info("Set domain name env variable", constants.GardenSeedDomainName, h)
 		}
 	}
 
@@ -309,8 +309,13 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		context.Background(),
 		&corev1.Secret{},
 		"metadata.labels"+constants.LabelKey,
-		func(o client.Object) []string {
-			secret := o.(*corev1.Secret)
+		func(obj client.Object) []string {
+			secret, ok := obj.(*corev1.Secret)
+			if !ok {
+				_log.Error(fmt.Errorf("object is not a secret"), "object", obj)
+
+				return nil
+			}
 			if value, exists := secret.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
@@ -325,8 +330,14 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		context.Background(),
 		&corev1.Service{},
 		"metadata.labels"+constants.LabelKey,
-		func(o client.Object) []string {
-			service := o.(*corev1.Service)
+		func(obj client.Object) []string {
+			service, ok := obj.(*corev1.Service)
+			if !ok {
+				_log.Error(fmt.Errorf("object is not a service"), "object", obj)
+
+				return nil
+			}
+
 			if value, exists := service.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
@@ -341,8 +352,13 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		context.Background(),
 		&networkingv1.Ingress{},
 		"metadata.labels"+constants.LabelKey,
-		func(o client.Object) []string {
-			ingress := o.(*networkingv1.Ingress)
+		func(obj client.Object) []string {
+			ingress, ok := obj.(*networkingv1.Ingress)
+			if !ok {
+				_log.Error(fmt.Errorf("object is not an ingress"), "object", obj)
+
+				return nil
+			}
 			if value, exists := ingress.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
@@ -425,7 +441,7 @@ func addStatefulSetController(mgr manager.Manager) error {
 }
 
 // Add certificate manager in case no external certificate manager is available
-func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOptions) error {
+func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
 	if !o.useCertManager {
 		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
 		if err != nil {
@@ -440,12 +456,12 @@ func addWebhookCertificateManager(mgr manager.Manager, o *OidcAppsControllerOpti
 
 func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 	// Add garden-secret-notifier if the GARDEN environment variables are present
-	if os.Getenv(constants.GARDEN_KUBECONFIG) != "" || os.Getenv(constants.GARDEN_ACCESS_TOKEN) != "" {
-		kubeconfigPath := filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
+	if os.Getenv(constants.GardenKubeconfig) != "" || os.Getenv(constants.GardenAccessToken) != "" {
+		kubeconfigPath := filepath.Dir(os.Getenv(constants.GardenKubeconfig))
 
-		tokenPath := os.Getenv(constants.GARDEN_ACCESS_TOKEN)
+		tokenPath := os.Getenv(constants.GardenAccessToken)
 		if tokenPath == "" {
-			tokenPath = filepath.Dir(os.Getenv(constants.GARDEN_KUBECONFIG))
+			tokenPath = filepath.Dir(os.Getenv(constants.GardenKubeconfig))
 		}
 
 		accessTokenNotifier := notifiers.NewGardenerAccessTokenNotifier(
@@ -461,7 +477,7 @@ func addGardenAccessTokenNotifier(mgr manager.Manager) error {
 }
 
 // Add namespace && image pull secret reconcilers if the registry-secret parameter is present
-func addPrivateRegistrySecretControllers(mgr manager.Manager, o *OidcAppsControllerOptions) error {
+func addPrivateRegistrySecretControllers(mgr manager.Manager, o *Options) error {
 	if o.registrySecret != "" {
 		imagePullSecretPredicates := predicate.GenerationChangedPredicate{
 			TypedFuncs: predicate.Funcs{
@@ -504,7 +520,7 @@ func addPrivateRegistrySecretControllers(mgr manager.Manager, o *OidcAppsControl
 	return nil
 }
 
-func addWebhooks(mgr manager.Manager, o *OidcAppsControllerOptions) error {
+func addWebhooks(mgr manager.Manager, o *Options) error {
 	// Add Mutating Admission Webhook Server
 	webhookServer := webhook.NewServer(webhook.Options{
 		Port:    o.webhookPort,
@@ -554,7 +570,13 @@ func IsOidcAppsPod(pod *corev1.Pod) bool {
 // on changes of the owned pods
 func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		pod := obj.(*corev1.Pod)
+		pod, ok := obj.(*corev1.Pod)
+		if !ok {
+			_log.Error(fmt.Errorf("object is not a pod"), "object", obj)
+
+			return nil
+		}
+
 		if !IsOidcAppsPod(pod) {
 			return nil
 		}
@@ -595,7 +617,13 @@ func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj 
 // on changes of an ingress owned by a pod owned by the statefulset
 func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		ingress := obj.(*networkingv1.Ingress)
+		ingress, ok := obj.(*networkingv1.Ingress)
+		if !ok {
+			_log.Error(fmt.Errorf("object is not an ingress"), "object", obj)
+
+			return nil
+		}
+
 		c := mgr.GetClient()
 
 		for _, o := range ingress.GetOwnerReferences() {
@@ -637,7 +665,13 @@ func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 // on changes of a service owned by a pod owned by the statefulset
 func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		service := obj.(*corev1.Service)
+		service, ok := obj.(*corev1.Service)
+		if !ok {
+			_log.Error(fmt.Errorf("object is not a service"), "object", obj)
+
+			return nil
+		}
+
 		c := mgr.GetClient()
 
 		for _, o := range service.GetOwnerReferences() {

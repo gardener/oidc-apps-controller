@@ -19,11 +19,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
-	v1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -137,7 +136,7 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	return runnable, nil
 }
 
-func (c *certManager) NeedLeaderElection() bool {
+func (*certManager) NeedLeaderElection() bool {
 	return false
 }
 
@@ -171,9 +170,7 @@ func (c *certManager) Start(ctx context.Context) error {
 
 	defer cancel()
 
-	c.cleanUpMutatingWebhookConfiguration(ctx) // Clean up the webhook CABundles
-
-	return nil
+	return c.cleanUpMutatingWebhookConfiguration(ctx) // Clean up the webhook CABundles
 }
 
 // setupWebhooksCABundles is invoked during runnable initialization and before the controller manager Start method is called.
@@ -226,7 +223,7 @@ func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.C
 // At this moment the client.Client is present, and we can use it to update the webhook CABundle resource without
 // creating a new client.
 func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
-	webhook := &v1.MutatingWebhookConfiguration{}
+	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
 
 	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
 		if err := c.client.Get(c.ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
@@ -396,8 +393,8 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 	return caBundleSlice, nil
 }
 
-func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
-	webhook := &v1.MutatingWebhookConfiguration{}
+func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) error {
+	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
 
 	if err := retry.RetryOnConflict(webhookUpdateRetry, func() error {
 		if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
@@ -409,11 +406,14 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) {
 	}); err != nil {
 		// panic if we cannot get/update the webhook
 		_log.Error(err, "Error updating webhook")
-		os.Exit(1)
+
+		return err
 	}
+
+	return nil
 }
 
-func (c *certManager) cleanWebhookCABundles(oidcWebhook *v1.MutatingWebhookConfiguration) {
+func (c *certManager) cleanWebhookCABundles(oidcWebhook *admissionregistrationv1.MutatingWebhookConfiguration) {
 	for i, w := range oidcWebhook.Webhooks {
 		if w.Name != c.webhookName+vpasWebhookSuffix &&
 			w.Name != c.webhookName+podsWebhookSuffix {
@@ -484,7 +484,7 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 	for {
 		select {
 		case <-caTicker.C:
-			webhook := &v1.MutatingWebhookConfiguration{}
+			webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
 			if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 				_log.Error(err, "Error fetching webhook")
 			}

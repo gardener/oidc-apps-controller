@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/yaml"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
@@ -61,7 +61,7 @@ type Configuration struct {
 // Oauth2ProxyConfig OIDC Provider configuration
 type Oauth2ProxyConfig struct {
 	Scope                              string `json:"scope,omitempty"`
-	ClientId                           string `json:"clientId"`
+	ClientID                           string `json:"clientId"`
 	ClientSecret                       string `json:"clientSecret,omitempty"`
 	RedirectURL                        string `json:"redirectUrl"`
 	OidcIssuerURL                      string `json:"oidcIssuerUrl"`
@@ -137,7 +137,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 			}
 
 			config.log.Error(err, "failed to read extension configuration", "path", path)
-			os.Exit(1)
+			panic("terminating")
 		}
 
 		if err = yaml.Unmarshal(cf, config); err != nil {
@@ -147,7 +147,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 			}
 
 			config.log.Error(err, "failed to unmarshal extension configuration")
-			os.Exit(1)
+			panic("terminating")
 		}
 	})
 
@@ -179,8 +179,8 @@ func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
 	t := c.fetchTarget(object)
 	domain := c.Configuration.DomainName
 
-	if len(os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)) > 0 {
-		domain = os.Getenv(oidc_apps_controller.GARDEN_SEED_DOMAIN_NAME)
+	if len(os.Getenv(constants.GardenSeedDomainName)) > 0 {
+		domain = os.Getenv(constants.GardenSeedDomainName)
 	}
 
 	prefix := object.GetName() + "-" + object.GetNamespace()
@@ -210,13 +210,13 @@ func (c *OIDCAppsControllerConfig) GetUpstreamTarget(object client.Object) strin
 	}
 
 	b.Grow(9)
-	b.WriteString("protocol=")
+	_, _ = b.WriteString("protocol=")
 	b.Grow(len(protocol))
-	b.WriteString(protocol)
+	_, _ = b.WriteString(protocol)
 	b.Grow(7)
-	b.WriteString(", port=")
+	_, _ = b.WriteString(", port=")
 	b.Grow(len(t.TargetPort.String()))
-	b.WriteString(t.TargetPort.String())
+	_, _ = b.WriteString(t.TargetPort.String())
 
 	return b.String()
 }
@@ -315,37 +315,21 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 
 // GetClientID returns the OIDC Provider client_id for the given workload target
 func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
-	if len(os.Getenv(oidc_apps_controller.GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID)) > 0 {
-		return os.Getenv(oidc_apps_controller.GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID)
+	if len(os.Getenv(constants.GardenSeedOauth2ProxyClientID)) > 0 {
+		return os.Getenv(constants.GardenSeedOauth2ProxyClientID)
 	}
 
 	t := c.fetchTarget(object)
 
 	if t.Configuration != nil &&
 		t.Configuration.Oauth2Proxy != nil &&
-		t.Configuration.Oauth2Proxy.ClientId != "" {
-		return t.Configuration.Oauth2Proxy.ClientId
+		t.Configuration.Oauth2Proxy.ClientID != "" {
+		return t.Configuration.Oauth2Proxy.ClientID
 	}
 
 	if c.Configuration.Oauth2Proxy != nil &&
-		c.Configuration.Oauth2Proxy.ClientId != "" {
-		return c.Configuration.Oauth2Proxy.ClientId
-	}
-
-	return ""
-}
-
-// GetOidcIssuerURL returns the OIDC Provider URL for the given workload target
-func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string {
-	t := c.fetchTarget(object)
-	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
-		t.Configuration.Oauth2Proxy.OidcIssuerURL != "" {
-		return t.Configuration.Oauth2Proxy.OidcIssuerURL
-	}
-
-	if c.Configuration.Oauth2Proxy != nil &&
-		c.Configuration.Oauth2Proxy.OidcIssuerURL != "" {
-		return c.Configuration.Oauth2Proxy.OidcIssuerURL
+		c.Configuration.Oauth2Proxy.ClientID != "" {
+		return c.Configuration.Oauth2Proxy.ClientID
 	}
 
 	return ""
@@ -384,8 +368,8 @@ func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
 	return ""
 }
 
-// GetRedirectUrl returns the OIDC Provider redirect URL for the given workload target
-func (c *OIDCAppsControllerConfig) GetRedirectUrl(object client.Object) string {
+// GetRedirectURL returns the OIDC Provider redirect URL for the given workload target
+func (c *OIDCAppsControllerConfig) GetRedirectURL(object client.Object) string {
 	t := c.fetchTarget(object)
 	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.RedirectURL != "" {
@@ -399,8 +383,8 @@ func (c *OIDCAppsControllerConfig) GetRedirectUrl(object client.Object) string {
 	return "https://" + c.GetHost(object) + "/oauth2/callback"
 }
 
-// GetOidcIssuerUrl returns the OIDC Provider URL for the given workload target
-func (c *OIDCAppsControllerConfig) GetOidcIssuerUrl(object client.Object) string {
+// GetOidcIssuerURL returns the OIDC Provider URL for the given workload target
+func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string {
 	t := c.fetchTarget(object)
 	if t.Configuration != nil &&
 		t.Configuration.Oauth2Proxy != nil &&

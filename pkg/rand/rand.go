@@ -38,7 +38,7 @@ func GenerateRandomString(length int) string {
 			return ""
 		}
 
-		b.WriteByte(charset[index.Int64()])
+		_ = b.WriteByte(charset[index.Int64()])
 	}
 
 	return b.String()

@@ -29,7 +29,7 @@ import (
 	"path/filepath"
 	"time"
 
-	k8s_cert "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/cert"
 )
 
 type certificateType string
@@ -101,8 +101,8 @@ func rsaToPem(privateKey *rsa.PrivateKey) ([]byte, error) {
 	return pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: m}), nil
 }
 
-func derToPem(cert *x509.Certificate) ([]byte, error) {
-	certDERBytes, err := x509.ParseCertificate(cert.Raw)
+func derToPem(certificate *x509.Certificate) ([]byte, error) {
+	certDERBytes, err := x509.ParseCertificate(certificate.Raw)
 	if err != nil {
 		return nil, fmt.Errorf("error parcing bundle: %w", err)
 	}
@@ -126,22 +126,22 @@ func writeBundle(path string, b *bundle) error {
 		locationCrt := filepath.Join(path, string(certCAType)+".crt")
 		locationKey := filepath.Join(path, string(certCAType)+".key")
 
-		if err = k8s_cert.WriteCert(locationCrt, certPEM); err != nil {
+		if err = cert.WriteCert(locationCrt, certPEM); err != nil {
 			return fmt.Errorf("error saving bundle public key: %w", err)
 		}
 
-		if err = k8s_cert.WriteCert(locationKey, keyPEM); err != nil {
+		if err = cert.WriteCert(locationKey, keyPEM); err != nil {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
 	case !b.cert.IsCA:
 		locationCrt := filepath.Join(path, string(certTLSType)+".crt")
 		locationKey := filepath.Join(path, string(certTLSType)+".key")
 
-		if err = k8s_cert.WriteCert(locationCrt, certPEM); err != nil {
+		if err = cert.WriteCert(locationCrt, certPEM); err != nil {
 			return fmt.Errorf("error saving bundle public key: %w", err)
 		}
 
-		if err = k8s_cert.WriteCert(locationKey, keyPEM); err != nil {
+		if err = cert.WriteCert(locationKey, keyPEM); err != nil {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
 	}
@@ -176,13 +176,13 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 	}
 
 	// Certificate
-	cert, err := ops.CreateCertificate(certTmpl, caBundle.cert, privateKey.Public(), caBundle.key)
+	certificate, err := ops.CreateCertificate(certTmpl, caBundle.cert, privateKey.Public(), caBundle.key)
 	if err != nil {
 		return nil, fmt.Errorf("error generating the TLS bundle: %w", err)
 	}
 
 	b := &bundle{
-		cert: cert,
+		cert: certificate,
 		key:  privateKey,
 	}
 
@@ -208,11 +208,11 @@ func generateSerial() (*big.Int, error) {
 
 func loadTLSFromDisk(path string) (*bundle, error) {
 	var (
-		err      error
-		key, crt []byte
-		block    *pem.Block
-		cert     *x509.Certificate
-		k        any
+		err         error
+		key, crt    []byte
+		block       *pem.Block
+		certificate *x509.Certificate
+		k           any
 	)
 
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".crt")); err != nil {
@@ -223,7 +223,7 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 		return nil, errors.New("no PEM block found")
 	}
 
-	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
+	if certificate, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
 
@@ -240,18 +240,18 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 	}
 
 	return &bundle{
-		cert: cert,
+		cert: certificate,
 		key:  k.(*rsa.PrivateKey),
 	}, nil
 }
 
 func loadCAFromDisk(path string) (*bundle, error) {
 	var (
-		err      error
-		key, crt []byte
-		block    *pem.Block
-		cert     *x509.Certificate
-		k        any
+		err         error
+		key, crt    []byte
+		block       *pem.Block
+		certificate *x509.Certificate
+		k           any
 	)
 
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".crt")); err != nil {
@@ -262,7 +262,7 @@ func loadCAFromDisk(path string) (*bundle, error) {
 		return nil, errors.New("no PEM block found")
 	}
 
-	if cert, err = x509.ParseCertificate(block.Bytes); err != nil {
+	if certificate, err = x509.ParseCertificate(block.Bytes); err != nil {
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func loadCAFromDisk(path string) (*bundle, error) {
 	}
 
 	return &bundle{
-		cert: cert,
+		cert: certificate,
 		key:  k.(*rsa.PrivateKey),
 	}, nil
 }

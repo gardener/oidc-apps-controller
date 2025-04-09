@@ -149,7 +149,6 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				ContainerName: constants.ContainerNameKubeRbacProxy,
 				Mode:          ptr.To(autoscalerv1.ContainerScalingModeOff),
 			}))
-
 		})
 	})
 
@@ -175,7 +174,6 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			Expect(resp.Patches).To(BeNil())
 		}) // It
 	})
-
 })
 
 func patchVpa(vpa *autoscalerv1.VerticalPodAutoscaler) *autoscalerv1.VerticalPodAutoscaler {
