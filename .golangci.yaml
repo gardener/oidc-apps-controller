@@ -5,7 +5,7 @@ run:
   go: "1.24"
 
 linters:
-  defaults: none
+  default: none
   enable:
     - errcheck
     - gocritic
@@ -16,25 +16,11 @@ linters:
     - unused
     - whitespace
     - wsl
-  exclusions:
-    generated: lax
-    rules:
-      - path: (.+)\.go$
-        text: var-naming
-      - path: (.+)\.go$
-        text: dot-imports
-      - path: (.+)\.go$
-        text: package-comments
-      - path: (.+)\.go$
-        text: indent-error-flow
-      - path: (.+)\.go$
-        text: unexported-return
-      - path: (.+)\.go$
-        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
-      - path: (.+)\.go$
-        text: 'undeclared name: `.*`'
-      - path: (.+)\.go$
-        text: '".*" imported but not used'
+  settings:
+    revive: # default set https://github.com/mgechev/revive/blob/master/defaults.toml
+      rules:
+        - name: dot-imports
+          disabled: true
 
 formatters:
   enable:
