@@ -46,7 +46,7 @@ import (
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/controllers"
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
+	oidcappscontroller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
 	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
@@ -71,7 +71,6 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-
 	// Setup oidc-apps-controller configuration
 	configuration.CreateControllerConfigOrDie(filepath.Join("config", "oidc-apps.yaml"))
 
@@ -162,7 +161,7 @@ var _ = BeforeSuite(func() {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Pod{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.PodMapFuncForDeployment(mgr)),
+			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.PodMapFuncForDeployment(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
 	Expect(err).ShouldNot(HaveOccurred())
@@ -189,11 +188,11 @@ var _ = BeforeSuite(func() {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&corev1.Service{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.ServiceMapFuncForStatefulset(mgr)),
+			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.ServiceMapFuncForStatefulset(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
 			&networkingv1.Ingress{},
-			handler.EnqueueRequestsFromMapFunc(oidc_apps_controller.IngressMapFuncForStatefulset(mgr)),
+			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.IngressMapFuncForStatefulset(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 	Expect(err).ShouldNot(HaveOccurred())
@@ -206,7 +205,6 @@ var _ = BeforeSuite(func() {
 
 	// Sync manager cache
 	Expect(mgr.GetCache().WaitForCacheSync(ctx)).Should(BeTrue())
-
 })
 
 var _ = AfterSuite(func() {

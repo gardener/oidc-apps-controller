@@ -24,7 +24,7 @@ import (
 // mocking dependencies in tests
 type CertificateOperations interface {
 	GenerateKey(keyLength int) (*rsa.PrivateKey, error)
-	CreateCertificate(template, parent *x509.Certificate, pub interface{}, priv interface{}) (*x509.Certificate, error)
+	CreateCertificate(template, parent *x509.Certificate, pub any, priv any) (*x509.Certificate, error)
 }
 
 type realCertOps struct{}
@@ -33,7 +33,7 @@ func (realCertOps) GenerateKey(keyLength int) (*rsa.PrivateKey, error) {
 	return rsa.GenerateKey(rand.Reader, keyLength)
 }
 
-func (realCertOps) CreateCertificate(template, parent *x509.Certificate, pub interface{}, priv interface{}) (*x509.Certificate, error) {
+func (realCertOps) CreateCertificate(template, parent *x509.Certificate, pub any, priv any) (*x509.Certificate, error) {
 	var (
 		certBytes []byte
 		err       error

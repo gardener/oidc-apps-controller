@@ -32,7 +32,6 @@ import (
 )
 
 var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
-
 	Context("when a statefulset is a target", Ordered, func() {
 		var (
 			statefulSet       *appsv1.StatefulSet
@@ -60,7 +59,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 				return clt.Create(ctx, pod1)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{target, default_namespace}, "-"))
+			suffix = rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -74,7 +73,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod := &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: default_namespace,
+					Namespace: defaultNamespace,
 					Name:      target + "-0",
 				},
 				pod)).Should(Succeed())
@@ -83,7 +82,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod = &corev1.Pod{}
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
-					Namespace: default_namespace,
+					Namespace: defaultNamespace,
 					Name:      target + "-1",
 				},
 				pod)).Should(Succeed())
@@ -96,7 +95,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the ingress for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -108,7 +107,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(target + "-0-" + default_namespace)
+					podSuffix = rand.GenerateSha256(target + "-0-" + defaultNamespace)
 					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
 						continue
 					}
@@ -127,7 +126,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the ingress for the second pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -139,7 +138,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(target + "-1-" + default_namespace)
+					podSuffix = rand.GenerateSha256(target + "-1-" + defaultNamespace)
 					if ingress.Name != constants.IngressName+"-1-"+podSuffix {
 						continue
 					}
@@ -161,7 +160,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the service for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -169,7 +168,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(target + "-0-" + default_namespace)
+				podSuffix = rand.GenerateSha256(target + "-0-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-0-"+podSuffix {
 						return nil
@@ -183,7 +182,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			By("checking the service for the second pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
@@ -191,7 +190,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(target + "-1-" + default_namespace)
+				podSuffix = rand.GenerateSha256(target + "-1-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-1-"+podSuffix {
 						return nil
@@ -207,7 +206,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
@@ -233,7 +232,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
-					client.InNamespace(default_namespace),
+					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,

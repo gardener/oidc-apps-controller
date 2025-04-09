@@ -24,7 +24,7 @@ import (
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
 func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList, error) {
@@ -122,12 +122,12 @@ func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Ob
 func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, object client.Object) string {
 	_log := log.FromContext(ctx)
 	// In the case when we are not running on a gardener seed cluster, just return the target namespace
-	if os.Getenv(constants.GARDEN_KUBECONFIG) == "" {
+	if os.Getenv(constants.GardenKubeconfig) == "" {
 		return object.GetNamespace()
 	}
 	// In the case the target is in the garden namespace, then we shall not set a namespace.
 	// The goal is the kick in only the gardener operators access which should have cluster scoped access
-	if object.GetNamespace() == constants.GARDEN_NAMESPACE {
+	if object.GetNamespace() == constants.GardenNamespace {
 		return ""
 	}
 	// In other cases, fetch the cluster resources and set the project namespace
@@ -161,7 +161,7 @@ func fetchResourceAttributesNamespace(ctx context.Context, c client.Client, obje
 
 // reconcileDeploymentDependencies is the function responsible for managing authentication & authorization dependencies.
 // It reconciles the needed secrets, ingresses and services.
-func reconcileDeploymentDependencies(ctx context.Context, c client.Client, object *v1.Deployment) error {
+func reconcileDeploymentDependencies(ctx context.Context, c client.Client, object *appsv1.Deployment) error {
 	var (
 		// Service for the oauth2-proxy sidecar
 		oauth2Service corev1.Service
@@ -270,7 +270,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	return patchVpa(ctx, c, object)
 }
 
-func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *v1.StatefulSet) error {
+func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *appsv1.StatefulSet) error {
 	var (
 		// Service for the oauth2-proxy sidecar
 		oauth2Service corev1.Service
@@ -590,7 +590,7 @@ func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object)
 					return true
 				}
 			case "ReplicaSet":
-				rs := &v1.ReplicaSet{}
+				rs := &appsv1.ReplicaSet{}
 				if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: object.GetNamespace()}, rs); client.IgnoreNotFound(err) != nil {
 					log.FromContext(ctx).Error(err, "cannot get replicaset", "name", ref.Name)
 

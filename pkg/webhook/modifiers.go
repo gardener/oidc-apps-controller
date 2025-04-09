@@ -58,22 +58,22 @@ func get2ProxySecretChecksum(object client.Object) string {
 	switch extConfig.GetClientSecret(object) {
 	case "":
 		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientID(extConfig.GetClientID(object)),
 			configuration.WithClientSecretFile("/dev/null"),
 			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
-			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
+			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
 		).Parse()
 	default:
 		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientID(extConfig.GetClientID(object)),
 			configuration.WithClientSecret(extConfig.GetClientSecret(object)),
 			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
-			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
+			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
@@ -166,7 +166,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 		LocalObjectReference: corev1.LocalObjectReference{
 			Name: secretName,
 		},
-		//Items:    nil,
+		// Items:    nil,
 		Optional: ptr.To(false),
 	}
 
@@ -272,7 +272,7 @@ func fetchTargetSuffix(object client.Object) string {
 	return suffix
 }
 
-func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
+func buildUpstreamURL(target string, podSpec corev1.PodSpec) string {
 	before, after, _ := strings.Cut(target, ",")
 
 	protocol, f := strings.CutPrefix(before, "protocol=")
@@ -303,7 +303,7 @@ func fetchUpstreamUrl(target string, podSpec corev1.PodSpec) string {
 	return ""
 }
 
-func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
+func getKubeRbacProxyContainer(clientID, issuerURL, upstream string, pod *corev1.Pod, owner client.Object) corev1.Container {
 	image, _ := imagevector.ImageVector().FindImage("kube-rbac-proxy-watcher")
 
 	if pod == nil {
@@ -371,7 +371,7 @@ func getKubeRbacProxyContainer(clientID, issuerUrl, upstream string, pod *corev1
 		ImagePullPolicy: "IfNotPresent",
 		Args: []string{"--insecure-listen-address=0.0.0.0:8100",
 			"--oidc-clientID=" + clientID,
-			"--oidc-issuer=" + issuerUrl,
+			"--oidc-issuer=" + issuerURL,
 			"--upstream=" + upstream,
 			"--config-file=/etc/kube-rbac-proxy/config-file.yaml"},
 		Ports: []corev1.ContainerPort{

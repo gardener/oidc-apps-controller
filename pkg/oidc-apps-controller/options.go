@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidc_apps_controller
+package oidcappscontroller
 
 import "github.com/spf13/pflag"
 
-// OidcAppsControllerOptions holds th controller starup parameters
-type OidcAppsControllerOptions struct {
+// Options holds th controller starup parameters
+type Options struct {
 	useCertManager       bool
 	webhookPort          int
 	metricsPort          int
@@ -29,20 +29,20 @@ type OidcAppsControllerOptions struct {
 }
 
 // AddFlags adds the controller parameters to the flag set
-func (o *OidcAppsControllerOptions) AddFlags(pflag *pflag.FlagSet) {
-	pflag.StringVar(&o.controllerConfigPath, "config", "extension-config.yaml",
+func (o *Options) AddFlags(flagSet *pflag.FlagSet) {
+	flagSet.StringVar(&o.controllerConfigPath, "config", "extension-config.yaml",
 		"The file path to the extension configuration yaml.")
-	pflag.StringVar(&o.registrySecret, "registry-secret", "",
+	flagSet.StringVar(&o.registrySecret, "registry-secret", "",
 		"The image pull secret for pull oidc-apps-controller container images")
-	pflag.BoolVar(&o.useCertManager, "use-cert-manager", false,
+	flagSet.BoolVar(&o.useCertManager, "use-cert-manager", false,
 		"Denotes if the webhook certificates are externally managed by a cert-manager.io instance or by this controller.")
-	pflag.StringVar(&o.webhookCertsDir, "webhook-certs-dir", "./certs",
+	flagSet.StringVar(&o.webhookCertsDir, "webhook-certs-dir", "./certs",
 		"The directory containing webhook serving tls.key, tls.crt certificates")
-	pflag.StringVar(&o.webhookName, "webhook-name", "oidc-apps-controller",
+	flagSet.StringVar(&o.webhookName, "webhook-name", "oidc-apps-controller",
 		"The name of the oidc-apps controller webhook ")
-	pflag.IntVar(&o.webhookPort, "webhook-port", 10250,
+	flagSet.IntVar(&o.webhookPort, "webhook-port", 10250,
 		"The port of the oidc-apps controller webhook ")
-	pflag.IntVar(&o.metricsPort, "metrics-port", 8080,
+	flagSet.IntVar(&o.metricsPort, "metrics-port", 8080,
 		"The port of the oidc-apps controller metrics endpoint ")
-	pflag.StringVar(&o.cacheSelectorString, "cache-selector", "", "The selector string for controller-runtime cache.")
+	flagSet.StringVar(&o.cacheSelectorString, "cache-selector", "", "The selector string for controller-runtime cache.")
 }

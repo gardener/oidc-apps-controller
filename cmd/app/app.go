@@ -25,14 +25,14 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	oidc_apps_controller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
+	oidcappscontroller "github.com/gardener/oidc-apps-controller/pkg/oidc-apps-controller"
 )
 
 var _log = logf.Log
 
 // NewOidcAppsController returns the root command
 func NewOidcAppsController() *cobra.Command {
-	opts := &oidc_apps_controller.OidcAppsControllerOptions{}
+	opts := &oidcappscontroller.Options{}
 	fromFlags := &zap.Options{}
 
 	cmd := &cobra.Command{
@@ -53,7 +53,7 @@ func NewOidcAppsController() *cobra.Command {
 				_log.Info(fmt.Sprintf("FLAG: --%s=%s", flag.Name, flag.Value))
 			})
 
-			return oidc_apps_controller.RunController(cmd.Context(), opts)
+			return oidcappscontroller.RunController(cmd.Context(), opts)
 		},
 	}
 

@@ -37,7 +37,7 @@ const (
 	// ContainerNameKubeRbacProxy is the name of the kube-rbac-proxy container
 	ContainerNameKubeRbacProxy = "kube-rbac-proxy"
 	// SecretNameOauth2Proxy is the name of the kube-rbac-proxy container
-	SecretNameOauth2Proxy = "oauth2-proxy" //#nosec G101 -- This is a false positive
+	SecretNameOauth2Proxy = "oauth2-proxy" // #nosec G101 -- This is a false positive
 	// SecretNameResourceAttributes is the name of the resource attributes secret
 	SecretNameResourceAttributes = "resource-attributes"
 	// SecretNameKubeconfig is the name of the kubeconfig secret
@@ -76,14 +76,14 @@ const (
 	// KubeRbacProxyVolumeName is the volume name of the kube-rbac-proxy configuration
 	KubeRbacProxyVolumeName = "kube-rbac-proxy"
 
-	// GARDEN_KUBECONFIG is an environment variable pointing at the default extension access token, if the custom one is not provided
-	GARDEN_KUBECONFIG = "GARDEN_KUBECONFIG"
-	// GARDEN_ACCESS_TOKEN is an environment variable pointing at a custom access token
-	GARDEN_ACCESS_TOKEN = "GARDEN_ACCESS_TOKEN"
-	// GARDEN_NAMESPACE is the default k8s namespace containing seed workloads
-	GARDEN_NAMESPACE = "garden"
-	// GARDEN_SEED_DOMAIN_NAME is the default domain name of the seed cluster, where the extension is running
-	GARDEN_SEED_DOMAIN_NAME = "GARDEN_SEED_DOMAIN_NAME"
-	// GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID is the oidc clientId for the seed cluster, where the extension is running
-	GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID = "GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID"
+	// GardenKubeconfig is an environment variable pointing at the default extension access token, if the custom one is not provided
+	GardenKubeconfig = "GARDEN_KUBECONFIG"
+	// GardenAccessToken is an environment variable pointing at a custom access token
+	GardenAccessToken = "GARDEN_ACCESS_TOKEN"
+	// GardenNamespace is the default k8s namespace containing seed workloads
+	GardenNamespace = "garden"
+	// GardenSeedDomainName is the default domain name of the seed cluster, where the extension is running
+	GardenSeedDomainName = "GARDEN_SEED_DOMAIN_NAME"
+	// GardenSeedOauth2ProxyClientID is the oidc clientId for the seed cluster, where the extension is running
+	GardenSeedOauth2ProxyClientID = "GARDEN_SEED_OAUTH2_PROXY_CLIENT_ID"
 )

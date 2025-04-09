@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
-	constants "github.com/gardener/oidc-apps-controller/pkg/constants"
+	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
 
@@ -43,22 +43,22 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	switch extConfig.GetClientSecret(object) {
 	case "":
 		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientID(extConfig.GetClientID(object)),
 			configuration.WithClientSecretFile("/dev/null"),
 			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
-			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
+			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
 
 	default:
 		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientId(extConfig.GetClientID(object)),
+			configuration.WithClientID(extConfig.GetClientID(object)),
 			configuration.WithClientSecret(extConfig.GetClientSecret(object)),
 			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectUrl(extConfig.GetRedirectUrl(object)),
-			configuration.WithOidcIssuerUrl(extConfig.GetOidcIssuerUrl(object)),
+			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
+			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
