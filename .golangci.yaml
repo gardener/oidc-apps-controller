@@ -1,19 +1,12 @@
 version: "2"
-
 run:
   concurrency: 4
   go: "1.24"
-
 linters:
-  default: none
-  enable:
-    - errcheck
+  enable: # set of linters in addition to the default set (https://golangci-lint.run/usage/linters/#enabled-by-default)
     - gocritic
-    - govet
     - nlreturn
     - revive
-    - staticcheck
-    - unused
     - whitespace
     - wsl
   settings:
@@ -21,7 +14,6 @@ linters:
       rules:
         - name: dot-imports
           disabled: true
-
 formatters:
   enable:
     - gci
