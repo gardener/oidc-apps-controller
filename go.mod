@@ -24,7 +24,7 @@ require (
 	go.uber.org/mock v0.5.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.3
-	k8s.io/apimachinery v0.33.0-beta.0
+	k8s.io/apimachinery v0.34.0-alpha.0
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.0
 	k8s.io/client-go v0.32.3
 	k8s.io/component-base v0.32.3
@@ -291,7 +291,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9 // indirect
+	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 )
