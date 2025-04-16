@@ -10,8 +10,6 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 5
-  ignore:
-    - dependency-name: "github.com/gardener/gardener"
   commit-message:
       prefix: "chore(deps):"
 # Create PRs for golang version updates
