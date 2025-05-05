@@ -14,7 +14,7 @@ tool (
 )
 
 require (
-	github.com/gardener/gardener v1.117.0
+	github.com/gardener/gardener v1.118.0
 	github.com/go-logr/logr v1.4.2
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/spf13/cobra v1.9.1
@@ -25,7 +25,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.33.0
 	k8s.io/apimachinery v0.34.0-alpha.0
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.0
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1
 	k8s.io/client-go v0.33.0
 	k8s.io/component-base v0.33.0
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
@@ -91,7 +91,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.15 // indirect
 	github.com/go-critic/go-critic v0.13.0 // indirect
@@ -287,9 +287,9 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.32.3 // indirect
+	k8s.io/apiextensions-apiserver v0.32.4 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 )
