@@ -20,7 +20,7 @@ oidc-apps-controller:
             We use gosec for sast scanning, see attached log.
     steps:
       verify:
-        image: 'golang:1.24.2'
+        image: 'golang:1.24.3'
     traits:
       version:
         preprocess: "inject-commit-hash"
