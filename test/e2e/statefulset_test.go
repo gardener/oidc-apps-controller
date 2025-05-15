@@ -35,7 +35,6 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 	Context("when a statefulset is a target", Ordered, func() {
 		var (
 			statefulSet       *appsv1.StatefulSet
-			pod0, pod1        *corev1.Pod
 			suffix, podSuffix string
 		)
 
@@ -50,23 +49,36 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
 
 			// Target StatefulSet shall be scaled with 2 replicas
-			pod0 = createStatefulSetPod(statefulSet, "0")
+			pod0 := createStatefulSetPod(statefulSet, "0")
 			Eventually(func() error {
 				return clt.Create(ctx, pod0)
 			}).WithPolling(100 * time.Millisecond).Should(Succeed())
-			pod1 = createStatefulSetPod(statefulSet, "1")
-			Eventually(func() error {
-				return clt.Create(ctx, pod1)
-			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+			pod1 := createStatefulSetPod(statefulSet, "1")
+			Eventually(func() error { return clt.Create(ctx, pod1) }).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix = rand.GenerateSha256(strings.Join([]string{"nginx-1", defaultNamespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
-			Expect(client.IgnoreNotFound(clt.Delete(ctx, statefulSet))).Should(Succeed())
-			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod0))).Should(Succeed())
-			Expect(client.IgnoreNotFound(clt.Delete(ctx, pod1))).Should(Succeed())
-			suffix = ""
+			deleteOptions := []client.DeleteAllOfOption{
+				client.InNamespace(defaultNamespace),
+			}
+
+			Eventually(func() error {
+				return clt.DeleteAllOf(ctx, &appsv1.StatefulSet{}, deleteOptions...)
+			}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
+			Eventually(func() error {
+				return clt.DeleteAllOf(ctx, &corev1.Pod{}, deleteOptions...)
+			}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
+			Eventually(func() error {
+				return clt.DeleteAllOf(ctx, &networkingv1.Ingress{}, deleteOptions...)
+			}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
+			Eventually(func() error {
+				return clt.DeleteAllOf(ctx, &corev1.Service{}, deleteOptions...)
+			}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
+			Eventually(func() error {
+				return clt.DeleteAllOf(ctx, &corev1.Secret{}, deleteOptions...)
+			}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be auth & authz sidecar containers present in the statefulset pods", func() {
@@ -74,7 +86,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
-					Name:      target + "-0",
+					Name:      "nginx-1" + "-0",
 				},
 				pod)).Should(Succeed())
 
@@ -83,7 +95,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			Expect(clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
-					Name:      target + "-1",
+					Name:      "nginx-1" + "-1",
 				},
 				pod)).Should(Succeed())
 
@@ -107,7 +119,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(target + "-0-" + defaultNamespace)
+					GinkgoLogr.Info(fmt.Sprintf("found an oidc-apps ingress %s", ingress.GetName()))
+					podSuffix = rand.GenerateSha256("nginx-1" + "-0-" + defaultNamespace)
 					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
 						continue
 					}
@@ -138,7 +151,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
 				for _, ingress := range ingresses.Items {
-					podSuffix = rand.GenerateSha256(target + "-1-" + defaultNamespace)
+					podSuffix = rand.GenerateSha256("nginx-1" + "-1-" + defaultNamespace)
 					if ingress.Name != constants.IngressName+"-1-"+podSuffix {
 						continue
 					}
@@ -168,7 +181,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(target + "-0-" + defaultNamespace)
+				podSuffix = rand.GenerateSha256("nginx-1" + "-0-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-0-"+podSuffix {
 						return nil
@@ -190,7 +203,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix = rand.GenerateSha256(target + "-1-" + defaultNamespace)
+				podSuffix = rand.GenerateSha256("nginx-1" + "-1-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-1-"+podSuffix {
 						return nil
