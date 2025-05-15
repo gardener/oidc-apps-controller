@@ -165,8 +165,6 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	var (
 		// Service for the oauth2-proxy sidecar
 		oauth2Service corev1.Service
-		// Ingress for the oauth2-proxy sidecar
-		oauth2Ingress networkingv1.Ingress
 		// Secret with oidc configuration for oauth2-proxy sidecar
 		oauth2Secret corev1.Secret
 		// Secret with resource attributes for the rbac-proxy sidecar
@@ -254,8 +252,20 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		}
 	}
 
-	// Create or update the oauth2 ingress setting the owner reference
-	if oauth2Ingress, err = createIngressForDeployment(object); err != nil {
+	if err = reconcileIngressForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
+	return patchVpa(ctx, c, object)
+}
+
+func reconcileIngressForDeployment(ctx context.Context, c client.Client, object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIngress(object) {
+		return nil
+	}
+
+	oauth2Ingress, err := createIngressForDeployment(object)
+	if err != nil {
 		return fmt.Errorf("failed to create oauth2 ingress: %w", err)
 	}
 
@@ -267,15 +277,35 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
 	}
 
-	return patchVpa(ctx, c, object)
+	return nil
+}
+
+func reconcileIngressForStatefulSetPod(ctx context.Context, c client.Client, pod *corev1.Pod,
+	object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIngress(object) {
+		return nil
+	}
+
+	oauth2Ingress, err := createIngressForStatefulSetPod(pod, object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 ingress: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(pod, &oauth2Ingress, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, &oauth2Ingress); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
+	}
+
+	return nil
 }
 
 func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *appsv1.StatefulSet) error {
 	var (
 		// Service for the oauth2-proxy sidecar
 		oauth2Service corev1.Service
-		// Ingress for the oauth2-proxy sidecar
-		oauth2Ingress networkingv1.Ingress
 		// Secret with oidc configuration for oauth2-proxy sidecar
 		oauth2Secret corev1.Secret
 		// Secret with resource attributes for the rbac-proxy sidecar
@@ -335,7 +365,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			return fmt.Errorf("failed to create oauth2 service: %w", err)
 		}
 
-		if err := controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
+		if err = controllerutil.SetOwnerReference(&pod, &oauth2Service, c.Scheme()); err != nil {
 			return fmt.Errorf("failed to set owner reference to oauth service: %w", err)
 		}
 
@@ -343,17 +373,8 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 			return fmt.Errorf("failed to create or update oauth2 service: %w", err)
 		}
 
-		// Create or update the oauth2 ingress setting the owner reference
-		if oauth2Ingress, err = createIngressForStatefulSetPod(&pod, object); err != nil {
-			return fmt.Errorf("failed to create oauth2 ingress: %w", err)
-		}
-
-		if err = controllerutil.SetOwnerReference(&pod, &oauth2Ingress, c.Scheme()); err != nil {
-			return fmt.Errorf("failed to set owner reference to oauth2 ingress: %w", err)
-		}
-
-		if err = createOrPatchObject(ctx, c, &oauth2Ingress); err != nil {
-			return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
+		if err = reconcileIngressForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
 		}
 	}
 
