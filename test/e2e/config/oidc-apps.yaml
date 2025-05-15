@@ -3,12 +3,18 @@ configuration:
   kubeRbacProxy:
   domainName: "example.com"
 targets:
-  - name: "nginx"
+  - name: "nginx-target"
     labelSelector:
       matchLabels:
-        app: nginx
+        app: nginx-target
     ingress:
-      enabled: true
+      create: true
       ingressClassName: "nginx"
       annotations:
         nginx.ingress.kubernetes.io/rewrite-target: /
+  - name: "nginx-target-skip-ingress"
+    labelSelector:
+      matchLabels:
+        app: nginx-target-skip-ingress
+    ingress:
+      create: false
