@@ -148,16 +148,25 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	}
 
 	podIndex, present := patch.GetObjectMeta().GetLabels()["statefulset.kubernetes.io/pod-name"]
+
+	// When "present", the target pod is part of a statefulset.
+	// In this case, the oidc-apps-controller creates a new ingress for each pod and the oauth2-proxy redirect
+	// URL needs to reflect the target pod index. When the redirect URL is constructed the pod index is appended to the
+	// host name.
 	if present {
 		hostPrefix := configuration.GetOIDCAppsControllerConfig().GetHost(owner)
+		if configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner) != "" {
+			hostPrefix = configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner)
+			// It does container https:// prefix and /oauth2/callback suffix
+			hostPrefix = strings.TrimPrefix(hostPrefix, "https://")
+			hostPrefix = strings.TrimSuffix(hostPrefix, "/oauth2/callback")
+		}
 
 		host, domain, found := strings.Cut(hostPrefix, ".")
 		if found {
 			l := strings.Split(podIndex, "-")
 			host = fmt.Sprintf("%s-%s.%s", host, l[len(l)-1], domain)
 		}
-
-		_log.Info(fmt.Sprintf("host: %s", host))
 
 		for idx, container := range patch.Spec.Containers {
 			if container.Name != "oauth2-proxy" {
