@@ -64,24 +64,17 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be auth & authz sidecar containers present in the statefulset pods", func() {
-			pod := &corev1.Pod{}
-			Expect(clt.Get(ctx,
-				client.ObjectKey{
-					Namespace: defaultNamespace,
-					Name:      nginxPod + "-0",
-				},
-				pod)).Should(Succeed())
+			for i := range 2 {
+				pod := &corev1.Pod{}
+				Expect(clt.Get(ctx,
+					client.ObjectKey{
+						Namespace: defaultNamespace,
+						Name:      nginxPod + "-" + strconv.Itoa(i),
+					},
+					pod)).Should(Succeed())
 
-			Expect(pod.Spec.Containers).Should(HaveLen(3))
-			pod = &corev1.Pod{}
-			Expect(clt.Get(ctx,
-				client.ObjectKey{
-					Namespace: defaultNamespace,
-					Name:      nginxPod + "-1",
-				},
-				pod)).Should(Succeed())
-
-			Expect(pod.Spec.Containers).Should(HaveLen(3))
+				Expect(pod.Spec.Containers).Should(HaveLen(3))
+			}
 		})
 
 		It("there shall be an oidc-apps ingress per pod present in the statefulset namespace", func(ctx SpecContext) {
@@ -103,8 +96,6 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 				podSuffix := rand.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
 				for _, ingress := range ingresses.Items {
-					GinkgoLogr.Info(fmt.Sprintf("found an oidc-apps ingress %s", ingress.GetName()))
-
 					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
 						continue
 					}
@@ -112,6 +103,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
+					}
+
+					Expect(ingress.Spec.Rules).To(HaveLen(1))
+					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"-0"+"."+domain {
+						return fmt.Errorf(
+							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
+							target+"-"+defaultNamespace+"-0"+"."+domain, ingress.Spec.Rules[0].Host,
+						)
 					}
 
 					return nil
@@ -144,6 +143,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
+					}
+
+					Expect(ingress.Spec.Rules).To(HaveLen(1))
+					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"-1"+"."+domain {
+						return fmt.Errorf(
+							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
+							target+"-"+defaultNamespace+"-1"+"."+domain, ingress.Spec.Rules[0].Host,
+						)
 					}
 
 					return nil
@@ -283,24 +290,17 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		}, NodeTimeout(5*time.Second))
 
 		It("there shall be auth & authz sidecar containers present in the statefulset pods", func() {
-			pod := &corev1.Pod{}
-			Expect(clt.Get(ctx,
-				client.ObjectKey{
-					Namespace: defaultNamespace,
-					Name:      nginxPod + "-0",
-				},
-				pod)).Should(Succeed())
+			for i := range 2 {
+				pod := &corev1.Pod{}
+				Expect(clt.Get(ctx,
+					client.ObjectKey{
+						Namespace: defaultNamespace,
+						Name:      nginxPod + "-" + strconv.Itoa(i),
+					},
+					pod)).Should(Succeed())
 
-			Expect(pod.Spec.Containers).Should(HaveLen(3))
-			pod = &corev1.Pod{}
-			Expect(clt.Get(ctx,
-				client.ObjectKey{
-					Namespace: defaultNamespace,
-					Name:      nginxPod + "-1",
-				},
-				pod)).Should(Succeed())
-
-			Expect(pod.Spec.Containers).Should(HaveLen(3))
+				Expect(pod.Spec.Containers).Should(HaveLen(3))
+			}
 		})
 
 		It("there shall be no oidc-apps ingress per pod present in the statefulset namespace", func(ctx SpecContext) {
@@ -432,6 +432,55 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 		})
 	})
+
+	Context("when a statefulset is a target with a custom redirectURL", func() {
+		BeforeAll(func(ctx SpecContext) {
+			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
+			statefulSet := createTargetStatefulSetWithCustomRedirectURL()
+			Eventually(func() error {
+				return clt.Create(ctx, statefulSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			// Target StatefulSet shall be scaled with 2 replicas
+			pod0 := createStatefulSetPod(statefulSet, "0")
+			Eventually(func() error { return clt.Create(ctx, pod0) }).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			pod1 := createStatefulSetPod(statefulSet, "1")
+			Eventually(func() error { return clt.Create(ctx, pod1) }).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		AfterAll(func(ctx SpecContext) {
+			cleanUpAllStatefulSets(ctx)
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be auth & authz sidecar containers present in the statefulset pods", func() {
+			for i := range 2 {
+				pod := &corev1.Pod{}
+				Expect(clt.Get(ctx,
+					client.ObjectKey{
+						Namespace: defaultNamespace,
+						Name:      nginxPod + "-" + strconv.Itoa(i),
+					},
+					pod)).Should(Succeed())
+
+				Expect(pod.Spec.Containers).Should(HaveLen(3))
+				// Check the redirectURL in oauth2-proxy container args
+				found := false
+				for _, container := range pod.Spec.Containers {
+					if container.Name == "oauth2-proxy" {
+						for _, arg := range container.Args {
+							GinkgoLogr.Info(arg)
+							if strings.Compare(arg,
+								`--redirect-url=https://custom-`+strconv.Itoa(i)+`.redirect.url/oauth2/callback`) == 0 {
+								found = true
+							}
+						}
+					}
+				}
+				Expect(found).Should(BeTrue())
+			}
+		})
+	}) // End of Context("when a deployment a target with a custom redirectURL")
 })
 
 func cleanUpAllStatefulSets(ctx SpecContext) {

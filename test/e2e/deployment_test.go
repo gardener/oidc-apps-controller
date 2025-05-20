@@ -62,7 +62,6 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be auth & authz sidecar containers present in the deployment pod", func() {
 			pod := &corev1.Pod{}
-			// nginx-pod-41bc5b is calculated by the
 			d := hash5(client.ObjectKey{Name: target, Namespace: defaultNamespace})
 			rs := hash5(client.ObjectKey{Name: strings.Join([]string{nginxRS, d}, "-"), Namespace: defaultNamespace})
 			Expect(clt.Get(ctx,
@@ -91,6 +90,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				if len(ingresses.Items) == 0 {
 					return fmt.Errorf("no oidc-apps ingresses are found")
 				}
+
 				for _, ingress := range ingresses.Items {
 					if ingress.Name != constants.IngressName+"-"+suffix {
 						continue
@@ -99,6 +99,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
+					}
+
+					Expect(ingress.Spec.Rules).To(HaveLen(1))
+					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"."+domain {
+						return fmt.Errorf(
+							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
+							target+"-"+defaultNamespace+"."+domain, ingress.Spec.Rules[0].Host,
+						)
 					}
 
 					return nil
@@ -315,6 +323,75 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			Expect(errors.IsNotFound(err)).Should(BeTrue())
 		})
 	}) // End of Context("when a deployment is not a target")
+
+	Context("when a deployment a target with a custom redirectURL", func() {
+		BeforeAll(func(ctx SpecContext) {
+			// Create a deployment and the downstream replicaset and the pod as there is no controller to create them
+			deployment := createRedirectTargetDeployment()
+			Eventually(func() error {
+				return clt.Create(ctx, deployment)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			replicaSet := createReplicaSet(deployment)
+			Eventually(func() error {
+				return clt.Create(ctx, replicaSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			pod := createPod(replicaSet)
+			Eventually(func() error {
+				return clt.Create(ctx, pod)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		AfterAll(func(ctx SpecContext) {
+			cleanUpAllDeployments(ctx)
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be auth & authz sidecar containers present in the deployment pod", func() {
+			pod := &corev1.Pod{}
+			d := hash5(client.ObjectKey{Name: redirectURLTarget, Namespace: defaultNamespace})
+			rs := hash5(client.ObjectKey{Name: strings.Join([]string{nginxRS, d}, "-"), Namespace: defaultNamespace})
+			Expect(clt.Get(ctx,
+				client.ObjectKey{
+					Name:      strings.Join([]string{nginxPod, rs}, "-"),
+					Namespace: defaultNamespace,
+				},
+				pod,
+			)).To(Succeed())
+			Expect(pod.Spec.Containers).Should(HaveLen(3))
+		})
+
+		It("there shall be an oauth2 secret present in the deployment namespace with redirectUrl set to the custom value", func(ctx SpecContext) {
+			secrets := corev1.SecretList{}
+			suffix := rand.GenerateSha256(strings.Join([]string{redirectURLTarget, defaultNamespace}, "-"))
+			Eventually(func() error {
+				if err = clt.List(ctx, &secrets,
+					client.InNamespace(defaultNamespace),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.SecretLabelKey: constants.Oauth2LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+				if len(secrets.Items) == 0 {
+					return fmt.Errorf("no oidc-apps secrets are found")
+				}
+				for _, secret := range secrets.Items {
+					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
+						Expect(secret.Data["oauth2-proxy.cfg"]).Should(
+							ContainSubstring("redirect_url=\"https://custom.redirect.url/oauth2/callback\""),
+						)
+
+						return nil
+					}
+				}
+
+				return fmt.Errorf("An expected oidc-apps oauth2 secret: %s is not found",
+					constants.SecretNameOauth2Proxy+"-"+suffix)
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
+	}) // End of Context("when a deployment a target with a custom redirectURL")
 })
 
 func cleanUpAllDeployments(ctx SpecContext) {

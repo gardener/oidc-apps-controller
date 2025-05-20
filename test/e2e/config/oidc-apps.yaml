@@ -18,3 +18,15 @@ targets:
         app: nginx-target-skip-ingress
     ingress:
       create: false
+  - name: "nginx-target-with-oauth2-redirect"
+    configuration:
+        oauth2Proxy:
+            redirectUrl: "https://custom.redirect.url/oauth2/callback"
+    labelSelector:
+      matchLabels:
+        app: nginx-target-with-oauth2-redirect
+    ingress:
+      create: true
+      ingressClassName: "nginx"
+
+
