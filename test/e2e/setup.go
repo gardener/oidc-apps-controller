@@ -34,8 +34,10 @@ const (
 	target            = "nginx-target"
 	nonTarget         = "nginx-non-target"
 	skipIngressTarget = "nginx-target-skip-ingress"
+	redirectURLTarget = "nginx-target-with-oauth2-redirect"
 	nginxPod          = "nginx-pod"
 	nginxRS           = "nginx-rs"
+	domain            = "example.com"
 )
 
 func installWebHooks(env *envtest.Environment) {
@@ -244,6 +246,39 @@ func createNonTargetDeployment() *appsv1.Deployment {
 	}
 }
 
+func createRedirectTargetDeployment() *appsv1.Deployment {
+	return &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      redirectURLTarget,
+			Namespace: defaultNamespace,
+			Labels:    map[string]string{"app": redirectURLTarget},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": redirectURLTarget},
+			},
+			Replicas: ptr.To(int32(1)),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": redirectURLTarget},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func createTargetStatefulSet() *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -259,10 +294,43 @@ func createTargetStatefulSet() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": target},
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: ptr.To(int32(2)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": target},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createTargetStatefulSetWithCustomRedirectURL() *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "StatefulSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      redirectURLTarget,
+			Namespace: defaultNamespace,
+			Labels:    map[string]string{"app": redirectURLTarget},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": redirectURLTarget},
+			},
+			Replicas: ptr.To(int32(2)),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": redirectURLTarget},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -292,7 +360,7 @@ func createTargetSkipIngressStatefulSet() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": skipIngressTarget},
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: ptr.To(int32(2)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": skipIngressTarget},
