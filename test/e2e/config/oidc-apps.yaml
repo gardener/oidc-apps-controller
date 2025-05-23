@@ -1,4 +1,4 @@
-configuration:
+global:
   oauth2Proxy:
   kubeRbacProxy:
   domainName: "example.com"

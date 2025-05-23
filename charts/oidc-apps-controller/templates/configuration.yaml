@@ -12,7 +12,7 @@ metadata:
 type: opaque
 stringData:
   controller.yaml: |
-    configuration:
-      {{- toYaml .Values.configuration | nindent 6 }}
+    global:
+      {{- toYaml .Values.global | nindent 6 }}
     targets:
       {{- toYaml .Values.targets  | nindent 6 }}

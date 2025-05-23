@@ -1,4 +1,3 @@
-configuration:
 targets:
   - name: "nginx"
     labelSelector:

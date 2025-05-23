@@ -101,7 +101,7 @@ cacheSelectorStr:
 
 # OIDC Apps Extension Configuration
 # Cluster-wide extension conf
-configuration:
+global:
   # OIDC Provider Configuration shared by all targets in the cluster
   # All fields can be overwritten by a concrete target
   oauth2Proxy:
