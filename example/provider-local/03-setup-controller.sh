@@ -56,7 +56,7 @@ providerConfig:
             values: ["plutono", "prometheus-shoot", "prometheus-cache", "prometheus-aggregate", "prometheus-seed"]
     vpa:
       enabled: true
-    configuration:
+    global:
       oauth2Proxy:
         sslInsecureSkipVerify: false
         insecureOidcSkipIssuerVerification: false

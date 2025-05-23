@@ -482,7 +482,7 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 
 func shallAddKubeConfigSecretName(object client.Object) bool {
 	// There are potentially two sources of the kubeconfig:
-	// 1. Configuration, meaning the kubeconfig secret reference is supplied with the oidc-apps-controller setup
+	// 1. Global, meaning the kubeconfig secret reference is supplied with the oidc-apps-controller setup
 	// 2. The controller is running as a gardener extension, meaning that there is a mounted secret in the controller pod.
 	// If either of these is missing the kube-rbac-proxy sidecar will be started without --kubeconfig setting using
 	// the pod service account to creat the SubjectAccessReview requests
