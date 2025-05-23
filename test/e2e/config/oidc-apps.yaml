@@ -19,9 +19,8 @@ targets:
     ingress:
       create: false
   - name: "nginx-target-with-oauth2-redirect"
-    configuration:
-        oauth2Proxy:
-            redirectUrl: "https://custom.redirect.url/oauth2/callback"
+    oauth2Proxy:
+      redirectUrl: "https://custom.redirect.url/oauth2/callback"
     labelSelector:
       matchLabels:
         app: nginx-target-with-oauth2-redirect
