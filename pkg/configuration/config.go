@@ -73,7 +73,7 @@ type Target struct {
 	TargetPort        intstr.IntOrString    `json:"targetPort,omitempty"`
 	TargetProtocol    string                `json:"targetProtocol,omitempty"`
 	Ingress           *IngressConf          `json:"ingress,omitempty"`
-	Configuration     *Configuration        `json:"configuration,omitempty"`
+	Configuration     `json:",omitempty"`
 }
 
 // IngressConf holds configuration for the ingress entry-point
@@ -210,8 +210,7 @@ func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) strin
 	secretName := ""
 
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.KubeRbacProxy != nil &&
+	if t.Configuration.KubeRbacProxy != nil &&
 		t.Configuration.KubeRbacProxy.KubeSecretRef != nil &&
 		t.Configuration.KubeRbacProxy.KubeSecretRef.Name != "" {
 		return t.Configuration.KubeRbacProxy.KubeSecretRef.Name
@@ -231,8 +230,7 @@ func (c *OIDCAppsControllerConfig) GetKubeConfigStr(object client.Object) string
 	kubeConfig := ""
 
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.KubeRbacProxy != nil &&
+	if t.Configuration.KubeRbacProxy != nil &&
 		t.Configuration.KubeRbacProxy.KubeConfigStr != "" {
 		return t.Configuration.KubeRbacProxy.KubeConfigStr
 	}
@@ -250,8 +248,7 @@ func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) str
 	secretName := ""
 
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.OidcCASecretRef != nil &&
+	if t.Configuration.OidcCASecretRef != nil &&
 		t.Configuration.OidcCASecretRef.Name != "" {
 		return t.Configuration.OidcCASecretRef.Name
 	}
@@ -273,8 +270,7 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 	)
 
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.OidcCABundle != "" {
+	if t.Configuration.OidcCABundle != "" {
 		if decodedBytes, err = base64.StdEncoding.DecodeString(t.Configuration.OidcCABundle); err != nil {
 			c.log.Error(err, "failed to decode oidc ca bundle")
 
@@ -305,8 +301,7 @@ func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
 
 	t := c.fetchTarget(object)
 
-	if t.Configuration != nil &&
-		t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.ClientID != "" {
 		return t.Configuration.Oauth2Proxy.ClientID
 	}
@@ -322,8 +317,7 @@ func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
 // GetClientSecret returns the OIDC Provider secret for the given target workload
 func (c *OIDCAppsControllerConfig) GetClientSecret(object client.Object) string {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.ClientSecret != "" {
 		return t.Configuration.Oauth2Proxy.ClientSecret
 	}
@@ -339,7 +333,7 @@ func (c *OIDCAppsControllerConfig) GetClientSecret(object client.Object) string 
 // GetScope returns the OIDC Provider scope for the given target workload
 func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.Scope != "" {
 		return t.Configuration.Oauth2Proxy.Scope
 	}
@@ -355,7 +349,7 @@ func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
 // GetRedirectURL returns the OIDC Provider redirect URL for the given workload target
 func (c *OIDCAppsControllerConfig) GetRedirectURL(object client.Object) string {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.RedirectURL != "" {
 		return t.Configuration.Oauth2Proxy.RedirectURL
 	}
@@ -370,8 +364,7 @@ func (c *OIDCAppsControllerConfig) GetRedirectURL(object client.Object) string {
 // GetOidcIssuerURL returns the OIDC Provider URL for the given workload target
 func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.OidcIssuerURL != "" {
 		return t.Configuration.Oauth2Proxy.OidcIssuerURL
 	}
@@ -387,8 +380,7 @@ func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string
 // GetSslInsecureSkipVerify designates if oauth2-proxy shall skip upstream ssl validation
 func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object) bool {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil &&
-		t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.SSLInsecureSkipVerify != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.SSLInsecureSkipVerify, false)
 	}
@@ -404,7 +396,7 @@ func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object
 // GetInsecureOidcSkipIssuerVerification designates if oauth2-proxy shall skip OIDC Provider certificate validation
 func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object client.Object) bool {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
 	}
@@ -420,7 +412,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 // GetInsecureOidcSkipNonce designates if oauth2-proxy shall skip OIDC nonce request parameter
 func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object) bool {
 	t := c.fetchTarget(object)
-	if t.Configuration != nil && t.Configuration.Oauth2Proxy != nil &&
+	if t.Configuration.Oauth2Proxy != nil &&
 		t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce != nil {
 		return ptr.Deref(t.Configuration.Oauth2Proxy.InsecureOidcSkipNonce, false)
 	}

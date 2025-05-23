@@ -33,22 +33,21 @@ targets:
       hostPrefix: "test-02-prefix"
       tlsSecretRef:
         name: "ingress-tls"
-    configuration:
-      oauth2Proxy:
-        scope: "openid email target"
-        clientId: "client-id-target"
-        clientSecret: "client-secret-target"
-        redirectUrl: "https://app.org/oauth2/callback"
-        oidcIssuerUrl: "https://oidc-provider-target.org"
-        sslInsecureSkipVerify: true
-        insecureOidcSkipIssuerVerification: true
-        insecureOidcSkipNonce: true
-      kubeRbacProxy:
-        kubeConfigStr: a3ViZWNvbmZpZy10YXJnZXQK
-        kubeSecretRef:
-          name: "target-kubeconfig"
-      oidcCASecretRef:
-        name: "target-oidc-ca"
+    oauth2Proxy:
+      scope: "openid email target"
+      clientId: "client-id-target"
+      clientSecret: "client-secret-target"
+      redirectUrl: "https://app.org/oauth2/callback"
+      oidcIssuerUrl: "https://oidc-provider-target.org"
+      sslInsecureSkipVerify: true
+      insecureOidcSkipIssuerVerification: true
+      insecureOidcSkipNonce: true
+    kubeRbacProxy:
+      kubeConfigStr: a3ViZWNvbmZpZy10YXJnZXQK
+      kubeSecretRef:
+        name: "target-kubeconfig"
+    oidcCASecretRef:
+      name: "target-oidc-ca"
 
   # A target with specific ingress host
   - name: test-03
