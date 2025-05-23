@@ -1,4 +1,4 @@
-configuration:
+global:
   domainName: "domain.org"
   oauth2Proxy:
     scope: "openid email"
