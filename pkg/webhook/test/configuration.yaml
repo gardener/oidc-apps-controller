@@ -4,7 +4,6 @@ targets:
     labelSelector:
       matchLabels:
         app: nginx
-    configuration:
-      oidcCABundle: Y2VydGlmaWNhdGUK
-      oauth2Proxy:
-        clientID: "test-client-id"
+    oidcCABundle: Y2VydGlmaWNhdGUK
+    oauth2Proxy:
+      clientID: "test-client-id"
