@@ -35,9 +35,6 @@ providerConfig:
     replicas: 1
     priorityClass:
       name: gardener-system-100
-    clients:
-      - name: local
-        clientId: local
     image:
       repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/$controller_name
       tag: $version
@@ -56,7 +53,10 @@ providerConfig:
             values: ["plutono", "prometheus-shoot", "prometheus-cache", "prometheus-aggregate", "prometheus-seed"]
     vpa:
       enabled: true
-    configuration:
+    clients:
+      - name: local
+        clientId: local
+    global:
       oauth2Proxy:
         sslInsecureSkipVerify: false
         insecureOidcSkipIssuerVerification: false

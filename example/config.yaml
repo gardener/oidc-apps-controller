@@ -1,6 +1,6 @@
 # OIDC Apps Extension Configuration
 # Cluster-wide extension configuration
-configuration:
+global:
   # OIDC Provider Configuration shared by all targets in the cluster
   # All fields can be overwritten by a concrete target
   oauth2Proxy:
@@ -70,6 +70,10 @@ targets:
       tlsSecretRef:
       # Ingress Class Name
       ingressClassName:
-    # Optional target oidc configuration.
-    # It overwrites the cluster wide {{configuration}} for this target
-    configuration:
+    # Optional target oauth2 configuration.
+    # It overwrites the cluster wide {{global}} for this target
+    oauth2Proxy:
+    # Optional target kube-rbac-proxy configuration.
+    # It overwrites the cluster wide {{global}} for this target
+    kubeRbacProxy:
+

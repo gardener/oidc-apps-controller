@@ -63,7 +63,7 @@ providerConfig:
           - {key: "kubernetes.io/metadata.name", operator: "NotIn", values: ["kube-system"]}
     vpa:
       enabled: true
-    configuration:
+    global:
       domainName: "... cluster domain ..." #cluster domain
       oauth2Proxy:
         sslInsecureSkipVerify: true
