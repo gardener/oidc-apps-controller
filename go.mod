@@ -25,8 +25,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.34.0-alpha.0
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1
-	k8s.io/client-go v0.33.1
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.0
 	k8s.io/component-base v0.33.1
 	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
 	sigs.k8s.io/controller-runtime v0.21.0
@@ -86,7 +85,6 @@ require (
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
-	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
