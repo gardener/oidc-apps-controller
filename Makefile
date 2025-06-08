@@ -39,7 +39,7 @@ $(TOOLS_DIR):
 # Targets                               #
 #########################################
 .DEFAULT_GOAL := all
-all: check test envtest build
+all: verify build
 
 .PHONY: verify
 verify: check test envtest sast
@@ -93,7 +93,7 @@ lint: tidy
 		$(SRC_DIRS)
 
 .PHONY: build
-build: tidy check
+build: tidy
 	@CGO_ENABLED=0 go build -ldflags="$(LD_FLAGS)" \
 	  	-o $(REPO_ROOT)/build/$(NAME) $(REPO_ROOT)/cmd/main.go
 
