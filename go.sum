@@ -130,8 +130,8 @@ github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZ
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dnephin/pflag v1.0.7 h1:oxONGlWxhmUct0YzKTgrpQv9AUA1wtPBn7zuSjJqptk=
 github.com/dnephin/pflag v1.0.7/go.mod h1:uxE91IoWURlOiTUIA8Mq5ZZkAv3dPUfZNaT80Zm7OQE=
-github.com/emicklei/go-restful/v3 v3.12.1 h1:PJMDIM/ak7btuL8Ex0iYET9hxM3CI2sjZtzpL63nKAU=
-github.com/emicklei/go-restful/v3 v3.12.1/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
+github.com/emicklei/go-restful/v3 v3.12.2 h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU=
+github.com/emicklei/go-restful/v3 v3.12.2/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/ettle/strcase v0.2.0 h1:fGNiVF21fHXpX1niBgk0aROov1LagYsOwV/xqKDKR/Q=
 github.com/ettle/strcase v0.2.0/go.mod h1:DajmHElDSaX76ITe3/VHVyMin4LWSJN5Z909Wp+ED1A=
 github.com/evanphx/json-patch v5.9.11+incompatible h1:ixHHqfcGvxhWkniF1tWxBHA0yb4Z+d1UQi45df52xW8=
@@ -782,8 +782,8 @@ k8s.io/apiextensions-apiserver v0.33.0 h1:d2qpYL7Mngbsc1taA4IjJPRJ9ilnsXIrndH+r9
 k8s.io/apiextensions-apiserver v0.33.0/go.mod h1:VeJ8u9dEEN+tbETo+lFkwaaZPg6uFKLGj5vyNEwwSzc=
 k8s.io/apimachinery v0.34.0-alpha.0 h1:arymqm+uCpPEAVWBCvNF+yq01AJzsoUeUd2DYpoHuzc=
 k8s.io/apimachinery v0.34.0-alpha.0/go.mod h1:BHW0YOu7n22fFv/JkYOEfkUYNRN0fj0BlvMFWA7b+SM=
-k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1 h1:/4sWdEE8grPknfFOXS+hs3HfatymRHcseidxrGtWYIY=
-k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1/go.mod h1:W4k7qGP8A9Xqp+UK+lM49AfsWkAdXzE80F/s8kxwWVI=
+k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1 h1:egVuwoIPvX7EPRi57bxpoIu/+9z1fK1AqyyhI/p8+v0=
+k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1/go.mod h1:rIBiAf+sK2mw8ryeHIZuY5juhJ4e2rNLwo59SDRXF7I=
 k8s.io/client-go v0.33.1 h1:ZZV/Ks2g92cyxWkRRnfUDsnhNn28eFpt26aGc8KbXF4=
 k8s.io/client-go v0.33.1/go.mod h1:JAsUrl1ArO7uRVFWfcj6kOomSlCv+JpvIsp6usAGefA=
 k8s.io/component-base v0.33.1 h1:EoJ0xA+wr77T+G8p6T3l4efT2oNwbqBVKR71E0tBIaI=
@@ -796,8 +796,8 @@ k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff h1:/usPimJzUKKu+m+TE36gUy
 k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff/go.mod h1:5jIi+8yX4RIb8wk3XwBo5Pq2ccx4FP10ohkbSKCZoK8=
 k8s.io/kubelet v0.32.4 h1:aYjgRQYIsogtBFu+9BzJGKCT5iw8b7vg5BNkV39H+5c=
 k8s.io/kubelet v0.32.4/go.mod h1:IHKF2BECx8V36b0T/IFg6Y1omKaFgbcUHoSMnIvA2iE=
-k8s.io/metrics v0.32.4 h1:R5mFVB7479sY/3+ioi2pPWC5mNu3TKEE/FpP5l+5P6c=
-k8s.io/metrics v0.32.4/go.mod h1:7RJ/A8hHSVY3LZvRzYSLqcl/0Xe1WbEkxt8zE/RzfYs=
+k8s.io/metrics v0.33.0 h1:sKe5sC9qb1RakMhs8LWYNuN2ne6OTCWexj8Jos3rO2Y=
+k8s.io/metrics v0.33.0/go.mod h1:XewckTFXmE2AJiP7PT3EXaY7hi7bler3t2ZLyOdQYzU=
 k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979 h1:jgJW5IePPXLGB8e/1wvd0Ich9QE97RvvF3a8J3fP/Lg=
 k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 mvdan.cc/gofumpt v0.8.0 h1:nZUCeC2ViFaerTcYKstMmfysj6uhQrA2vJe+2vwGU6k=
