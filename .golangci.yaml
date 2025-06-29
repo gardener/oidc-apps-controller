@@ -8,7 +8,7 @@ linters:
     - nlreturn
     - revive
     - whitespace
-    - wsl
+    - wsl_v5
   settings:
     revive: # default set https://github.com/mgechev/revive/blob/master/defaults.toml
       enable-all-rules: true
@@ -32,6 +32,10 @@ linters:
           disabled: true
         - name: use-errors-new
           disabled: true
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
 formatters:
   enable:
     - gci
