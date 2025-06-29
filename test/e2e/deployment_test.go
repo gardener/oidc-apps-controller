@@ -15,6 +15,7 @@
 package e2e
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -88,7 +89,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return err
 				}
 				if len(ingresses.Items) == 0 {
-					return fmt.Errorf("no oidc-apps ingresses are found")
+					return errors.New("no oidc-apps ingresses are found")
 				}
 
 				for _, ingress := range ingresses.Items {
@@ -154,7 +155,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
@@ -181,7 +182,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
@@ -284,7 +285,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					Name:      constants.IngressName + "-" + suffix,
 				}, ingress)
 			Expect(err).Should(HaveOccurred())
-			Expect(errors.IsNotFound(err)).Should(BeTrue())
+			Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 		})
 
 		It("there shall be no oauth2 service present in the deployment namespace", func() {
@@ -296,7 +297,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					Name:      constants.ServiceNameOauth2Service + "-" + suffix,
 				}, service)
 			Expect(err).Should(HaveOccurred())
-			Expect(errors.IsNotFound(err)).Should(BeTrue())
+			Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 		})
 
 		It("there shall be no oauth2 secret present in the deployment namespace", func() {
@@ -308,7 +309,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					Name:      constants.SecretNameOauth2Proxy + "-" + suffix,
 				}, secret)
 			Expect(err).Should(HaveOccurred())
-			Expect(errors.IsNotFound(err)).Should(BeTrue())
+			Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 		})
 
 		It("there shall be no rbac secret present in the deployment namespace", func() {
@@ -320,7 +321,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					Name:      constants.SecretNameResourceAttributes + "-" + suffix,
 				}, secret)
 			Expect(err).Should(HaveOccurred())
-			Expect(errors.IsNotFound(err)).Should(BeTrue())
+			Expect(apierrors.IsNotFound(err)).Should(BeTrue())
 		})
 	}) // End of Context("when a deployment is not a target")
 
@@ -375,7 +376,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {

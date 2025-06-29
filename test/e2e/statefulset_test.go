@@ -15,6 +15,7 @@
 package e2e
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -91,7 +92,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(ingresses.Items) == 0 {
-					return fmt.Errorf("no oidc-apps ingresses are found")
+					return errors.New("no oidc-apps ingresses are found")
 				}
 
 				podSuffix := rand.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
@@ -131,7 +132,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(ingresses.Items) == 0 {
-					return fmt.Errorf("no oidc-apps ingresses are found")
+					return errors.New("no oidc-apps ingresses are found")
 				}
 
 				podSuffix := rand.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
@@ -220,7 +221,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
@@ -246,7 +247,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
@@ -393,7 +394,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
@@ -419,7 +420,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					return err
 				}
 				if len(secrets.Items) == 0 {
-					return fmt.Errorf("no oidc-apps secrets are found")
+					return errors.New("no oidc-apps secrets are found")
 				}
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {

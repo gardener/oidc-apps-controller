@@ -312,7 +312,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		func(obj client.Object) []string {
 			secret, ok := obj.(*corev1.Secret)
 			if !ok {
-				_log.Error(fmt.Errorf("object is not a secret"), "object", obj)
+				_log.Error(errors.New("object is not a secret"), "object", obj)
 
 				return nil
 			}
@@ -333,7 +333,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		func(obj client.Object) []string {
 			service, ok := obj.(*corev1.Service)
 			if !ok {
-				_log.Error(fmt.Errorf("object is not a service"), "object", obj)
+				_log.Error(errors.New("object is not a service"), "object", obj)
 
 				return nil
 			}
@@ -355,7 +355,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		func(obj client.Object) []string {
 			ingress, ok := obj.(*networkingv1.Ingress)
 			if !ok {
-				_log.Error(fmt.Errorf("object is not an ingress"), "object", obj)
+				_log.Error(errors.New("object is not an ingress"), "object", obj)
 
 				return nil
 			}
@@ -572,7 +572,7 @@ func PodMapFuncForDeployment(mgr manager.Manager) func(ctx context.Context, obj 
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		pod, ok := obj.(*corev1.Pod)
 		if !ok {
-			_log.Error(fmt.Errorf("object is not a pod"), "object", obj)
+			_log.Error(errors.New("object is not a pod"), "object", obj)
 
 			return nil
 		}
@@ -619,7 +619,7 @@ func IngressMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		ingress, ok := obj.(*networkingv1.Ingress)
 		if !ok {
-			_log.Error(fmt.Errorf("object is not an ingress"), "object", obj)
+			_log.Error(errors.New("object is not an ingress"), "object", obj)
 
 			return nil
 		}
@@ -667,7 +667,7 @@ func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
 		service, ok := obj.(*corev1.Service)
 		if !ok {
-			_log.Error(fmt.Errorf("object is not a service"), "object", obj)
+			_log.Error(errors.New("object is not a service"), "object", obj)
 
 			return nil
 		}

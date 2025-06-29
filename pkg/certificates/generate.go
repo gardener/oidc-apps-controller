@@ -214,7 +214,6 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 		certificate *x509.Certificate
 		k           any
 	)
-
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certTLSType)+".crt")); err != nil {
 		return nil, err
 	}
@@ -253,7 +252,6 @@ func loadCAFromDisk(path string) (*bundle, error) {
 		certificate *x509.Certificate
 		k           any
 	)
-
 	if crt, err = os.ReadFile(filepath.Join(filepath.Clean(path), string(certCAType)+".crt")); err != nil {
 		return nil, err
 	}

@@ -38,7 +38,6 @@ func (realCertOps) CreateCertificate(template, parent *x509.Certificate, pub any
 		certBytes []byte
 		err       error
 	)
-
 	if certBytes, err = x509.CreateCertificate(rand.Reader, template, parent, pub, priv); err != nil {
 		return nil, err
 	}

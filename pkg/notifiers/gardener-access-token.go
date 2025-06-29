@@ -116,8 +116,8 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 	}
 
 	tokenBytes = bytes.TrimSpace(tokenBytes)
-	kubeConfigBytes, err := os.ReadFile(g.kubeconfigPath)
 
+	kubeConfigBytes, err := os.ReadFile(g.kubeconfigPath)
 	if err != nil {
 		_log.Error(err, "error reading kubeconfig")
 
