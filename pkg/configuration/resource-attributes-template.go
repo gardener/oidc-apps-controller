@@ -43,6 +43,7 @@ type ResourceAttributes struct {
 
 func (r *root) Parse() string {
 	var parsed []byte
+
 	parsed, _ = yaml.Marshal(*r)
 
 	return string(parsed)

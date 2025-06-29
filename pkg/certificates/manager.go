@@ -157,7 +157,8 @@ func (c *certManager) Start(ctx context.Context) error {
 		go c.syncWebhookCaBundle(ctx, wg) // Start the webhook CA bundle check
 		go c.rotateCACert(ctx, wg)        // Start the CA bundle rotation
 		go c.rotateTLSCert(ctx, wg)       // Start the TLS bundle rotation
-		<-ctx.Done()                      // Waiting for the controller-runtime.Manager to close the context
+
+		<-ctx.Done() // Waiting for the controller-runtime.Manager to close the context
 
 		_log.Info("Shutting down the webhook certificate manager")
 
@@ -261,6 +262,7 @@ func (c *certManager) rotateTLSCert(ctx context.Context, wg *sync.WaitGroup) {
 	defer tlsTicker.Stop()
 
 	ops := realCertOps{}
+
 OuterLoop:
 	for {
 		select {
@@ -271,10 +273,12 @@ OuterLoop:
 
 				continue
 			}
+
 			t, err := generateTLSCert(c.certPath, ops, c.dnsNames, c.ca)
 			if err != nil {
 				_log.Error(err, "Error rotating TLS bundle")
 			}
+
 			c.tls.key = t.key
 			c.tls.cert = t.cert
 			_log.Info("TLS bundle is rotated", "serial", c.tls.cert.SerialNumber.String(), "certificate notAfter", c.tls.cert.NotAfter)
@@ -295,6 +299,7 @@ func (c *certManager) rotateCACert(ctx context.Context, wg *sync.WaitGroup) {
 	defer caTicker.Stop()
 
 	ops := realCertOps{}
+
 OuterLoop:
 	for {
 		select {
@@ -305,10 +310,12 @@ OuterLoop:
 
 				continue
 			}
+
 			crt, err := generateCACert(c.certPath, ops)
 			if err != nil {
 				_log.Error(err, "Error rotating CA bundle")
 			}
+
 			c.ca.key = crt.key
 			c.ca.cert = crt.cert
 			_log.Info("CA bundle is rotated", "serial", c.ca.cert.SerialNumber.String(), "certificate notAfter", c.ca.cert.NotAfter)
@@ -336,6 +343,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 
 	for len(caBundle) > 0 {
 		var block *pem.Block
+
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		if block == nil {
@@ -436,6 +444,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 
 	for len(caBundle) > 0 {
 		var block *pem.Block
+
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		if block == nil {
@@ -511,6 +520,7 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 func caBundleFound(caBundle []byte, cert *x509.Certificate) bool {
 	for len(caBundle) > 0 {
 		var block *pem.Block
+
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		if block == nil {

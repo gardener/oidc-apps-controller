@@ -16,6 +16,7 @@ package webhook
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -49,7 +50,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 
 	if p.Decoder == nil {
 		return webhook.Errored(http.StatusInternalServerError,
-			fmt.Errorf("decoder in the admission handler cannot be nil"))
+			errors.New("decoder in the admission handler cannot be nil"))
 	}
 
 	pod := &corev1.Pod{}

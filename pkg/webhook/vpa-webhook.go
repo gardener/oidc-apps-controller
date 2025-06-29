@@ -16,7 +16,7 @@ package webhook
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -48,7 +48,7 @@ func (v *VPAMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 
 	if v.Decoder == nil {
 		return webhook.Errored(http.StatusInternalServerError,
-			fmt.Errorf("decoder in the admission handler cannot be nil"))
+			errors.New("decoder in the admission handler cannot be nil"))
 	}
 
 	vpa := &autoscalerv1.VerticalPodAutoscaler{}

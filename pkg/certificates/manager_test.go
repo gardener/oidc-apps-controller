@@ -58,6 +58,7 @@ func TestUpdateCABundles(t *testing.T) {
 	// Loop through the CA bundle and find the serial numbers of the two CA certificates
 	for len(caBundle) > 0 {
 		var block *pem.Block
+
 		block, caBundle = pem.Decode(caBundle)
 		// no pem block is found
 		assert.NotNil(t, block)
@@ -113,6 +114,7 @@ func TestRemoveCABundles(t *testing.T) {
 	// Loop through the CA bundle and find the serial numbers of the two CA certificates
 	for len(removed) > 0 {
 		var block *pem.Block
+
 		block, removed = pem.Decode(removed)
 		// no pem block is found
 		assert.NotNil(t, block)
