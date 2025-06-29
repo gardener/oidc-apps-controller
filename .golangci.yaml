@@ -33,7 +33,8 @@ linters:
         - name: use-errors-new
           disabled: true
     wsl_v5:
-      allow-whole-block: true
+      allow-first-in-block: true
+      allow-whole-block: false
       branch-max-lines: 2
 formatters:
   enable:
