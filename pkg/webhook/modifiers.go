@@ -337,10 +337,6 @@ func getKubeRbacProxyContainer(clientID, issuerURL, upstream string, pod *corev1
 	}
 
 	containerResourceRequirements := corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("100m"),
-			"memory": resource.MustParse("100Mi"),
-		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
 			"cpu":    resource.MustParse("5m"),
 			"memory": resource.MustParse("32Mi"),
@@ -350,12 +346,6 @@ func getKubeRbacProxyContainer(clientID, issuerURL, upstream string, pod *corev1
 	for _, c := range pod.Spec.Containers {
 		if c.Name != constants.ContainerNameKubeRbacProxy {
 			continue
-		}
-
-		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
-			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
-				containerResourceRequirements.Limits = c.Resources.Limits
-			}
 		}
 
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {
@@ -416,10 +406,6 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 	}
 
 	containerResourceRequirements := corev1.ResourceRequirements{
-		Limits: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("100m"),
-			"memory": resource.MustParse("100Mi"),
-		},
 		Requests: map[corev1.ResourceName]resource.Quantity{
 			"cpu":    resource.MustParse("5m"),
 			"memory": resource.MustParse("32Mi"),
@@ -429,12 +415,6 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 	for _, c := range pod.Containers {
 		if c.Name != constants.ContainerNameOauth2Proxy {
 			continue
-		}
-
-		if !reflect.ValueOf(c.Resources.Limits).IsZero() {
-			if c.Resources.Limits.Memory().Cmp(resource.MustParse("100Mi")) > 0 {
-				containerResourceRequirements.Limits = c.Resources.Limits
-			}
 		}
 
 		if !reflect.ValueOf(c.Resources.Requests).IsZero() {

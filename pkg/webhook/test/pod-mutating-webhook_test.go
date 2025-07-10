@@ -176,12 +176,8 @@ func initTargetDeployment() {
 					Name: constants.ContainerNameOauth2Proxy,
 					Resources: corev1.ResourceRequirements{
 						Requests: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("20m"),
-							"memory": resource.MustParse("32Mi"),
-						},
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("200m"),
-							"memory": resource.MustParse("64Mi"),
+							"cpu":    resource.MustParse("1m"),
+							"memory": resource.MustParse("10Mi"),
 						},
 					},
 				},
@@ -216,10 +212,6 @@ func initTargetDeployment() {
 					Name: constants.ContainerNameOauth2Proxy,
 					Resources: corev1.ResourceRequirements{
 						Requests: map[corev1.ResourceName]resource.Quantity{
-							"cpu":    resource.MustParse("500m"),
-							"memory": resource.MustParse("300Mi"),
-						},
-						Limits: map[corev1.ResourceName]resource.Quantity{
 							"cpu":    resource.MustParse("500m"),
 							"memory": resource.MustParse("300Mi"),
 						},
@@ -476,10 +468,6 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				for _, c := range pp.Spec.Containers {
 					if c.Name == constants.ContainerNameOauth2Proxy {
 						Expect(c.Resources).To(Equal(corev1.ResourceRequirements{
-							Limits: corev1.ResourceList{
-								"cpu":    resource.MustParse("100m"),
-								"memory": resource.MustParse("100Mi"),
-							},
 							Requests: corev1.ResourceList{
 								"cpu":    resource.MustParse("5m"),
 								"memory": resource.MustParse("32Mi"),
@@ -512,10 +500,6 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 				for _, c := range pp.Spec.Containers {
 					if c.Name == constants.ContainerNameKubeRbacProxy {
 						expected := corev1.ResourceRequirements{
-							Limits: map[corev1.ResourceName]resource.Quantity{
-								"cpu":    resource.MustParse("100m"),
-								"memory": resource.MustParse("100Mi"),
-							},
 							Requests: map[corev1.ResourceName]resource.Quantity{
 								"cpu":    resource.MustParse("5m"),
 								"memory": resource.MustParse("32Mi"),
