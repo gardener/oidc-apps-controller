@@ -1,4 +1,5 @@
 # oidc-apps-controller
+
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/oidc-apps-controller)](https://api.reuse.software/info/github.com/gardener/oidc-apps-controller)
 [![Build](https://github.com/gardener/oidc-apps-controller/actions/workflows/non-release.yaml/badge.svg)](https://github.com/gardener/oidc-apps-controller/actions/workflows/non-release.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gardener/oidc-apps-controller)](https://goreportcard.com/report/github.com/gardener/oidc-apps-controller)
