@@ -144,6 +144,8 @@ func writeBundle(path string, b *bundle) error {
 		if err = cert.WriteCert(locationKey, keyPEM); err != nil {
 			return fmt.Errorf("error saving bundle private key: %w", err)
 		}
+	default:
+		return errors.New("unknown certificate type")
 	}
 
 	return nil
