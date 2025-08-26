@@ -623,6 +623,7 @@ func hasOidcAppsPods(ctx context.Context, c client.Client, object client.Object)
 						return true
 					}
 				}
+			default:
 			}
 		}
 	}
