@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-
 # SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
-#
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
-COPYRIGHT="SAP SE or an SAP affiliate company and Gardener contributors"
+COPYRIGHT="SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors"
 
 go tool -modfile=${root_dir}/go.mod addlicense \
   -c "$COPYRIGHT" \
