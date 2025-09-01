@@ -19,7 +19,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
