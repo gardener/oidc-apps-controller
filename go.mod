@@ -23,10 +23,10 @@ require (
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.33.4
+	k8s.io/api v0.34.0
 	k8s.io/apimachinery v0.34.0
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1
-	k8s.io/client-go v0.33.4
+	k8s.io/client-go v0.34.0
 	k8s.io/component-base v0.33.4
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
@@ -253,7 +253,6 @@ require (
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20250604165838-d6126d850224 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
 
