@@ -1,7 +1,7 @@
 version: "2"
 run:
   concurrency: 4
-  go: "1.24"
+  go: "1.25"
 linters:
   enable: # set of linters in addition to the default set (https://golangci-lint.run/usage/linters/#enabled-by-default)
     - gocritic
