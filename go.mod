@@ -17,7 +17,7 @@ require (
 	github.com/gardener/gardener v1.122.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.25.3
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/automaxprocs v1.6.0
@@ -25,7 +25,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.34.0
 	k8s.io/apimachinery v0.34.0
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.1
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.2
 	k8s.io/client-go v0.34.0
 	k8s.io/component-base v0.33.4
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
