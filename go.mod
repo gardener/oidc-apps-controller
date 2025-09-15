@@ -24,7 +24,7 @@ require (
 	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.34.0
-	k8s.io/apimachinery v0.34.0
+	k8s.io/apimachinery v0.34.1
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.4.2
 	k8s.io/client-go v0.34.0
 	k8s.io/component-base v0.34.0
