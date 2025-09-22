@@ -102,7 +102,7 @@ jobs:
           set -eu
           mkdir -p /tmp/blobs.d
           TEST_COV=yes \
-            .ci/verify |& tee /tmp/blobs.d/verify-log.txt
+            make verify-extended |& tee /tmp/blobs.d/verify-log.txt
           # linter-script is expected to output `gosec-report.sarif` (hardcoded contract)
           tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
           tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
