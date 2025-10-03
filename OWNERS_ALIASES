@@ -2,6 +2,12 @@
 
 aliases:
   oidc-apps-controller-reviewers:
-  - nickytd
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
   oidc-apps-controller-approvers:
-  - nickytd
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
