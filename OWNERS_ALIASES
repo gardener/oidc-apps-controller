@@ -1,0 +1,13 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  oidc-apps-controller-reviewers:
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
+  oidc-apps-controller-approvers:
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
