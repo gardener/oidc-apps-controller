@@ -1,0 +1,6 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+reviewers:
+- oidc-apps-controller-reviewers
+approvers:
+- oidc-apps-controller-approvers

@@ -1,0 +1,7 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  oidc-apps-controller-reviewers:
+  - nickytd
+  oidc-apps-controller-approvers:
+  - nickytd
