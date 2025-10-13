@@ -77,7 +77,7 @@ func initTargetVPA() {
 				APIVersion: "apps/v1",
 			},
 			UpdatePolicy: &autoscalerv1.PodUpdatePolicy{
-				UpdateMode: ptr.To(autoscalerv1.UpdateModeAuto),
+				UpdateMode: ptr.To(autoscalerv1.UpdateModeRecreate),
 			},
 			ResourcePolicy: &autoscalerv1.PodResourcePolicy{
 				ContainerPolicies: []autoscalerv1.ContainerResourcePolicy{
@@ -107,7 +107,7 @@ func initNonTargetVPA() {
 				APIVersion: "apps/v1",
 			},
 			UpdatePolicy: &autoscalerv1.PodUpdatePolicy{
-				UpdateMode: ptr.To(autoscalerv1.UpdateModeAuto),
+				UpdateMode: ptr.To(autoscalerv1.UpdateModeRecreate),
 			},
 			ResourcePolicy: &autoscalerv1.PodResourcePolicy{
 				ContainerPolicies: []autoscalerv1.ContainerResourcePolicy{
