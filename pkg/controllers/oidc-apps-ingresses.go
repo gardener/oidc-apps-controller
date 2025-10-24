@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -70,9 +71,8 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ingress.Annotations = annotations
 	}
 
-	if labels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object); len(labels) > 0 {
-		ingress.Labels = labels
-	}
+	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
+	maps.Copy(ingress.Labels, extraLabels)
 
 	return ingress, nil
 }
@@ -136,9 +136,8 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		ingress.Annotations = annotations
 	}
 
-	if labels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object); len(labels) > 0 {
-		ingress.Labels = labels
-	}
+	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
+	maps.Copy(ingress.Labels, extraLabels)
 
 	return ingress, nil
 }
