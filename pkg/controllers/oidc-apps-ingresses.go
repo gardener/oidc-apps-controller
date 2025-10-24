@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,10 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
+			Labels: map[string]string{
+				constants.LabelKey:                           constants.LabelValue,
+				v1beta1constants.LabelShootEndpointAdvertise: "true",
+			},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -88,7 +92,10 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
+			Labels: map[string]string{
+				constants.LabelKey:                           constants.LabelValue,
+				v1beta1constants.LabelShootEndpointAdvertise: "true",
+			},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
