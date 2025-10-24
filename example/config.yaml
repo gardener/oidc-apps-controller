@@ -66,6 +66,8 @@ targets:
       host:
       # Target ingress annotations for the ingress controller
       annotations: {}
+      # Target ingress labels for the ingress controller
+      labels: {}
       # TLS Secret for front ssl termination
       tlsSecretRef:
       # Ingress Class Name
@@ -76,4 +78,3 @@ targets:
     # Optional target kube-rbac-proxy configuration.
     # It overwrites the cluster wide {{global}} for this target
     kubeRbacProxy:
-

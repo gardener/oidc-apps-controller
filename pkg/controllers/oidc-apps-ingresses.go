@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,8 +29,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
 			Labels: map[string]string{
-				constants.LabelKey:                           constants.LabelValue,
-				v1beta1constants.LabelShootEndpointAdvertise: "true",
+				constants.LabelKey: constants.LabelValue,
 			},
 		},
 		Spec: networkingv1.IngressSpec{
@@ -72,6 +70,10 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ingress.Annotations = annotations
 	}
 
+	if labels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object); len(labels) > 0 {
+		ingress.Labels = labels
+	}
+
 	return ingress, nil
 }
 
@@ -93,8 +95,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
 			Labels: map[string]string{
-				constants.LabelKey:                           constants.LabelValue,
-				v1beta1constants.LabelShootEndpointAdvertise: "true",
+				constants.LabelKey: constants.LabelValue,
 			},
 		},
 		Spec: networkingv1.IngressSpec{
@@ -133,6 +134,10 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	}
 	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
 		ingress.Annotations = annotations
+	}
+
+	if labels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object); len(labels) > 0 {
+		ingress.Labels = labels
 	}
 
 	return ingress, nil
