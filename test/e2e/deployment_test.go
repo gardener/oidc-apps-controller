@@ -6,6 +6,7 @@ package e2e
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/rand"
 )
@@ -89,6 +91,16 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
 							constants.IngressName+"-"+suffix)
+					}
+
+					// Ensure configured labels are set on the ingress.
+					confTarget := configuration.GetOIDCAppsControllerConfig().FetchTarget(&ingress)
+					wantIngressLabels := map[string]string{
+						constants.LabelKey: constants.LabelValue,
+					}
+					maps.Copy(wantIngressLabels, confTarget.Labels)
+					if !maps.Equal(ingress.Labels, wantIngressLabels) {
+						return fmt.Errorf("mismatched labels for target and ingress: %s", ingress.Name)
 					}
 
 					Expect(ingress.Spec.Rules).To(HaveLen(1))

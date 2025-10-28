@@ -430,83 +430,65 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 	return nil
 }
 
-func createOrPatchSecret(ctx context.Context, c client.Client, patch corev1.Secret) error {
+func createOrPatchSecret(ctx context.Context, c client.Client, obj corev1.Secret) error {
 	secret := &corev1.Secret{}
 	// Create a secret if it does not exist
-	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret); apierrors.IsNotFound(err) {
-		if err = c.Create(ctx, &patch); err != nil {
-			return fmt.Errorf("failed to create ingress	: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&obj), secret); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &obj); err != nil {
+			return fmt.Errorf("failed to create secret: %w", err)
 		}
 
 		return nil
 	}
 
-	// Patch the secret if it exists
+	// Update the secret
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		_patch := client.MergeFrom(&patch)
-		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), secret)
-		if err != nil {
-			return fmt.Errorf("failed to get secret: %w", err)
-		}
-
-		return c.Patch(ctx, secret, _patch)
+		return c.Update(ctx, &obj)
 	}); err != nil {
-		return fmt.Errorf("failed to patch secret: %w", err)
+		return fmt.Errorf("failed to update secret: %w", err)
 	}
 
 	return nil
 }
 
-func createOrPatchIngress(ctx context.Context, c client.Client, patch networkingv1.Ingress) error {
+func createOrPatchIngress(ctx context.Context, c client.Client, obj networkingv1.Ingress) error {
 	ingress := &networkingv1.Ingress{}
 
 	// Create an ingress if it does not exist
-	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress); apierrors.IsNotFound(err) {
-		if err = c.Create(ctx, &patch); err != nil {
-			return fmt.Errorf("failed to create ingress	: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&obj), ingress); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &obj); err != nil {
+			return fmt.Errorf("failed to create ingress: %w", err)
 		}
 
 		return nil
 	}
 
-	// Patch the ingress if it exists
+	// Update the ingress
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		_patch := client.MergeFrom(&patch)
-		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), ingress)
-		if err != nil {
-			return fmt.Errorf("failed to get ingress: %w", err)
-		}
-
-		return c.Patch(ctx, ingress, _patch)
+		return c.Update(ctx, &obj)
 	}); err != nil {
-		return fmt.Errorf("failed to patch ingress: %w", err)
+		return fmt.Errorf("failed to update ingress: %w", err)
 	}
 
 	return nil
 }
 
-func createOrPatchService(ctx context.Context, c client.Client, patch corev1.Service) error {
+func createOrPatchService(ctx context.Context, c client.Client, obj corev1.Service) error {
 	service := &corev1.Service{}
 	// Create a service if it does not exist
-	if err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service); apierrors.IsNotFound(err) {
-		if err = c.Create(ctx, &patch); err != nil {
-			return fmt.Errorf("failed to create service	: %w", err)
+	if err := c.Get(ctx, client.ObjectKeyFromObject(&obj), service); apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, &obj); err != nil {
+			return fmt.Errorf("failed to create service: %w", err)
 		}
 
 		return nil
 	}
 
-	// Patch the service if it exists
+	// Update the service
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		_patch := client.MergeFrom(&patch)
-		err := c.Get(ctx, client.ObjectKeyFromObject(&patch), service)
-		if err != nil {
-			return fmt.Errorf("failed to get service: %w", err)
-		}
-
-		return c.Patch(ctx, service, _patch)
+		return c.Update(ctx, &obj)
 	}); err != nil {
-		return fmt.Errorf("failed to patch service: %w", err)
+		return fmt.Errorf("failed to update service: %w", err)
 	}
 
 	return nil

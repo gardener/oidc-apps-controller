@@ -4,6 +4,9 @@ global:
   domainName: "example.com"
 targets:
   - name: "nginx-target"
+    labels:
+      foo: bar
+      bar: baz
     labelSelector:
       matchLabels:
         app: nginx-target
@@ -19,6 +22,8 @@ targets:
     ingress:
       create: false
   - name: "nginx-target-with-oauth2-redirect"
+    labels:
+      foo.bar/baz: qux
     oauth2Proxy:
       redirectUrl: "https://custom.redirect.url/oauth2/callback"
     labelSelector:
@@ -27,5 +32,3 @@ targets:
     ingress:
       create: true
       ingressClassName: "nginx"
-
-
