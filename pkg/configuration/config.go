@@ -161,7 +161,7 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 
 // GetHost return the domain name for a given workload target
 func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	domain := c.Global.DomainName
 
 	if len(os.Getenv(constants.GardenSeedDomainName)) > 0 {
@@ -189,7 +189,7 @@ func (c *OIDCAppsControllerConfig) GetUpstreamTarget(object client.Object) strin
 	b := strings.Builder{}
 	protocol := "http"
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.TargetProtocol == "https" {
 		protocol = "https"
 	}
@@ -210,7 +210,7 @@ func (c *OIDCAppsControllerConfig) GetUpstreamTarget(object client.Object) strin
 func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) string {
 	secretName := ""
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.KubeRbacProxy != nil &&
 		t.KubeRbacProxy.KubeSecretRef != nil &&
 		t.KubeRbacProxy.KubeSecretRef.Name != "" {
@@ -230,7 +230,7 @@ func (c *OIDCAppsControllerConfig) GetKubeSecretName(object client.Object) strin
 func (c *OIDCAppsControllerConfig) GetKubeConfigStr(object client.Object) string {
 	kubeConfig := ""
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.KubeRbacProxy != nil &&
 		t.KubeRbacProxy.KubeConfigStr != "" {
 		return t.KubeRbacProxy.KubeConfigStr
@@ -248,7 +248,7 @@ func (c *OIDCAppsControllerConfig) GetKubeConfigStr(object client.Object) string
 func (c *OIDCAppsControllerConfig) GetOidcCASecretName(object client.Object) string {
 	secretName := ""
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.OidcCASecretRef != nil &&
 		t.OidcCASecretRef.Name != "" {
 		return t.OidcCASecretRef.Name
@@ -270,7 +270,7 @@ func (c *OIDCAppsControllerConfig) GetOidcCABundle(object client.Object) string 
 		oidcCABundle string
 	)
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.OidcCABundle != "" {
 		if decodedBytes, err = base64.StdEncoding.DecodeString(t.OidcCABundle); err != nil {
 			c.log.Error(err, "failed to decode oidc ca bundle")
@@ -300,7 +300,7 @@ func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
 		return os.Getenv(constants.GardenSeedOauth2ProxyClientID)
 	}
 
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.ClientID != "" {
@@ -317,7 +317,7 @@ func (c *OIDCAppsControllerConfig) GetClientID(object client.Object) string {
 
 // GetClientSecret returns the OIDC Provider secret for the given target workload
 func (c *OIDCAppsControllerConfig) GetClientSecret(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.ClientSecret != "" {
 		return t.Oauth2Proxy.ClientSecret
@@ -333,7 +333,7 @@ func (c *OIDCAppsControllerConfig) GetClientSecret(object client.Object) string 
 
 // GetScope returns the OIDC Provider scope for the given target workload
 func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.Scope != "" {
 		return t.Oauth2Proxy.Scope
@@ -349,7 +349,7 @@ func (c *OIDCAppsControllerConfig) GetScope(object client.Object) string {
 
 // GetRedirectURL returns the OIDC Provider redirect URL for the given workload target
 func (c *OIDCAppsControllerConfig) GetRedirectURL(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.RedirectURL != "" {
 		return t.Oauth2Proxy.RedirectURL
@@ -364,7 +364,7 @@ func (c *OIDCAppsControllerConfig) GetRedirectURL(object client.Object) string {
 
 // GetOidcIssuerURL returns the OIDC Provider URL for the given workload target
 func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.OidcIssuerURL != "" {
 		return t.Oauth2Proxy.OidcIssuerURL
@@ -380,7 +380,7 @@ func (c *OIDCAppsControllerConfig) GetOidcIssuerURL(object client.Object) string
 
 // GetSslInsecureSkipVerify designates if oauth2-proxy shall skip upstream ssl validation
 func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object) bool {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.SSLInsecureSkipVerify != nil {
 		return ptr.Deref(t.Oauth2Proxy.SSLInsecureSkipVerify, false)
@@ -396,7 +396,7 @@ func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object
 
 // GetInsecureOidcSkipIssuerVerification designates if oauth2-proxy shall skip OIDC Provider certificate validation
 func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object client.Object) bool {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
 		return ptr.Deref(t.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
@@ -412,7 +412,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 
 // GetInsecureOidcSkipNonce designates if oauth2-proxy shall skip OIDC nonce request parameter
 func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object) bool {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.InsecureOidcSkipNonce != nil {
 		return ptr.Deref(t.Oauth2Proxy.InsecureOidcSkipNonce, false)
@@ -428,7 +428,7 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object
 
 // ShallCreateIngress returns true if the target workload shall create an ingress
 func (c *OIDCAppsControllerConfig) ShallCreateIngress(object client.Object) bool {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Ingress != nil {
 		return t.Ingress.Create
 	}
@@ -438,7 +438,7 @@ func (c *OIDCAppsControllerConfig) ShallCreateIngress(object client.Object) bool
 
 // GetIngressTLSSecretName return the tls secret for the ingress serving certificate for the given workload
 func (c *OIDCAppsControllerConfig) GetIngressTLSSecretName(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Ingress != nil && t.Ingress.TLSSecretRef.Name != "" {
 		return t.Ingress.TLSSecretRef.Name
 	}
@@ -448,7 +448,7 @@ func (c *OIDCAppsControllerConfig) GetIngressTLSSecretName(object client.Object)
 
 // GetIngressClassName return the ingress class name for the given target
 func (c *OIDCAppsControllerConfig) GetIngressClassName(object client.Object) string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Ingress != nil {
 		return t.Ingress.IngressClassName
 	}
@@ -458,7 +458,7 @@ func (c *OIDCAppsControllerConfig) GetIngressClassName(object client.Object) str
 
 // GetIngressAnnotations returns the ingress annotations for the given target
 func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) map[string]string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Ingress != nil && t.Ingress.Annotations != nil {
 		return t.Ingress.Annotations
 	}
@@ -468,7 +468,7 @@ func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) m
 
 // GetIngressLabels returns the ingress labels for the given target
 func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[string]string {
-	t := c.fetchTarget(object)
+	t := c.FetchTarget(object)
 	if t.Ingress != nil && t.Ingress.Labels != nil {
 		return t.Ingress.Labels
 	}
@@ -476,7 +476,8 @@ func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[st
 	return nil
 }
 
-func (c *OIDCAppsControllerConfig) fetchTarget(o client.Object) Target {
+// FetchTarget fetches the target associated with the given object.
+func (c *OIDCAppsControllerConfig) FetchTarget(o client.Object) Target {
 	var targets []Target
 
 	for _, t := range c.Targets {
@@ -535,7 +536,7 @@ func (c *OIDCAppsControllerConfig) targetMatchesLabels(t Target, o client.Object
 
 // GetTargetLabelSelector returns the label selector for the given target
 func (c *OIDCAppsControllerConfig) GetTargetLabelSelector(o client.Object) *metav1.LabelSelector {
-	t := c.fetchTarget(o)
+	t := c.FetchTarget(o)
 
 	if t.LabelSelector != nil {
 		return t.LabelSelector
