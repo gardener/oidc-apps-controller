@@ -34,7 +34,7 @@ type OIDCAppsControllerConfig struct {
 	log     logr.Logger
 }
 
-// Global holds the concrete target configurations for the auth & autz proxies
+// Global holds the concrete target configurations for the auth & authz proxies
 type Global struct {
 	Oauth2Proxy   *Oauth2ProxyConfig   `json:"oauth2Proxy,omitempty"`
 	KubeRbacProxy *KubeRbacProxyConfig `json:"kubeRbacProxy,omitempty"`
@@ -82,6 +82,7 @@ type IngressConf struct {
 	HostPrefix       string                 `json:"hostPrefix,omitempty"`
 	Host             string                 `json:"host,omitempty"`
 	Annotations      map[string]string      `json:"annotations,omitempty"`
+	Labels           map[string]string      `json:"labels,omitempty"`
 	TLSSecretRef     corev1.SecretReference `json:"tlsSecretRef,omitempty"`
 	IngressClassName string                 `json:"ingressClassName,omitempty"`
 }
@@ -460,6 +461,16 @@ func (c *OIDCAppsControllerConfig) GetIngressAnnotations(object client.Object) m
 	t := c.fetchTarget(object)
 	if t.Ingress != nil && t.Ingress.Annotations != nil {
 		return t.Ingress.Annotations
+	}
+
+	return nil
+}
+
+// GetIngressLabels returns the ingress labels for the given target
+func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[string]string {
+	t := c.fetchTarget(object)
+	if t.Ingress != nil && t.Ingress.Labels != nil {
+		return t.Ingress.Labels
 	}
 
 	return nil

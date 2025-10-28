@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,7 +29,9 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
+			Labels: map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -68,6 +71,9 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ingress.Annotations = annotations
 	}
 
+	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
+	maps.Copy(ingress.Labels, extraLabels)
+
 	return ingress, nil
 }
 
@@ -88,7 +94,9 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.IngressName + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
-			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
+			Labels: map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			},
 		},
 		Spec: networkingv1.IngressSpec{
 			IngressClassName: ptr.To(ingressClassName),
@@ -127,6 +135,9 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 	if annotations := configuration.GetOIDCAppsControllerConfig().GetIngressAnnotations(object); len(annotations) > 0 {
 		ingress.Annotations = annotations
 	}
+
+	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
+	maps.Copy(ingress.Labels, extraLabels)
 
 	return ingress, nil
 }
