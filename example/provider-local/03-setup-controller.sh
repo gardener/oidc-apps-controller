@@ -73,6 +73,8 @@ providerConfig:
             component: plutono
         targetPort: 3000
         ingress:
+          labels:
+            shoot: plutono
           create: true
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
@@ -99,6 +101,8 @@ providerConfig:
             component: plutono
         targetPort: 3000
         ingress:
+          labels:
+            seed: plutono
           create: true
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
