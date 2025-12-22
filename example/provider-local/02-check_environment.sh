@@ -59,10 +59,10 @@ function check_provider_local {
     fi
 
     ipam=$(docker network inspect kind -f "{{range .IPAM.Config}}{{.Subnet}} {{end}}")
-    if grep -q "172.18.0.0/16" <<< $ipam ; then
-        printf '\u2714 "172.18.0.0/16 subnet found\n'
+    if grep -q "172.18.0.0/24" <<< $ipam ; then
+        printf '\u2714 "172.18.0.0/24 subnet found\n'
     else
-        printf '\u274c "172.18.0.0/16 subnet not found... TODO\n' && exit
+        printf '\u274c "172.18.0.0/24 subnet not found... TODO\n' && exit
     fi
 
     garden=$(docker network inspect kind -f "{{range .Containers}}{{.Name}} {{end}}")
