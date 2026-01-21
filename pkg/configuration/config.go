@@ -132,6 +132,7 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 func handleError(err error, message, path string) {
 	if config.log.IsZero() {
 		log.SetLogger(zap.New(zap.UseDevMode(true)))
+
 		config.log = log.Log.WithName("oidcAppsExtensionConfig")
 	}
 
