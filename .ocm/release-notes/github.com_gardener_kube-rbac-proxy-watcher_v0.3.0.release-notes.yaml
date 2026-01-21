@@ -1,0 +1,26 @@
+ocm:
+  component_name: github.com/gardener/kube-rbac-proxy-watcher
+  component_version: v0.3.0
+release_notes:
+- audience: developer
+  author:
+    hostname: github.com
+    type: githubUser
+    username: nickytd
+  category: bugfix
+  contents: Fixed race conditions in process management, nil pointer dereference scenarios,
+    goroutine leaks, and command line parameter parsing logic
+  mimetype: text/markdown
+  reference: '[#101](https://github.com/gardener/kube-rbac-proxy-watcher/pull/101)'
+  type: standard
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: nickytd
+  category: other
+  contents: Enable custom review focus mode for hyperspace pull request bot with high-confidence,
+    actionable feedback philosophy
+  mimetype: text/markdown
+  reference: '[#100](https://github.com/gardener/kube-rbac-proxy-watcher/pull/100)'
+  type: standard
