@@ -248,6 +248,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 
 							return true
 						}
+
 						_, found := e.Object.GetLabels()[constants.LabelKey]
 
 						return found
@@ -259,6 +260,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 
 							return true
 						}
+
 						_, found := e.Object.GetLabels()[constants.LabelKey]
 
 						return found
@@ -270,6 +272,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 
 							return true
 						}
+
 						_, found := e.ObjectNew.GetLabels()[constants.LabelKey]
 
 						return found
@@ -281,6 +284,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 
 							return true
 						}
+
 						_, found := e.Object.GetLabels()[constants.LabelKey]
 
 						return found

@@ -3,5 +3,5 @@
 
 //go:generate sh -c "../../hack/generate-controller-registration.sh"
 
-// Package chart enables go:generate support for generating the correct controller registration.
-package chart
+// Package oidcappscontroller enables go:generate support for generating the correct controller registration.
+package oidcappscontroller
