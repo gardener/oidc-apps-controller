@@ -71,13 +71,6 @@ function check_provider_local {
     else
         printf '\u274c "gardener-local-control-plane" container not found\n'&& exit
     fi
-
-    version=$(docker compose version)
-    if grep -q "version v2" <<< $version ; then
-        printf "\u2714 docker compose v2 found\n"
-    else
-        printf "\u274c docker compose: $version. Expected v2... and higher\n" && exit
-    fi
 }
 
 function check_dex_is_up_and_running {
