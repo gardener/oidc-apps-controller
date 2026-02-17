@@ -416,7 +416,9 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 	// Generate a deterministic cookie secret based on owner's name, namespace, and UID.
 	// This ensures the secret remains stable across pod updates (e.g., VPA in-place modifications),
 	// avoiding forbidden pod spec changes.
-	cookieSecret := rand.GenerateSha256(owner.GetName() + "-" + owner.GetNamespace() + "-" + string(owner.GetUID()) + "-cookie-secret")
+	// Strip to 32 hex chars (16 bytes) for AES-128 cipher compatibility.
+	fullHash := rand.GenerateFullSha256(owner.GetName() + "-" + owner.GetNamespace() + "-" + string(owner.GetUID()) + "-cookie-secret")
+	cookieSecret := fullHash[:32]
 
 	container := corev1.Container{
 		Name:            constants.ContainerNameOauth2Proxy,
