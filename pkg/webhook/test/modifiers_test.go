@@ -148,14 +148,26 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 			patchedPod := patchPodWithWebhook(pod1, localPodWebhook1)
 			actualCookieSecret := extractCookieSecret(patchedPod)
 
-			// The cookie secret is generated using: rand.GenerateSha256(owner.GetName() + "-" + owner.GetNamespace() + "-" + string(owner.GetUID()) + "-cookie-secret")
+			// The cookie secret is generated using: rand.GenerateFullSha256(...) stripped to 32 hex chars (16 bytes)
 			// The owner is the Deployment, so: "nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret"
-			expectedCookieSecret := rand.GenerateSha256("nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret")
+			fullHash := rand.GenerateFullSha256("nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret")
+			expectedCookieSecret := fullHash[:32]
 
 			Expect(actualCookieSecret).To(Equal(expectedCookieSecret),
 				"Cookie secret should match expected deterministic value")
 
 			_log.Info("Expected value verified", "expected", expectedCookieSecret, "actual", actualCookieSecret)
+		})
+
+		It("should generate a cookie secret of exactly 32 hex characters (16 bytes)", func() {
+			patchedPod := patchPodWithWebhook(pod1, localPodWebhook1)
+			actualCookieSecret := extractCookieSecret(patchedPod)
+
+			// Cookie secret must be 16 bytes (32 hex chars) for AES-128 cipher compatibility
+			Expect(len(actualCookieSecret)).To(Equal(32),
+				"Cookie secret should be exactly 32 hex characters (16 bytes)")
+
+			_log.Info("Cookie secret length verified", "length", len(actualCookieSecret), "expectedLength", 32)
 		})
 	})
 
