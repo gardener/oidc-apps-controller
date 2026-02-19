@@ -21,7 +21,7 @@ import (
 
 func createIngressForDeployment(object client.Object) (networkingv1.Ingress, error) {
 	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
-	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
+	ingressClassName := new(configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object))
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 	host := configuration.GetOIDCAppsControllerConfig().GetHost(object)
 
@@ -34,7 +34,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 			},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: ptr.To(ingressClassName),
+			IngressClassName: ingressClassName,
 			TLS: []networkingv1.IngressTLS{
 				{
 					Hosts:      []string{host},
@@ -79,7 +79,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 
 func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (networkingv1.Ingress, error) {
 	suffix := rand.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
-	ingressClassName := configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object)
+	ingressClassName := new(configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object))
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 
 	hostPrefix, ok := pod.GetAnnotations()[constants.AnnotationHostKey]
@@ -99,7 +99,7 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 			},
 		},
 		Spec: networkingv1.IngressSpec{
-			IngressClassName: ptr.To(ingressClassName),
+			IngressClassName: ingressClassName,
 			TLS: []networkingv1.IngressTLS{
 				{
 					Hosts:      []string{fmt.Sprintf("%s-%s.%s", host, fetchStrIndexIfPresent(pod), domain)},

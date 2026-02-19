@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -301,7 +300,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 										LocalObjectReference: corev1.LocalObjectReference{
 											Name: "oauth2-proxy-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 										},
-										Optional: ptr.To(false),
+										Optional: new(false),
 									},
 								},
 								{
@@ -310,7 +309,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 											Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
 												Name+"-"+targetDeployment.Namespace),
 										},
-										Optional: ptr.To(false),
+										Optional: new(false),
 									},
 								},
 							},
@@ -329,7 +328,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 										LocalObjectReference: corev1.LocalObjectReference{
 											Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 										},
-										Optional: ptr.To(false),
+										Optional: new(false),
 									},
 								},
 								{
@@ -338,7 +337,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 											Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
 												Name+"-"+targetDeployment.Namespace),
 										},
-										Optional: ptr.To(false),
+										Optional: new(false),
 									},
 								},
 							},
@@ -388,7 +387,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 											LocalObjectReference: corev1.LocalObjectReference{
 												Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 											},
-											Optional: ptr.To(false),
+											Optional: new(false),
 										},
 									},
 									{
@@ -397,7 +396,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 												Name: "kubeconfig-" + rand.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
-											Optional: ptr.To(false),
+											Optional: new(false),
 										},
 									},
 									{
@@ -406,7 +405,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 												Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
-											Optional: ptr.To(false),
+											Optional: new(false),
 										},
 									},
 								},
@@ -431,7 +430,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 											LocalObjectReference: corev1.LocalObjectReference{
 												Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 											},
-											Optional: ptr.To(false),
+											Optional: new(false),
 										},
 									},
 									{
@@ -440,7 +439,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 												Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
-											Optional: ptr.To(false),
+											Optional: new(false),
 										},
 									},
 								},

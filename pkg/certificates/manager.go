@@ -135,11 +135,7 @@ func (c *certManager) Start(ctx context.Context) error {
 	c.ctx = ctx
 	runnableWaitGroup := &sync.WaitGroup{} // Wait group for the certificate manager
 
-	runnableWaitGroup.Add(1)
-
-	go func() {
-		defer runnableWaitGroup.Done()
-
+	runnableWaitGroup.Go(func() {
 		wg := &sync.WaitGroup{}
 		wg.Add(3)
 
@@ -152,7 +148,7 @@ func (c *certManager) Start(ctx context.Context) error {
 		_log.Info("Shutting down the webhook certificate manager")
 
 		wg.Wait()
-	}()
+	})
 
 	runnableWaitGroup.Wait() // Done with the certificate manager
 

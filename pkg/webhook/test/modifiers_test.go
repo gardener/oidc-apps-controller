@@ -129,7 +129,7 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 			const iterations = 5
 			var cookieSecrets []string
 
-			for i := 0; i < iterations; i++ {
+			for range iterations {
 				patchedPod := patchPodWithWebhook(pod1, localPodWebhook1)
 				cookieSecret := extractCookieSecret(patchedPod)
 				cookieSecrets = append(cookieSecrets, cookieSecret)
@@ -570,7 +570,7 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 			const vpaUpdates = 3
 			var cookieSecrets []string
 
-			for i := 0; i < vpaUpdates; i++ {
+			for i := range vpaUpdates {
 				// Simulate pod with VPA update annotations
 				podWithVPAUpdate := initialPod.DeepCopy()
 				podWithVPAUpdate.Annotations = map[string]string{
@@ -620,8 +620,8 @@ func extractCookieSecret(pod *corev1.Pod) string {
 	for _, container := range pod.Spec.Containers {
 		if container.Name == constants.ContainerNameOauth2Proxy {
 			for _, arg := range container.Args {
-				if strings.HasPrefix(arg, "--cookie-secret=") {
-					return strings.TrimPrefix(arg, "--cookie-secret=")
+				if after, ok := strings.CutPrefix(arg, "--cookie-secret="); ok {
+					return after
 				}
 			}
 		}
