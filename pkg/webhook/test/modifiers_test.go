@@ -23,7 +23,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 	"github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
@@ -127,6 +127,7 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 
 		It("should generate the same cookie secret across multiple invocations", func() {
 			const iterations = 5
+
 			var cookieSecrets []string
 
 			for range iterations {
@@ -150,7 +151,7 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 
 			// The cookie secret is generated using: rand.GenerateFullSha256(...) stripped to 32 hex chars (16 bytes)
 			// The owner is the Deployment, so: "nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret"
-			fullHash := rand.GenerateFullSha256("nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret")
+			fullHash := randutils.GenerateFullSha256("nginx" + "-" + "nginx" + "-" + "deployment-uid-1" + "-cookie-secret")
 			expectedCookieSecret := fullHash[:32]
 
 			Expect(actualCookieSecret).To(Equal(expectedCookieSecret),
@@ -568,6 +569,7 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 
 		It("should maintain cookie secret stability across multiple VPA updates", func() {
 			const vpaUpdates = 3
+
 			var cookieSecrets []string
 
 			for i := range vpaUpdates {

@@ -18,7 +18,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 var errSecretDoesNotExist = errors.New("secret does not exist")
@@ -26,7 +26,7 @@ var errSecretDoesNotExist = errors.New("secret does not exist")
 func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	var cfg string
 
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	extConfig := configuration.GetOIDCAppsControllerConfig()
 
 	switch extConfig.GetClientSecret(object) {
@@ -53,7 +53,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
 	}
 
-	checksum := rand.GenerateFullSha256(cfg)
+	checksum := randutils.GenerateFullSha256(cfg)
 
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -70,7 +70,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 }
 
 func createResourceAttributesSecret(object client.Object, targetNamespace string) (corev1.Secret, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 
 	// TODO: add configurable resource, subresource
 	cfg := configuration.NewResourceAttributes(
@@ -92,7 +92,7 @@ func createResourceAttributesSecret(object client.Object, targetNamespace string
 }
 
 func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 
 	kubeConfigStr := configuration.GetOIDCAppsControllerConfig().GetKubeConfigStr(object)
 	if len(kubeConfigStr) > 0 {
@@ -192,7 +192,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 }
 
 func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 
 	oidcCABundle := configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object)
 	if len(oidcCABundle) > 0 {

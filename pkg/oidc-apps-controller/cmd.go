@@ -309,6 +309,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 				return nil
 			}
+
 			if value, exists := secret.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}
@@ -352,6 +353,7 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 				return nil
 			}
+
 			if value, exists := ingress.GetLabels()[constants.LabelKey]; exists {
 				return []string{value}
 			}

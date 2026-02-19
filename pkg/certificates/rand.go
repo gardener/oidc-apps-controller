@@ -6,7 +6,7 @@ package certificates
 import (
 	"sync"
 
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 var (
@@ -31,5 +31,5 @@ func generateTLSCommonName(prefix string) string {
 }
 
 func generateRandomString(length int) string {
-	return rand.GenerateRandomString(length)
+	return randutils.GenerateRandomString(length)
 }

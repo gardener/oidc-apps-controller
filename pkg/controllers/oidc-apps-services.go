@@ -12,11 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 func createOauth2Service(selectors client.MatchingLabels, object client.Object) (corev1.Service, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	index := fetchStrIndexIfPresent(object)
 
 	return corev1.Service{

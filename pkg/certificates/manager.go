@@ -393,6 +393,7 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) e
 		if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 			return err
 		}
+
 		c.cleanWebhookCABundles(webhook)
 
 		return c.client.Update(ctx, webhook)

@@ -21,7 +21,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
@@ -68,7 +68,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be an oidc-apps annotated ingress present in the deployment namespace", func(ctx SpecContext) {
 			ingresses := networkingv1.IngressList{}
-			suffix := rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
@@ -79,6 +79,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(ingresses.Items) == 0 {
 					return errors.New("no oidc-apps ingresses are found")
 				}
@@ -87,6 +88,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					if ingress.Name != constants.IngressName+"-"+suffix {
 						continue
 					}
+
 					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
@@ -99,11 +101,13 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 						constants.LabelKey: constants.LabelValue,
 					}
 					maps.Copy(wantIngressLabels, confTarget.Labels)
+
 					if !maps.Equal(ingress.Labels, wantIngressLabels) {
 						return fmt.Errorf("mismatched labels for target and ingress: %s", ingress.Name)
 					}
 
 					Expect(ingress.Spec.Rules).To(HaveLen(1))
+
 					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"."+domain {
 						return fmt.Errorf(
 							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
@@ -120,7 +124,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be an oauth2 service present in the deployment namespace", func(ctx SpecContext) {
 			services := corev1.ServiceList{}
-			suffix := rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
@@ -131,6 +135,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-"+suffix {
 						return nil
@@ -144,7 +149,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be an oauth2 secret present in the deployment namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
-			suffix := rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
@@ -155,9 +160,11 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
 						return nil
@@ -171,7 +178,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be a rbac secret present in the deployment namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
-			suffix := rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
@@ -182,9 +189,11 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
 						return nil
@@ -213,7 +222,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			})
 			It("there shall be no oidc-apps annotated ingress present", func(ctx SpecContext) {
 				ingresses := networkingv1.IngressList{}
-				suffix := rand.GenerateSha256(strings.Join([]string{skipIngressTarget, defaultNamespace}, "-"))
+				suffix := randutils.GenerateSha256(strings.Join([]string{skipIngressTarget, defaultNamespace}, "-"))
 
 				Eventually(func() error {
 					if err = clt.List(ctx, &ingresses,
@@ -225,9 +234,11 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 						}); err != nil {
 						return err
 					}
+
 					if len(ingresses.Items) == 0 {
 						return nil
 					}
+
 					for _, ingress := range ingresses.Items {
 						if ingress.Name == constants.IngressName+"-"+suffix {
 							return fmt.Errorf("An unexpected oidc-apps ingress: %s is found",
@@ -279,7 +290,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be no oidc-apps ingress present in the deployment namespace", func() {
 			ingress := &networkingv1.Ingress{}
-			suffix := rand.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
 			err = clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
@@ -291,7 +302,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be no oauth2 service present in the deployment namespace", func() {
 			service := &corev1.Service{}
-			suffix := rand.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
 			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
@@ -303,7 +314,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be no oauth2 secret present in the deployment namespace", func() {
 			secret := &corev1.Secret{}
-			suffix := rand.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
 			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
@@ -315,7 +326,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be no rbac secret present in the deployment namespace", func() {
 			secret := &corev1.Secret{}
-			suffix := rand.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{nonTarget, defaultNamespace}, "-"))
 			err := clt.Get(ctx,
 				client.ObjectKey{
 					Namespace: defaultNamespace,
@@ -365,7 +376,7 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 
 		It("there shall be an oauth2 secret present in the deployment namespace with redirectUrl set to the custom value", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
-			suffix := rand.GenerateSha256(strings.Join([]string{redirectURLTarget, defaultNamespace}, "-"))
+			suffix := randutils.GenerateSha256(strings.Join([]string{redirectURLTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
 				if err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
@@ -376,9 +387,11 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
 						Expect(secret.Data["oauth2-proxy.cfg"]).Should(

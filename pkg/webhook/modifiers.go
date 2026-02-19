@@ -19,7 +19,7 @@ import (
 	"github.com/gardener/oidc-apps-controller/imagevector"
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 // Add an annotation to target workload.
@@ -68,7 +68,7 @@ func get2ProxySecretChecksum(object client.Object) string {
 		).Parse()
 	}
 
-	return rand.GenerateFullSha256(cfg)
+	return randutils.GenerateFullSha256(cfg)
 }
 
 // Add gardener specific labels to the target pods.
@@ -251,7 +251,7 @@ func fetchTargetSuffix(object client.Object) string {
 
 	suffix, ok := objectAnnotations[constants.AnnotationSuffixKey]
 	if !ok {
-		suffix = rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+		suffix = randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 		objectAnnotations[constants.AnnotationSuffixKey] = suffix
 
 		object.SetAnnotations(objectAnnotations)
@@ -416,7 +416,7 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 	// This ensures the secret remains stable across pod updates (e.g., VPA in-place modifications),
 	// avoiding forbidden pod spec changes.
 	// Strip to 32 hex chars (16 bytes) for AES-128 cipher compatibility.
-	fullHash := rand.GenerateFullSha256(owner.GetName() + "-" + owner.GetNamespace() + "-" + string(owner.GetUID()) + "-cookie-secret")
+	fullHash := randutils.GenerateFullSha256(owner.GetName() + "-" + owner.GetNamespace() + "-" + string(owner.GetUID()) + "-cookie-secret")
 	cookieSecret := fullHash[:32]
 
 	container := corev1.Container{

@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
@@ -46,7 +46,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod1 := createStatefulSetPod(statefulSet, "1")
 			Eventually(func() error { return clt.Create(ctx, pod1) }).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
+			suffix = randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -69,6 +69,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 		It("there shall be an oidc-apps ingress per pod present in the statefulset namespace", func(ctx SpecContext) {
 			ingresses := networkingv1.IngressList{}
+
 			By("checking the ingress for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &ingresses,
@@ -80,15 +81,17 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(ingresses.Items) == 0 {
 					return errors.New("no oidc-apps ingresses are found")
 				}
 
-				podSuffix := rand.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
+				podSuffix := randutils.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
 				for _, ingress := range ingresses.Items {
 					if ingress.Name != constants.IngressName+"-0-"+podSuffix {
 						continue
 					}
+
 					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
@@ -96,6 +99,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}
 
 					Expect(ingress.Spec.Rules).To(HaveLen(1))
+
 					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"-0"+"."+domain {
 						return fmt.Errorf(
 							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
@@ -120,15 +124,17 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(ingresses.Items) == 0 {
 					return errors.New("no oidc-apps ingresses are found")
 				}
 
-				podSuffix := rand.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
+				podSuffix := randutils.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
 				for _, ingress := range ingresses.Items {
 					if ingress.Name != constants.IngressName+"-1-"+podSuffix {
 						continue
 					}
+
 					annotation, found := ingress.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
 					if !found || annotation != "/" {
 						return fmt.Errorf("An expected annotation in oidc-apps ingress: %s is not found",
@@ -136,6 +142,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}
 
 					Expect(ingress.Spec.Rules).To(HaveLen(1))
+
 					if ingress.Spec.Rules[0].Host != target+"-"+defaultNamespace+"-1"+"."+domain {
 						return fmt.Errorf(
 							"An expected host in oidc-apps ingress is not found, expected: %s, got: %s",
@@ -152,6 +159,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 		It("there shall be oauth2 services per pod present in the statefulset namespace", func(ctx SpecContext) {
 			services := corev1.ServiceList{}
+
 			By("checking the service for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
@@ -163,7 +171,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix := rand.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
+
+				podSuffix := randutils.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-0-"+podSuffix {
 						return nil
@@ -185,7 +194,9 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix := rand.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
+
+				podSuffix := randutils.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
+
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-1-"+podSuffix {
 						return nil
@@ -209,9 +220,11 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
 						return nil
@@ -235,9 +248,11 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
 						return nil
@@ -272,7 +287,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 			pod1 := createSkipIngressStatefulSetPod(statefulSetSkipIngress, "1")
 			Eventually(func() error { return clt.Create(ctx, pod1) }).WithPolling(100 * time.Millisecond).Should(Succeed())
 
-			suffix = rand.GenerateSha256(strings.Join([]string{skipIngressTarget, defaultNamespace}, "-"))
+			suffix = randutils.GenerateSha256(strings.Join([]string{skipIngressTarget, defaultNamespace}, "-"))
 		}, NodeTimeout(5*time.Second))
 
 		AfterAll(func(ctx SpecContext) {
@@ -305,12 +320,13 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(ingresses.Items) == 0 {
 					return nil
 				}
 
 				for i := range 2 {
-					podSuffix := rand.GenerateSha256(nginxPod + "-" + strconv.Itoa(i) + "-" + defaultNamespace)
+					podSuffix := randutils.GenerateSha256(nginxPod + "-" + strconv.Itoa(i) + "-" + defaultNamespace)
 					for _, ingress := range ingresses.Items {
 						if ingress.Name == constants.IngressName+"-"+podSuffix {
 							return fmt.Errorf("An unexpected oidc-apps ingress: %s is found",
@@ -325,6 +341,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 		It("there shall be oauth2 services per pod present in the statefulset namespace", func(ctx SpecContext) {
 			services := corev1.ServiceList{}
+
 			By("checking the service for the first pod")
 			Eventually(func() error {
 				if err = clt.List(ctx, &services,
@@ -336,7 +353,8 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix := rand.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
+
+				podSuffix := randutils.GenerateSha256(nginxPod + "-0-" + defaultNamespace)
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-0-"+podSuffix {
 						return nil
@@ -358,7 +376,9 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
-				podSuffix := rand.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
+
+				podSuffix := randutils.GenerateSha256(nginxPod + "-1-" + defaultNamespace)
+
 				for _, service := range services.Items {
 					if service.Name == constants.ServiceNameOauth2Service+"-1-"+podSuffix {
 						return nil
@@ -382,9 +402,11 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameOauth2Proxy+"-"+suffix {
 						return nil
@@ -408,9 +430,11 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					}); err != nil {
 					return err
 				}
+
 				if len(secrets.Items) == 0 {
 					return errors.New("no oidc-apps secrets are found")
 				}
+
 				for _, secret := range secrets.Items {
 					if secret.Name == constants.SecretNameResourceAttributes+"-"+suffix {
 						return nil
@@ -460,6 +484,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 					if container.Name == "oauth2-proxy" {
 						for _, arg := range container.Args {
 							GinkgoLogr.Info(arg)
+
 							if strings.Compare(arg,
 								`--redirect-url=https://custom-`+strconv.Itoa(i)+`.redirect.url/oauth2/callback`) == 0 {
 								found = true
@@ -467,6 +492,7 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 						}
 					}
 				}
+
 				Expect(found).Should(BeTrue())
 			}
 		})

@@ -16,11 +16,11 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 func createIngressForDeployment(object client.Object) (networkingv1.Ingress, error) {
-	suffix := rand.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	ingressClassName := new(configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object))
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 	host := configuration.GetOIDCAppsControllerConfig().GetHost(object)
@@ -78,7 +78,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 }
 
 func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (networkingv1.Ingress, error) {
-	suffix := rand.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
+	suffix := randutils.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
 	ingressClassName := new(configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object))
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
 

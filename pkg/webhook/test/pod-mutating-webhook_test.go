@@ -26,7 +26,7 @@ import (
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 	"github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
 
@@ -276,11 +276,14 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			_log.Info("patched pod", "patched pod", patchedPod)
 			By("verifying containers in patched pod", func() {
 				expectedContainerImages := []string{"kube-rbac-proxy-watcher", "oauth2-proxy"}
+
 				Expect(len(patchedPod.Spec.Containers)).To(Equal(2))
 
 				for _, c := range patchedPod.Spec.Containers {
 					image, _, ok := strings.Cut(c.Image, ":")
+
 					Expect(ok).To(BeTrue())
+
 					n := strings.SplitAfter(image, "/")
 					Expect(n[len(n)-1]).To(BeElementOf(expectedContainerImages))
 				}
@@ -298,7 +301,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								{
 									Secret: &corev1.SecretProjection{
 										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "oauth2-proxy-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
+											Name: "oauth2-proxy-" + randutils.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 										},
 										Optional: new(false),
 									},
@@ -306,7 +309,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								{
 									Secret: &corev1.SecretProjection{
 										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
+											Name: "oidc-ca-" + randutils.GenerateSha256(targetDeployment.
 												Name+"-"+targetDeployment.Namespace),
 										},
 										Optional: new(false),
@@ -326,7 +329,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								{
 									Secret: &corev1.SecretProjection{
 										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
+											Name: "resource-attributes-" + randutils.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 										},
 										Optional: new(false),
 									},
@@ -334,7 +337,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 								{
 									Secret: &corev1.SecretProjection{
 										LocalObjectReference: corev1.LocalObjectReference{
-											Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
+											Name: "oidc-ca-" + randutils.GenerateSha256(targetDeployment.
 												Name+"-"+targetDeployment.Namespace),
 										},
 										Optional: new(false),
@@ -350,6 +353,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 			patchedPod := patchPod(targetPod)
 			for _, c := range patchedPod.Spec.Containers {
 				_log.Info("patched pod container", "container", c)
+
 				switch c.Name {
 				case constants.ContainerNameOauth2Proxy:
 					Expect(c.VolumeMounts).To(ContainElement(
@@ -372,8 +376,11 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 		When("the GARDEN_KUBECONFIG env variable is present", func() {
 			It("there shall be a projected secret volume in the pod spec containing kubeconfig secret", func() {
 				err := os.Setenv("GARDEN_KUBECONFIG", filepath.Join(tmpDir, "kubeconfig"))
+
 				DeferCleanup(os.Unsetenv, "GARDEN_KUBECONFIG")
+
 				Expect(err).NotTo(HaveOccurred())
+
 				patchedPod := patchPod(targetPod)
 				_log.Info("patched pod volumes", "patched pod", patchedPod.Spec.Volumes)
 				Expect(patchedPod.Spec.Volumes).To(ContainElement(
@@ -385,7 +392,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 									{
 										Secret: &corev1.SecretProjection{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
+												Name: "resource-attributes-" + randutils.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 											},
 											Optional: new(false),
 										},
@@ -393,7 +400,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 									{
 										Secret: &corev1.SecretProjection{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "kubeconfig-" + rand.GenerateSha256(targetDeployment.
+												Name: "kubeconfig-" + randutils.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
 											Optional: new(false),
@@ -402,7 +409,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 									{
 										Secret: &corev1.SecretProjection{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
+												Name: "oidc-ca-" + randutils.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
 											Optional: new(false),
@@ -428,7 +435,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 									{
 										Secret: &corev1.SecretProjection{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "resource-attributes-" + rand.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
+												Name: "resource-attributes-" + randutils.GenerateSha256(targetDeployment.Name+"-"+targetDeployment.Namespace),
 											},
 											Optional: new(false),
 										},
@@ -436,7 +443,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 									{
 										Secret: &corev1.SecretProjection{
 											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "oidc-ca-" + rand.GenerateSha256(targetDeployment.
+												Name: "oidc-ca-" + randutils.GenerateSha256(targetDeployment.
 													Name+"-"+targetDeployment.Namespace),
 											},
 											Optional: new(false),
@@ -502,7 +509,9 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 	Context("when a pod does not belong to a target", func() {
 		It("there shall be no auth & authz proxies in the pod templates spec", func() {
 			raw, err := json.Marshal(nonTargetPod)
+
 			Expect(err).NotTo(HaveOccurred())
+
 			req := admission.Request{
 				AdmissionRequest: adminssionv1.AdmissionRequest{
 					UID:       "uid-request",
