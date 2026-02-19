@@ -65,7 +65,7 @@ func installWebHooks(env *envtest.Environment) {
 							},
 						},
 						AdmissionReviewVersions: []string{"v1"},
-						TimeoutSeconds:          ptr.To(int32(20)),
+						TimeoutSeconds:          new(int32(20)),
 					},
 				},
 			},
@@ -90,7 +90,7 @@ func createTargetDeployments() []*appsv1.Deployment {
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{"app": target},
 				},
-				Replicas: ptr.To(int32(1)),
+				Replicas: new(int32(1)),
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{"app": target},
@@ -120,7 +120,7 @@ func createTargetDeployments() []*appsv1.Deployment {
 				Selector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{"app": skipIngressTarget},
 				},
-				Replicas: ptr.To(int32(1)),
+				Replicas: new(int32(1)),
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{"app": skipIngressTarget},
@@ -156,7 +156,7 @@ func createReplicaSet(owner client.Object) *appsv1.ReplicaSet {
 			},
 		},
 		Spec: appsv1.ReplicaSetSpec{
-			Replicas: ptr.To(int32(1)),
+			Replicas: new(int32(1)),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": hash5(client.ObjectKeyFromObject(owner))},
 			},
@@ -217,7 +217,7 @@ func createNonTargetDeployment() *appsv1.Deployment {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": nonTarget},
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: new(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": nonTarget},
@@ -250,7 +250,7 @@ func createRedirectTargetDeployment() *appsv1.Deployment {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": redirectURLTarget},
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: new(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": redirectURLTarget},
@@ -283,7 +283,7 @@ func createTargetStatefulSet() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": target},
 			},
-			Replicas: ptr.To(int32(2)),
+			Replicas: new(int32(2)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": target},
@@ -316,7 +316,7 @@ func createTargetStatefulSetWithCustomRedirectURL() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": redirectURLTarget},
 			},
-			Replicas: ptr.To(int32(2)),
+			Replicas: new(int32(2)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": redirectURLTarget},
@@ -349,7 +349,7 @@ func createTargetSkipIngressStatefulSet() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": skipIngressTarget},
 			},
-			Replicas: ptr.To(int32(2)),
+			Replicas: new(int32(2)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": skipIngressTarget},

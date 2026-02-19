@@ -14,7 +14,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/oidc-apps-controller/imagevector"
@@ -156,7 +155,7 @@ func addProjectedSecretSourceVolume(volumeName, secretName string, podSpec *core
 			Name: secretName,
 		},
 		// Items:    nil,
-		Optional: ptr.To(false),
+		Optional: new(false),
 	}
 
 	// Add the secret projected volume source in case there are no others
@@ -358,8 +357,8 @@ func getKubeRbacProxyContainer(clientID, issuerURL, upstream string, pod *corev1
 		},
 		SecurityContext: &corev1.SecurityContext{
 			Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
-			AllowPrivilegeEscalation: ptr.To(false),
-			ReadOnlyRootFilesystem:   ptr.To(true),
+			AllowPrivilegeEscalation: new(false),
+			ReadOnlyRootFilesystem:   new(true),
 		},
 		Resources:    containerResourceRequirements,
 		VolumeMounts: volumeMounts,
@@ -438,8 +437,8 @@ func getOIDCProxyContainer(pod *corev1.PodSpec, owner client.Object) corev1.Cont
 			"--upstream=http://127.0.0.1:8100"},
 		SecurityContext: &corev1.SecurityContext{
 			Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
-			AllowPrivilegeEscalation: ptr.To(false),
-			ReadOnlyRootFilesystem:   ptr.To(true),
+			AllowPrivilegeEscalation: new(false),
+			ReadOnlyRootFilesystem:   new(true),
 		},
 		Ports: []corev1.ContainerPort{
 			{Name: "oauth2", ContainerPort: 8000},

@@ -21,7 +21,7 @@ func GenerateRandomString(length int) string {
 	b.Grow(length)
 
 	charsetLength := big.NewInt(int64(len(charset)))
-	for i := 0; i < length; i++ {
+	for range length {
 		index, err := rand.Int(rand.Reader, charsetLength)
 		if err != nil {
 			return ""

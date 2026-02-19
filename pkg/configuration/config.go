@@ -28,63 +28,63 @@ import (
 
 // OIDCAppsControllerConfig is the root configuration node
 type OIDCAppsControllerConfig struct {
-	Global  Global   `json:"global,omitempty"`
-	Targets []Target `json:"targets,omitempty"`
+	Global  Global   `json:"global"`
+	Targets []Target `json:"targets,omitzero"`
 	client  client.Client
 	log     logr.Logger
 }
 
 // Global holds the concrete target configurations for the auth & authz proxies
 type Global struct {
-	Oauth2Proxy   *Oauth2ProxyConfig   `json:"oauth2Proxy,omitempty"`
-	KubeRbacProxy *KubeRbacProxyConfig `json:"kubeRbacProxy,omitempty"`
+	Oauth2Proxy   *Oauth2ProxyConfig   `json:"oauth2Proxy,omitzero"`
+	KubeRbacProxy *KubeRbacProxyConfig `json:"kubeRbacProxy,omitzero"`
 
-	Labels      map[string]string `json:"labels,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
-	DomainName  string            `json:"domainName,omitempty"`
+	Labels      map[string]string `json:"labels,omitzero"`
+	Annotations map[string]string `json:"annotations,omitzero"`
+	DomainName  string            `json:"domainName,omitzero"`
 
-	OidcCABundle    string                  `json:"oidcCABundle,omitempty"`
-	OidcCASecretRef *corev1.SecretReference `json:"oidcCASecretRef,omitempty"`
+	OidcCABundle    string                  `json:"oidcCABundle,omitzero"`
+	OidcCASecretRef *corev1.SecretReference `json:"oidcCASecretRef,omitzero"`
 }
 
 // Oauth2ProxyConfig OIDC Provider configuration
 type Oauth2ProxyConfig struct {
-	Scope                              string `json:"scope,omitempty"`
+	Scope                              string `json:"scope,omitzero"`
 	ClientID                           string `json:"clientId"`
-	ClientSecret                       string `json:"clientSecret,omitempty"`
+	ClientSecret                       string `json:"clientSecret,omitzero"`
 	RedirectURL                        string `json:"redirectUrl"`
 	OidcIssuerURL                      string `json:"oidcIssuerUrl"`
-	SSLInsecureSkipVerify              *bool  `json:"sslInsecureSkipVerify,omitempty"`
-	InsecureOidcSkipIssuerVerification *bool  `json:"insecureOidcSkipIssuerVerification,omitempty"`
-	InsecureOidcSkipNonce              *bool  `json:"insecureOidcSkipNonce,omitempty"`
+	SSLInsecureSkipVerify              *bool  `json:"sslInsecureSkipVerify,omitzero"`
+	InsecureOidcSkipIssuerVerification *bool  `json:"insecureOidcSkipIssuerVerification,omitzero"`
+	InsecureOidcSkipNonce              *bool  `json:"insecureOidcSkipNonce,omitzero"`
 }
 
 // KubeRbacProxyConfig kube-rbac-proxy configuration
 type KubeRbacProxyConfig struct {
-	KubeConfigStr string                  `json:"kubeConfigStr,omitempty"`
-	KubeSecretRef *corev1.SecretReference `json:"kubeSecretRef,omitempty"`
+	KubeConfigStr string                  `json:"kubeConfigStr,omitzero"`
+	KubeSecretRef *corev1.SecretReference `json:"kubeSecretRef,omitzero"`
 }
 
 // Target workload selector configuration
 type Target struct {
 	Name              string                `json:"name"`
-	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
-	LabelSelector     *metav1.LabelSelector `json:"labelSelector,omitempty"`
-	TargetPort        intstr.IntOrString    `json:"targetPort,omitempty"`
-	TargetProtocol    string                `json:"targetProtocol,omitempty"`
-	Ingress           *IngressConf          `json:"ingress,omitempty"`
-	Global            `json:",omitempty"`
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitzero"`
+	LabelSelector     *metav1.LabelSelector `json:"labelSelector,omitzero"`
+	TargetPort        intstr.IntOrString    `json:"targetPort"`
+	TargetProtocol    string                `json:"targetProtocol,omitzero"`
+	Ingress           *IngressConf          `json:"ingress,omitzero"`
+	Global
 }
 
 // IngressConf holds configuration for the ingress entry-point
 type IngressConf struct {
-	Create           bool                   `json:"create,omitempty"`
-	HostPrefix       string                 `json:"hostPrefix,omitempty"`
-	Host             string                 `json:"host,omitempty"`
-	Annotations      map[string]string      `json:"annotations,omitempty"`
-	Labels           map[string]string      `json:"labels,omitempty"`
-	TLSSecretRef     corev1.SecretReference `json:"tlsSecretRef,omitempty"`
-	IngressClassName string                 `json:"ingressClassName,omitempty"`
+	Create           bool                   `json:"create,omitzero"`
+	HostPrefix       string                 `json:"hostPrefix,omitzero"`
+	Host             string                 `json:"host,omitzero"`
+	Annotations      map[string]string      `json:"annotations,omitzero"`
+	Labels           map[string]string      `json:"labels,omitzero"`
+	TLSSecretRef     corev1.SecretReference `json:"tlsSecretRef,omitzero"`
+	IngressClassName string                 `json:"ingressClassName,omitzero"`
 }
 
 var config *OIDCAppsControllerConfig
