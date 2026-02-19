@@ -471,11 +471,11 @@ func shallAddKubeConfigSecretName(object client.Object) bool {
 
 	d := filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
 
-	if _, err := os.Stat(filepath.Join(d, "kubeconfig")); err != nil {
+	if _, err := os.Stat(filepath.Join(d, "kubeconfig")); err != nil { // #nosec G304 G703 -- path is from trusted env var GARDEN_KUBECONFIG
 		return false
 	}
 
-	if _, err := os.Stat(filepath.Join(d, "token")); err != nil {
+	if _, err := os.Stat(filepath.Join(d, "token")); err != nil { // #nosec G304 G703 -- path is from trusted env var GARDEN_KUBECONFIG
 		return false
 	}
 
