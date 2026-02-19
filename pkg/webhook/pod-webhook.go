@@ -218,8 +218,21 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 				return false, nil
 			}
 
+			ownerRefs := replicaset.GetOwnerReferences()
+			if len(ownerRefs) == 0 {
+				log.FromContext(ctx).Info("replicaset has no owner references", "replicaset", replicaset.GetName())
+
+				return false, nil
+			}
+
+			if ownerRefs[0].Kind != "Deployment" {
+				log.FromContext(ctx).Info("replicaset owner is not a deployment", "replicaset", replicaset.GetName(), "ownerKind", ownerRefs[0].Kind)
+
+				return false, nil
+			}
+
 			deployment := &appsv1.Deployment{}
-			if err := c.Get(ctx, client.ObjectKey{Name: replicaset.GetOwnerReferences()[0].Name,
+			if err := c.Get(ctx, client.ObjectKey{Name: ownerRefs[0].Name,
 				Namespace: pod.GetNamespace()},
 				deployment); err != nil {
 				log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", pod)
