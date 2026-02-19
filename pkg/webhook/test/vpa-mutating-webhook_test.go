@@ -145,6 +145,7 @@ var _ = Describe("Oidc Apps MutatingAdmission Framework Test", func() {
 		It("there shall be no auth & authz policies in the vpa spec", func() {
 			raw, err := json.Marshal(nonTargetVpa)
 			Expect(err).NotTo(HaveOccurred())
+
 			req := admission.Request{
 				AdmissionRequest: adminssionv1.AdmissionRequest{
 					UID:       "uid-request",

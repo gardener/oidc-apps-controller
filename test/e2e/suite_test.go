@@ -189,6 +189,7 @@ var _ = BeforeSuite(func() {
 	// Start the controller-runtime manager
 	go func() {
 		defer GinkgoRecover()
+
 		Expect(mgr.Start(ctx)).Should(Succeed())
 	}()
 

@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
-	"github.com/gardener/oidc-apps-controller/pkg/rand"
+	"github.com/gardener/oidc-apps-controller/pkg/randutils"
 )
 
 const (
@@ -143,7 +143,7 @@ func createTargetDeployments() []*appsv1.Deployment {
 
 func hash5(obj client.ObjectKey) string {
 	// Create a hash from the object name
-	return rand.GenerateSha256(strings.Join([]string{obj.Name, obj.Namespace}, "-"))
+	return randutils.GenerateSha256(strings.Join([]string{obj.Name, obj.Namespace}, "-"))
 }
 
 func createReplicaSet(owner client.Object) *appsv1.ReplicaSet {
