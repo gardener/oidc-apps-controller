@@ -31,10 +31,10 @@ $(TOOLS_DIR):
 all: verify build
 
 .PHONY: verify
-verify: check test envtest sast
+verify: check check-go-fix test envtest sast
 
 .PHONY: verify-extended
-verify-extended: check test envtest sast-report
+verify-extended: verify sast-report
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -70,6 +70,16 @@ fmt: tidy
 	@go tool golangci-lint fmt \
     	--config=$(REPO_ROOT)/.golangci.yaml \
     	$(SRC_DIRS)
+
+.PHONY: check-go-fix
+check-go-fix: tidy
+	@echo "Running go fix..."
+	@go fix $(SRC_DIRS)/...
+	@if [ -n "$$(git status --porcelain $(SRC_DIRS))" ]; then \
+		echo "Error: go fix produced changes. Please run 'go fix ./...' and commit the changes."; \
+		git --no-pager diff; \
+		exit 1; \
+	fi
 
 .PHONY: check
 check: tidy fmt gci lint
