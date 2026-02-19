@@ -131,7 +131,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 
 	path = filepath.Dir(os.Getenv("GARDEN_KUBECONFIG"))
 
-	kcfg, err = os.ReadFile(filepath.Join(filepath.Clean(path), "kubeconfig"))
+	kcfg, err = os.ReadFile(filepath.Join(filepath.Clean(path), "kubeconfig")) // #nosec G703 -- kubeconfig is expected to be a file containing the kubeconfig, and the path is controlled by environment variables
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, errSecretDoesNotExist
 	}
@@ -146,7 +146,7 @@ func createKubeconfigSecret(object client.Object) (corev1.Secret, error) {
 		path = os.Getenv("GARDEN_ACCESS_TOKEN")
 	}
 
-	token, err = os.ReadFile(filepath.Join(filepath.Clean(path), "token"))
+	token, err = os.ReadFile(filepath.Join(filepath.Clean(path), "token")) // #nosec G703 -- token is expected to be a file containing the token, and the path is controlled by environment variables
 	if err != nil && os.IsNotExist(err) {
 		return corev1.Secret{}, nil
 	}
