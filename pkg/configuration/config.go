@@ -45,6 +45,17 @@ type Global struct {
 
 	OidcCABundle    string                  `json:"oidcCABundle,omitzero"`
 	OidcCASecretRef *corev1.SecretReference `json:"oidcCASecretRef,omitzero"`
+
+	// HTTPRoutes holds global configuration for Gateway API HTTPRoute support
+	HTTPRoutes *HTTPRoutesGlobalConf `json:"httpRoutes,omitzero"`
+}
+
+// HTTPRoutesGlobalConf holds global configuration for HTTPRoute support
+type HTTPRoutesGlobalConf struct {
+	// Enabled controls whether Gateway API HTTPRoute support is active.
+	// When false, no HTTPRoute resources will be created regardless of target configuration.
+	// When true, the controller expects Gateway API CRDs to be present in the cluster.
+	Enabled bool `json:"enabled,omitzero"`
 }
 
 // Oauth2ProxyConfig OIDC Provider configuration
@@ -144,6 +155,16 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 	})
 
 	return config
+}
+
+// SetClient sets the client for the configuration
+func (c *OIDCAppsControllerConfig) SetClient(cl client.Client) {
+	c.client = cl
+}
+
+// SetLogger sets the logger for the configuration
+func (c *OIDCAppsControllerConfig) SetLogger(l logr.Logger) {
+	c.log = l
 }
 
 // handleError centralizes error handling logic
@@ -497,12 +518,22 @@ func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[st
 
 // ShallCreateHTTPRoute returns true if the target workload shall create an HTTPRoute
 func (c *OIDCAppsControllerConfig) ShallCreateHTTPRoute(object client.Object) bool {
+	// HTTPRoute support must be enabled via global.httpRoutes.enabled configuration
+	if !c.IsHTTPRouteEnabled() {
+		return false
+	}
+
 	t := c.FetchTarget(object)
 	if t.HTTPRoute != nil {
 		return t.HTTPRoute.Create
 	}
 
 	return false
+}
+
+// IsHTTPRouteEnabled returns true if Gateway API HTTPRoute support is globally enabled
+func (c *OIDCAppsControllerConfig) IsHTTPRouteEnabled() bool {
+	return c.Global.HTTPRoutes != nil && c.Global.HTTPRoutes.Enabled
 }
 
 // GetHTTPRouteHost returns the host for the HTTPRoute for a given workload target

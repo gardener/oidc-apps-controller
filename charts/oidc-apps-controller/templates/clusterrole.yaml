@@ -33,4 +33,7 @@ rules:
   - apiGroups: ["extensions.gardener.cloud"]
     resources: ["clusters"]
     verbs: [ "get","list","watch" ]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: [ "create", "get", "list", "watch", "update", "patch", "delete" ]
   {{- end }}

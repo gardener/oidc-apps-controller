@@ -197,7 +197,9 @@ func TestGardenConfig(t *testing.T) {
 }
 
 func TestHTTPRouteConfiguration(t *testing.T) {
-	extensionConfig := OIDCAppsControllerConfig{}
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
 	g.Expect(err).ShouldNot(HaveOccurred())
@@ -223,7 +225,9 @@ func TestHTTPRouteConfiguration(t *testing.T) {
 }
 
 func TestHTTPRouteWithCustomHost(t *testing.T) {
-	extensionConfig := OIDCAppsControllerConfig{}
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
 	g.Expect(err).ShouldNot(HaveOccurred())
@@ -246,7 +250,9 @@ func TestHTTPRouteWithCustomHost(t *testing.T) {
 }
 
 func TestTargetWithoutHTTPRoute(t *testing.T) {
-	extensionConfig := OIDCAppsControllerConfig{}
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
 	g := NewWithT(t)
 	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
 	g.Expect(err).ShouldNot(HaveOccurred())
@@ -260,6 +266,45 @@ func TestTargetWithoutHTTPRoute(t *testing.T) {
 
 	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetHTTPRouteParentRefs(target)).To(BeNil())
+}
+
+func TestHTTPRouteDisabledGlobally(t *testing.T) {
+	// Even with HTTPRoute configured in target, it should return false when global.httpRoutes.enabled is false
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-05 has HTTPRoute configured with create: true
+	target := getDeployment("test-05")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// Should return false because global.httpRoutes.enabled is not set (nil)
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeFalse())
+	g.Expect(extensionConfig.IsHTTPRouteEnabled()).To(BeFalse())
+}
+
+func TestIsHTTPRouteEnabled(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test nil HTTPRoutes
+	configNil := &OIDCAppsControllerConfig{}
+	g.Expect(configNil.IsHTTPRouteEnabled()).To(BeFalse())
+
+	// Test HTTPRoutes with enabled=false
+	configDisabled := &OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: false}},
+	}
+	g.Expect(configDisabled.IsHTTPRouteEnabled()).To(BeFalse())
+
+	// Test HTTPRoutes with enabled=true
+	configEnabled := &OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g.Expect(configEnabled.IsHTTPRouteEnabled()).To(BeTrue())
 }
 
 func getDeployment(name string) *appsv1.Deployment {
