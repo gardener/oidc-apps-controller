@@ -196,6 +196,72 @@ func TestGardenConfig(t *testing.T) {
 	g.Expect(clientID).To(Equal("seed-client-id"))
 }
 
+func TestHTTPRouteConfiguration(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-05")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+
+	parentRefs := extensionConfig.GetHTTPRouteParentRefs(target)
+	g.Expect(parentRefs).To(HaveLen(1))
+	g.Expect(parentRefs[0].Name).To(Equal("my-gateway"))
+	g.Expect(parentRefs[0].Namespace).To(Equal("gateway-system"))
+	g.Expect(parentRefs[0].SectionName).To(Equal("https"))
+
+	host := extensionConfig.GetHTTPRouteHost(target)
+	g.Expect(host).To(HavePrefix("test-05-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
+func TestHTTPRouteWithCustomHost(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-06")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetHTTPRouteHost(target)).To(Equal("custom.httproute.host"))
+
+	parentRefs := extensionConfig.GetHTTPRouteParentRefs(target)
+	g.Expect(parentRefs).To(HaveLen(1))
+	g.Expect(parentRefs[0].Name).To(Equal("another-gateway"))
+	g.Expect(parentRefs[0].Namespace).To(Equal(""))
+	g.Expect(parentRefs[0].SectionName).To(Equal(""))
+}
+
+func TestTargetWithoutHTTPRoute(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-04")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeFalse())
+	g.Expect(extensionConfig.GetHTTPRouteParentRefs(target)).To(BeNil())
+}
+
 func getDeployment(name string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

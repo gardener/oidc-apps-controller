@@ -102,6 +102,12 @@ cacheSelectorStr:
 # OIDC Apps Extension Configuration
 # Cluster-wide extension conf
 global:
+  # HTTPRoutes global configuration for Gateway API HTTPRoute support
+  # When enabled, the controller registers Gateway API scheme and watches HTTPRoute resources
+  # Requires Gateway API CRDs to be installed in the cluster
+  httpRoutes:
+    enabled: false
+
   # OIDC Provider Configuration shared by all targets in the cluster
   # All fields can be overwritten by a concrete target
   oauth2Proxy:
@@ -168,11 +174,28 @@ targets:
       # Target ingress annotations for the ingress controller
       # TODO: support nginx.ingress.kubernetes.io/backend-protocol: "HTTPS" as default, to establish https to the oauth2-proxy sidecar
       annotations: {}
+      # Target ingress labels
+      labels: {}
       # TLS Secret for front ssl termination
       tlsSecretRef:
-      # Optional target oidc configuration.
-      # It overwrites the cluster wide {{configuration}}
-      configuration:
+      # Ingress class name
+      ingressClassName:
+    # Target HTTPRoute entry-point (alternative to ingress, requires global.httpRoutes.enabled: true)
+    httpRoute:
+      create: #false
+      # Target URL prefix, to concatenate to the domainName, if not uses the target {{name}}-{{namespace}}
+      hostPrefix: ""
+      # Target host for the HTTPRoute if differ from the {{hostPrefix}} + {{domainName}}
+      host:
+      # Target HTTPRoute annotations
+      annotations: {}
+      # Target HTTPRoute labels
+      labels: {}
+      # Parent Gateway references for the HTTPRoute
+      parentRefs: []
+      # - name: my-gateway
+      #   namespace: gateway-system
+      #   sectionName: https
 
 # In case of Gardener, seeds must configure which client ID to be used the client name.
 # They use the annotation key `oidc-apps.extensions.gardener.cloud/client-name`

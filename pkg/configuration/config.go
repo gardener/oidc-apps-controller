@@ -73,6 +73,7 @@ type Target struct {
 	TargetPort        intstr.IntOrString    `json:"targetPort"`
 	TargetProtocol    string                `json:"targetProtocol,omitzero"`
 	Ingress           *IngressConf          `json:"ingress,omitzero"`
+	HTTPRoute         *HTTPRouteConf        `json:"httpRoute,omitzero"`
 	Global
 }
 
@@ -85,6 +86,23 @@ type IngressConf struct {
 	Labels           map[string]string      `json:"labels,omitzero"`
 	TLSSecretRef     corev1.SecretReference `json:"tlsSecretRef,omitzero"`
 	IngressClassName string                 `json:"ingressClassName,omitzero"`
+}
+
+// HTTPRouteConf holds configuration for the Gateway API HTTPRoute entry-point
+type HTTPRouteConf struct {
+	Create      bool                 `json:"create,omitzero"`
+	HostPrefix  string               `json:"hostPrefix,omitzero"`
+	Host        string               `json:"host,omitzero"`
+	Annotations map[string]string    `json:"annotations,omitzero"`
+	Labels      map[string]string    `json:"labels,omitzero"`
+	ParentRefs  []HTTPRouteParentRef `json:"parentRefs,omitzero"`
+}
+
+// HTTPRouteParentRef defines a reference to a parent Gateway
+type HTTPRouteParentRef struct {
+	Name        string `json:"name"`
+	Namespace   string `json:"namespace,omitzero"`
+	SectionName string `json:"sectionName,omitzero"`
 }
 
 var config *OIDCAppsControllerConfig
@@ -472,6 +490,71 @@ func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[st
 	t := c.FetchTarget(object)
 	if t.Ingress != nil && t.Ingress.Labels != nil {
 		return t.Ingress.Labels
+	}
+
+	return nil
+}
+
+// ShallCreateHTTPRoute returns true if the target workload shall create an HTTPRoute
+func (c *OIDCAppsControllerConfig) ShallCreateHTTPRoute(object client.Object) bool {
+	t := c.FetchTarget(object)
+	if t.HTTPRoute != nil {
+		return t.HTTPRoute.Create
+	}
+
+	return false
+}
+
+// GetHTTPRouteHost returns the host for the HTTPRoute for a given workload target
+func (c *OIDCAppsControllerConfig) GetHTTPRouteHost(object client.Object) string {
+	t := c.FetchTarget(object)
+	domain := c.Global.DomainName
+
+	if len(os.Getenv(constants.GardenSeedDomainName)) > 0 {
+		domain = os.Getenv(constants.GardenSeedDomainName)
+	}
+
+	prefix := object.GetName() + "-" + object.GetNamespace()
+	if t.HTTPRoute != nil && t.HTTPRoute.HostPrefix != "" {
+		prefix = t.HTTPRoute.HostPrefix + "-" + randutils.GenerateSha256(object.GetName()+"-"+object.GetNamespace())
+	}
+
+	if t.HTTPRoute != nil && t.HTTPRoute.Host != "" {
+		prefix, domain, _ = strings.Cut(t.HTTPRoute.Host, ".")
+	}
+
+	if domain == "" {
+		return prefix
+	}
+
+	return strings.Join([]string{prefix, domain}, ".")
+}
+
+// GetHTTPRouteParentRefs returns the parent references for the HTTPRoute for the given target
+func (c *OIDCAppsControllerConfig) GetHTTPRouteParentRefs(object client.Object) []HTTPRouteParentRef {
+	t := c.FetchTarget(object)
+	if t.HTTPRoute != nil && len(t.HTTPRoute.ParentRefs) > 0 {
+		return t.HTTPRoute.ParentRefs
+	}
+
+	return nil
+}
+
+// GetHTTPRouteAnnotations returns the HTTPRoute annotations for the given target
+func (c *OIDCAppsControllerConfig) GetHTTPRouteAnnotations(object client.Object) map[string]string {
+	t := c.FetchTarget(object)
+	if t.HTTPRoute != nil && t.HTTPRoute.Annotations != nil {
+		return t.HTTPRoute.Annotations
+	}
+
+	return nil
+}
+
+// GetHTTPRouteLabels returns the HTTPRoute labels for the given target
+func (c *OIDCAppsControllerConfig) GetHTTPRouteLabels(object client.Object) map[string]string {
+	t := c.FetchTarget(object)
+	if t.HTTPRoute != nil && t.HTTPRoute.Labels != nil {
+		return t.HTTPRoute.Labels
 	}
 
 	return nil
