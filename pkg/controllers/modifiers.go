@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
@@ -79,6 +80,32 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 	}
 
 	return &networkingv1.IngressList{Items: ownedIngresses}, nil
+}
+
+func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client.Object) (*gatewayv1.HTTPRouteList,
+	error) {
+	oidcHTTPRoutes := &gatewayv1.HTTPRouteList{}
+
+	if err := c.List(ctx, oidcHTTPRoutes,
+		client.InNamespace(object.GetNamespace()),
+		client.MatchingLabelsSelector{
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
+		},
+	); err != nil {
+		return oidcHTTPRoutes, client.IgnoreNotFound(err)
+	}
+
+	ownedHTTPRoutes := make([]gatewayv1.HTTPRoute, 0, len(oidcHTTPRoutes.Items))
+
+	for _, httpRoute := range oidcHTTPRoutes.Items {
+		if isAnOwnedResource(object, &httpRoute) {
+			ownedHTTPRoutes = append(ownedHTTPRoutes, httpRoute)
+		}
+	}
+
+	return &gatewayv1.HTTPRouteList{Items: ownedHTTPRoutes}, nil
 }
 
 func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Object) (*corev1.SecretList,
@@ -245,6 +272,10 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		return err
 	}
 
+	if err = reconcileHTTPRouteForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
 	return patchVpa(ctx, c, object)
 }
 
@@ -286,6 +317,49 @@ func reconcileIngressForStatefulSetPod(ctx context.Context, c client.Client, pod
 
 	if err = createOrPatchObject(ctx, c, &oauth2Ingress); err != nil {
 		return fmt.Errorf("failed to create or update oauth2 ingress: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileHTTPRouteForDeployment(ctx context.Context, c client.Client, object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateHTTPRoute(object) {
+		return nil
+	}
+
+	oauth2HTTPRoute, err := createHTTPRouteForDeployment(object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 httproute: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(object, &oauth2HTTPRoute, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 httproute: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, &oauth2HTTPRoute); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 httproute: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileHTTPRouteForStatefulSetPod(ctx context.Context, c client.Client, pod *corev1.Pod,
+	object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateHTTPRoute(object) {
+		return nil
+	}
+
+	oauth2HTTPRoute, err := createHTTPRouteForStatefulSetPod(pod, object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 httproute: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(pod, &oauth2HTTPRoute, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 httproute: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, &oauth2HTTPRoute); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 httproute: %w", err)
 	}
 
 	return nil
@@ -365,6 +439,10 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		if err = reconcileIngressForStatefulSetPod(ctx, c, &pod, object); err != nil {
 			return err
 		}
+
+		if err = reconcileHTTPRouteForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
+		}
 	}
 
 	// Create or update the resource attributes secret setting the owner reference
@@ -423,6 +501,8 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 		return createOrPatchService(ctx, c, *p)
 	case *networkingv1.Ingress:
 		return createOrPatchIngress(ctx, c, *p)
+	case *gatewayv1.HTTPRoute:
+		return createOrPatchHTTPRoute(ctx, c, *p)
 	}
 
 	log.FromContext(ctx).Info("unknown object type", "object", patch)
@@ -468,6 +548,41 @@ func createOrPatchIngress(ctx context.Context, c client.Client, obj networkingv1
 		return c.Update(ctx, &obj)
 	}); err != nil {
 		return fmt.Errorf("failed to update ingress: %w", err)
+	}
+
+	return nil
+}
+
+func createOrPatchHTTPRoute(ctx context.Context, c client.Client, obj gatewayv1.HTTPRoute) error {
+	httpRoute := &gatewayv1.HTTPRoute{}
+
+	// Check if HTTPRoute exists
+	err := c.Get(ctx, client.ObjectKeyFromObject(&obj), httpRoute)
+	if apierrors.IsNotFound(err) {
+		// Create an HTTPRoute if it does not exist
+		if err = c.Create(ctx, &obj); err != nil {
+			return fmt.Errorf("failed to create httproute: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get httproute: %w", err)
+	}
+
+	// Update the HTTPRoute
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// Re-fetch to get current resourceVersion on each retry
+		if err := c.Get(ctx, client.ObjectKeyFromObject(&obj), httpRoute); err != nil {
+			return err
+		}
+
+		obj.SetResourceVersion(httpRoute.GetResourceVersion())
+
+		return c.Update(ctx, &obj)
+	}); err != nil {
+		return fmt.Errorf("failed to update httproute: %w", err)
 	}
 
 	return nil
