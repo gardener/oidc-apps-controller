@@ -18,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
@@ -425,6 +426,9 @@ func cleanUpAllDeployments(ctx SpecContext) {
 	}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
 	Eventually(func() error {
 		return clt.DeleteAllOf(ctx, &networkingv1.Ingress{}, deleteOptions...)
+	}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
+	Eventually(func() error {
+		return clt.DeleteAllOf(ctx, &gatewayv1.HTTPRoute{}, deleteOptions...)
 	}).WithPolling(100 * time.Millisecond).WithTimeout(5 * time.Second).Should(Succeed())
 	Eventually(func() error {
 		return clt.DeleteAllOf(ctx, &corev1.Service{}, deleteOptions...)

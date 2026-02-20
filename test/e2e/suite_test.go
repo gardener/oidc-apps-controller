@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
@@ -84,6 +85,11 @@ var _ = BeforeSuite(func() {
 	err = autoscalerv1.AddToScheme(sch)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(sch.IsGroupRegistered("autoscaling.k8s.io")).Should(BeTrue())
+
+	// oidc-apps-controller uses gateway.networking.k8s.io/v1 API for HTTPRoute support
+	err = gatewayv1.Install(sch)
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(sch.IsGroupRegistered("gateway.networking.k8s.io")).Should(BeTrue())
 
 	// Initialize the client
 	clt, err = client.New(env.Config, client.Options{Scheme: sch})
@@ -149,6 +155,14 @@ var _ = BeforeSuite(func() {
 			),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Watches(
+			&gatewayv1.HTTPRoute{},
+			handler.EnqueueRequestForOwner(
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
+				&appsv1.Deployment{},
+			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(
 			&corev1.Pod{},
 			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.PodMapFuncForDeployment(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
@@ -182,6 +196,10 @@ var _ = BeforeSuite(func() {
 		Watches(
 			&networkingv1.Ingress{},
 			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.IngressMapFuncForStatefulset(mgr)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
+		Watches(
+			&gatewayv1.HTTPRoute{},
+			handler.EnqueueRequestsFromMapFunc(oidcappscontroller.HTTPRouteMapFuncForStatefulset(mgr)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
 		Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 	Expect(err).ShouldNot(HaveOccurred())
