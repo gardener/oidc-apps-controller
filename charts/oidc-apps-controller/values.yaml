@@ -4,7 +4,7 @@ image:
   repository: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/oidc-apps-controller
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.1.3"
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -66,6 +66,23 @@ resources:
 metrics:
   enableScraping: true
   port: 8080
+  # ServiceMonitor for Prometheus Operator
+  # Alternative to annotation-based scraping
+  serviceMonitor:
+    # Create a ServiceMonitor resource for Prometheus Operator
+    enabled: false
+    # Namespace for the ServiceMonitor (defaults to release namespace)
+    # namespace: monitoring
+    # Additional labels for the ServiceMonitor (e.g., for Prometheus selector)
+    labels: {}
+    # Scrape interval (e.g., "30s")
+    # interval: 30s
+    # Scrape timeout (e.g., "10s")
+    # scrapeTimeout: 10s
+    # RelabelConfigs to apply to samples before scraping
+    # relabelings: []
+    # MetricRelabelConfigs to apply to samples before ingestion
+    # metricRelabelings: []
 
 priorityClass:
   # create: false
@@ -165,6 +182,8 @@ targets:
     # TODO: the configuration shall support adding trusted CAs for the upstream communication
     targetProtocol:
     # Target ingress entry-point
+    # Note: Each target can override global oauth2Proxy, kubeRbacProxy, labels, annotations,
+    # domainName, oidcCABundle, and oidcCASecretRef configurations
     ingress:
       create: #false
       # Target URL prefix, to concatenate to the domainName, if not uses the target {{name}}-{{namespace}}
@@ -181,6 +200,8 @@ targets:
       # Ingress class name
       ingressClassName:
     # Target HTTPRoute entry-point (alternative to ingress, requires global.httpRoutes.enabled: true)
+    # Note: Each target can override global oauth2Proxy, kubeRbacProxy, labels, annotations,
+    # domainName, oidcCABundle, and oidcCASecretRef configurations
     httpRoute:
       create: #false
       # Target URL prefix, to concatenate to the domainName, if not uses the target {{name}}-{{namespace}}

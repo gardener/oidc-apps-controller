@@ -1,0 +1,523 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Container image repository"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "description": "Image pull policy"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Image tag"
+        }
+      },
+      "required": ["repository", "tag"]
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "replicas": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of controller replicas"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "certificate": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Use cert-manager for webhook certificates"
+        },
+        "secretName": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "clusterRole": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object",
+      "properties": {
+        "allowPrivilegeEscalation": {
+          "type": "boolean"
+        },
+        "capabilities": {
+          "type": "object"
+        },
+        "readOnlyRootFilesystem": {
+          "type": "boolean"
+        },
+        "runAsNonRoot": {
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "type": "integer"
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["type", "port"]
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enableScraping": {
+          "type": "boolean",
+          "description": "Enable Prometheus metrics scraping via annotations"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Create ServiceMonitor for Prometheus Operator"
+            },
+            "namespace": {
+              "type": ["string", "null"],
+              "description": "Namespace for ServiceMonitor (defaults to release namespace)"
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Additional labels for ServiceMonitor"
+            },
+            "interval": {
+              "type": "string",
+              "description": "Scrape interval (e.g., 30s)"
+            },
+            "scrapeTimeout": {
+              "type": "string",
+              "description": "Scrape timeout (e.g., 10s)"
+            },
+            "relabelings": {
+              "type": "array",
+              "description": "RelabelConfigs for the ServiceMonitor"
+            },
+            "metricRelabelings": {
+              "type": "array",
+              "description": "MetricRelabelConfigs for the ServiceMonitor"
+            }
+          }
+        }
+      }
+    },
+    "priorityClass": {
+      "type": ["object", "null"],
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "vpa": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "updatePolicy": {
+          "type": "object",
+          "properties": {
+            "updateMode": {
+              "type": "string",
+              "enum": ["Off", "Initial", "Recreate", "Auto", "InPlaceOrRecreate"]
+            }
+          }
+        },
+        "minAllowed": {
+          "type": "object"
+        },
+        "maxAllowed": {
+          "type": "object"
+        },
+        "controlledValues": {
+          "type": "string",
+          "enum": ["RequestsOnly", "RequestsAndLimits"]
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "affinity": {
+      "type": "object"
+    },
+    "webhook": {
+      "type": "object",
+      "properties": {
+        "objectSelector": {
+          "type": "object"
+        },
+        "namespaceSelector": {
+          "type": "object"
+        }
+      }
+    },
+    "cacheSelectorStr": {
+      "type": ["string", "null"]
+    },
+    "global": {
+      "type": "object",
+      "properties": {
+        "httpRoutes": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Gateway API HTTPRoute support"
+            }
+          }
+        },
+        "oauth2Proxy": {
+          "type": ["object", "null"],
+          "properties": {
+            "scope": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "redirectUrl": {
+              "type": "string"
+            },
+            "oidcIssuerUrl": {
+              "type": "string"
+            },
+            "sslInsecureSkipVerify": {
+              "type": "boolean"
+            },
+            "insecureOidcSkipIssuerVerification": {
+              "type": "boolean"
+            },
+            "insecureOidcSkipNonce": {
+              "type": "boolean"
+            }
+          }
+        },
+        "kubeRbacProxy": {
+          "type": ["object", "null"],
+          "properties": {
+            "kubeConfigStr": {
+              "type": "string"
+            },
+            "kubeSecretRef": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "namespace": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "oidcCABundle": {
+          "type": "string"
+        },
+        "oidcCASecretRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "domainName": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "Target name"
+          },
+          "namespaceSelector": {
+            "type": ["object", "null"],
+            "description": "Namespace label selector"
+          },
+          "labelSelector": {
+            "type": ["object", "null"],
+            "description": "Pod label selector"
+          },
+          "targetPort": {
+            "type": ["integer", "string", "null"],
+            "description": "Target upstream port"
+          },
+          "targetProtocol": {
+            "type": ["string", "null"],
+            "enum": ["http", "https", null]
+          },
+          "ingress": {
+            "type": ["object", "null"],
+            "properties": {
+              "create": {
+                "type": ["boolean", "null"]
+              },
+              "hostPrefix": {
+                "type": "string"
+              },
+              "host": {
+                "type": ["string", "null"]
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "tlsSecretRef": {
+                "type": ["object", "null"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  }
+                }
+              },
+              "ingressClassName": {
+                "type": ["string", "null"]
+              }
+            }
+          },
+          "httpRoute": {
+            "type": ["object", "null"],
+            "properties": {
+              "create": {
+                "type": ["boolean", "null"]
+              },
+              "hostPrefix": {
+                "type": "string"
+              },
+              "host": {
+                "type": ["string", "null"]
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "parentRefs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "namespace": {
+                      "type": "string"
+                    },
+                    "sectionName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name"]
+                }
+              }
+            }
+          },
+          "oauth2Proxy": {
+            "type": ["object", "null"],
+            "description": "Target-specific oauth2Proxy overrides"
+          },
+          "kubeRbacProxy": {
+            "type": ["object", "null"],
+            "description": "Target-specific kubeRbacProxy overrides"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "clients": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Logical name of the client"
+          },
+          "clientId": {
+            "type": "string",
+            "description": "OIDC client ID"
+          }
+        },
+        "required": ["name", "clientId"]
+      }
+    }
+  },
+  "required": ["image", "service"]
+}
