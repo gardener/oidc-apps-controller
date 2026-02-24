@@ -525,6 +525,12 @@ func (c *OIDCAppsControllerConfig) ShallCreateHTTPRoute(object client.Object) bo
 
 	t := c.FetchTarget(object)
 	if t.HTTPRoute != nil {
+		if t.HTTPRoute.Create && len(t.HTTPRoute.ParentRefs) == 0 {
+			c.log.Info("WARNING: HTTPRoute configuration has empty parentRefs - HTTPRoute will not be attached to any Gateway",
+				"target", t.Name,
+				"object", object.GetNamespace()+"/"+object.GetName())
+		}
+
 		return t.HTTPRoute.Create
 	}
 

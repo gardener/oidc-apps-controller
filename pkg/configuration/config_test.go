@@ -307,6 +307,33 @@ func TestIsHTTPRouteEnabled(t *testing.T) {
 	g.Expect(configEnabled.IsHTTPRouteEnabled()).To(BeTrue())
 }
 
+func TestHTTPRouteWithEmptyParentRefs(t *testing.T) {
+	// Test that HTTPRoute with empty parentRefs still returns true for ShallCreateHTTPRoute
+	// but logs a warning (the warning is tested implicitly by ensuring the function works)
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-07 has HTTPRoute with create: true but no parentRefs
+	target := getDeployment("test-07")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// Should return true for create, but parentRefs should be empty
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetHTTPRouteParentRefs(target)).To(BeNil())
+
+	// Verify the host is still generated correctly
+	host := extensionConfig.GetHTTPRouteHost(target)
+	g.Expect(host).To(HavePrefix("test-07-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
 func getDeployment(name string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
