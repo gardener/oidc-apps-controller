@@ -56,6 +56,19 @@ func deleteOwnedResources(ctx context.Context, c client.Client, object client.Ob
 		_log.V(9).Info("Deleted", "name", s.Name, "namespace", s.Namespace)
 	}
 
+	httpRoutes, err := fetchOidcAppsHTTPRoutes(ctx, c, object)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range httpRoutes.Items {
+		if err = c.Delete(ctx, &s); err != nil {
+			return errors.New("failed to delete")
+		}
+
+		_log.V(9).Info("Deleted", "name", s.Name, "namespace", s.Namespace)
+	}
+
 	services, err := fetchOidcAppsServices(ctx, c, object)
 	if err != nil {
 		return err

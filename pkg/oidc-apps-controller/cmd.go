@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/gardener/oidc-apps-controller/pkg/certificates"
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
@@ -61,6 +62,14 @@ var (
 func RunController(ctx context.Context, o *Options) error {
 	printGardenEnvVars()
 
+	// Load extension configuration first to determine HTTPRoute support
+	extensionConfig = configuration.CreateControllerConfigOrDie(o.controllerConfigPath)
+	httpRouteEnabled := extensionConfig.IsHTTPRouteEnabled()
+
+	if httpRouteEnabled {
+		_log.Info("Gateway API HTTPRoute support enabled via configuration")
+	}
+
 	// Initialize a scheme which will contain the API definitions
 	sch := scheme.Scheme
 
@@ -72,6 +81,13 @@ func RunController(ctx context.Context, o *Options) error {
 	// Add autoscaler schemes
 	if err := autoscalerv1.AddToScheme(sch); err != nil {
 		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
+	}
+
+	// Add Gateway API schemes for HTTPRoute support (only when enabled in config)
+	if httpRouteEnabled {
+		if err := gatewayv1.Install(sch); err != nil {
+			return fmt.Errorf("could not initialize the gateway-api scheme: %w", err)
+		}
 	}
 
 	// Limit the cache
@@ -106,6 +122,13 @@ func RunController(ctx context.Context, o *Options) error {
 				Label: oidcAppsSelector,
 			},
 		}}
+
+	// Add HTTPRoute to cache only when Gateway API support is enabled in config
+	if httpRouteEnabled {
+		cacheOptions.ByObject[&gatewayv1.HTTPRoute{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+		}
+	}
 
 	// Add additional scheme in case of running in gardener cluster
 	if len(os.Getenv(constants.GardenKubeconfig)) > 0 {
@@ -157,11 +180,9 @@ func RunController(ctx context.Context, o *Options) error {
 		}
 	}
 
-	extensionConfig = configuration.CreateControllerConfigOrDie(
-		o.controllerConfigPath,
-		configuration.WithClient(mgr.GetClient()),
-		configuration.WithLog(mgr.GetLogger()),
-	)
+	// Update extension config with client and logger now that manager is ready
+	extensionConfig.SetClient(mgr.GetClient())
+	extensionConfig.SetLogger(mgr.GetLogger())
 
 	if err := initializeManagerIndices(mgr); err != nil {
 		return fmt.Errorf("could not initialize cache indices: %w", err)
@@ -364,11 +385,36 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", networkingv1.Ingress{}, err)
 	}
 
+	// Add HTTPRoute index only when Gateway API support is enabled
+	if extensionConfig.IsHTTPRouteEnabled() {
+		if err := mgr.GetFieldIndexer().IndexField(
+			context.Background(),
+			&gatewayv1.HTTPRoute{},
+			"metadata.labels"+constants.LabelKey,
+			func(obj client.Object) []string {
+				httpRoute, ok := obj.(*gatewayv1.HTTPRoute)
+				if !ok {
+					_log.Error(errors.New("object is not an httproute"), "object", obj)
+
+					return nil
+				}
+
+				if value, exists := httpRoute.GetLabels()[constants.LabelKey]; exists {
+					return []string{value}
+				}
+
+				return nil
+			},
+		); err != nil {
+			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", gatewayv1.HTTPRoute{}, err)
+		}
+	}
+
 	return nil
 }
 
 func addDeploymentController(mgr manager.Manager) error {
-	return controllerruntime.NewControllerManagedBy(mgr).
+	controllerBuilder := controllerruntime.NewControllerManagedBy(mgr).
 		Named("oidc-apps-deployments").
 		For(&appsv1.Deployment{}).
 		WithEventFilter(fetchPredicates(extensionConfig)).
@@ -399,12 +445,25 @@ func addDeploymentController(mgr manager.Manager) error {
 		Watches(
 			&corev1.Pod{},
 			handler.EnqueueRequestsFromMapFunc(PodMapFuncForDeployment(mgr)),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+
+	// Add HTTPRoute watches only when Gateway API support is enabled
+	if extensionConfig.IsHTTPRouteEnabled() {
+		controllerBuilder = controllerBuilder.Watches(
+			&gatewayv1.HTTPRoute{},
+			handler.EnqueueRequestForOwner(
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
+				&appsv1.Deployment{},
+			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+	}
+
+	return controllerBuilder.Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
 }
 
 func addStatefulSetController(mgr manager.Manager) error {
-	return controllerruntime.NewControllerManagedBy(mgr).
+	controllerBuilder := controllerruntime.NewControllerManagedBy(mgr).
 		Named("oidc-apps-statefulsets").
 		For(&appsv1.StatefulSet{}).
 		WithEventFilter(fetchPredicates(extensionConfig)).
@@ -431,8 +490,17 @@ func addStatefulSetController(mgr manager.Manager) error {
 		Watches(
 			&networkingv1.Ingress{},
 			handler.EnqueueRequestsFromMapFunc(IngressMapFuncForStatefulset(mgr)),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{})).
-		Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+
+	// Add HTTPRoute watches only when Gateway API support is enabled
+	if extensionConfig.IsHTTPRouteEnabled() {
+		controllerBuilder = controllerBuilder.Watches(
+			&gatewayv1.HTTPRoute{},
+			handler.EnqueueRequestsFromMapFunc(HTTPRouteMapFuncForStatefulset(mgr)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+	}
+
+	return controllerBuilder.Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
 
 // Add certificate manager in case no external certificate manager is available
@@ -677,6 +745,53 @@ func ServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context,
 			pod := &corev1.Pod{}
 			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: service.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 				_log.Error(err, "could not get pod", "name", o.Name, "namespace", service.Namespace)
+			}
+
+			if len(pod.Name) == 0 {
+				continue
+			}
+
+			for _, r := range pod.GetOwnerReferences() {
+				if r.Kind != "StatefulSet" {
+					continue
+				}
+
+				statefulset := &appsv1.StatefulSet{}
+				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+				}
+
+				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
+
+				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+			}
+		}
+
+		return nil
+	}
+}
+
+// HTTPRouteMapFuncForStatefulset returns a map function that returns reconcile requests for a target statefulset triggered
+// on changes of an HTTPRoute owned by a pod owned by the statefulset
+func HTTPRouteMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		httpRoute, ok := obj.(*gatewayv1.HTTPRoute)
+		if !ok {
+			_log.Error(errors.New("object is not an httproute"), "object", obj)
+
+			return nil
+		}
+
+		c := mgr.GetClient()
+
+		for _, o := range httpRoute.GetOwnerReferences() {
+			if o.Kind != "Pod" {
+				continue
+			}
+
+			pod := &corev1.Pod{}
+			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: httpRoute.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+				_log.Error(err, "could not get pod", "name", o.Name, "namespace", httpRoute.Namespace)
 			}
 
 			if len(pod.Name) == 0 {

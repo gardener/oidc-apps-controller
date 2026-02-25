@@ -1,4 +1,6 @@
 global:
+  httpRoutes:
+    enabled: true
   oauth2Proxy:
   kubeRbacProxy:
   domainName: "example.com"
@@ -32,3 +34,25 @@ targets:
     ingress:
       create: true
       ingressClassName: "nginx"
+  - name: "nginx-target-httproute"
+    labels:
+      httproute: enabled
+    labelSelector:
+      matchLabels:
+        app: nginx-target-httproute
+    ingress:
+      create: false
+    httproute:
+      create: true
+      parentRefs:
+        - name: "test-gateway"
+          namespace: "default"
+          sectionName: "https"
+  - name: "nginx-target-httproute-skip"
+    labelSelector:
+      matchLabels:
+        app: nginx-target-httproute-skip
+    ingress:
+      create: false
+    httproute:
+      create: false

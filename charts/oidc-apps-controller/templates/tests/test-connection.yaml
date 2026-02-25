@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "oidc-apps-extension.fullname" . }}-test-connection"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "oidc-apps-extension.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: wget
+      image: busybox:1.36
+      command: ['wget']
+      args:
+        - '--no-check-certificate'
+        - '--spider'
+        - '--timeout=5'
+        - 'https://{{ include "oidc-apps-extension.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/healthz'

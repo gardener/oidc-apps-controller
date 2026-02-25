@@ -69,3 +69,44 @@ targets:
       matchLabels:
         app.kubernetes.io/name: test-04
 
+  # A target with HTTPRoute configuration
+  - name: test-05
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-05
+    httpRoute:
+      create: true
+      hostPrefix: "test-05-prefix"
+      parentRefs:
+        - name: "my-gateway"
+          namespace: "gateway-system"
+          sectionName: "https"
+
+  # A target with specific HTTPRoute host
+  - name: test-06
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-06
+    httpRoute:
+      create: true
+      host: "custom.httproute.host"
+      parentRefs:
+        - name: "another-gateway"
+
+  # A target with HTTPRoute but empty parentRefs (for testing validation warning)
+  - name: test-07
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-07
+    httpRoute:
+      create: true
+      hostPrefix: "test-07-prefix"

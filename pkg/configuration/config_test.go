@@ -196,6 +196,144 @@ func TestGardenConfig(t *testing.T) {
 	g.Expect(clientID).To(Equal("seed-client-id"))
 }
 
+func TestHTTPRouteConfiguration(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-05")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+
+	parentRefs := extensionConfig.GetHTTPRouteParentRefs(target)
+	g.Expect(parentRefs).To(HaveLen(1))
+	g.Expect(parentRefs[0].Name).To(Equal("my-gateway"))
+	g.Expect(parentRefs[0].Namespace).To(Equal("gateway-system"))
+	g.Expect(parentRefs[0].SectionName).To(Equal("https"))
+
+	host := extensionConfig.GetHTTPRouteHost(target)
+	g.Expect(host).To(HavePrefix("test-05-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
+func TestHTTPRouteWithCustomHost(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-06")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetHTTPRouteHost(target)).To(Equal("custom.httproute.host"))
+
+	parentRefs := extensionConfig.GetHTTPRouteParentRefs(target)
+	g.Expect(parentRefs).To(HaveLen(1))
+	g.Expect(parentRefs[0].Name).To(Equal("another-gateway"))
+	g.Expect(parentRefs[0].Namespace).To(Equal(""))
+	g.Expect(parentRefs[0].SectionName).To(Equal(""))
+}
+
+func TestTargetWithoutHTTPRoute(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-04")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeFalse())
+	g.Expect(extensionConfig.GetHTTPRouteParentRefs(target)).To(BeNil())
+}
+
+func TestHTTPRouteDisabledGlobally(t *testing.T) {
+	// Even with HTTPRoute configured in target, it should return false when global.httpRoutes.enabled is false
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-05 has HTTPRoute configured with create: true
+	target := getDeployment("test-05")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// Should return false because global.httpRoutes.enabled is not set (nil)
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeFalse())
+	g.Expect(extensionConfig.IsHTTPRouteEnabled()).To(BeFalse())
+}
+
+func TestIsHTTPRouteEnabled(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test nil HTTPRoutes
+	configNil := &OIDCAppsControllerConfig{}
+	g.Expect(configNil.IsHTTPRouteEnabled()).To(BeFalse())
+
+	// Test HTTPRoutes with enabled=false
+	configDisabled := &OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: false}},
+	}
+	g.Expect(configDisabled.IsHTTPRouteEnabled()).To(BeFalse())
+
+	// Test HTTPRoutes with enabled=true
+	configEnabled := &OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g.Expect(configEnabled.IsHTTPRouteEnabled()).To(BeTrue())
+}
+
+func TestHTTPRouteWithEmptyParentRefs(t *testing.T) {
+	// Test that HTTPRoute with empty parentRefs still returns true for ShallCreateHTTPRoute
+	// but logs a warning (the warning is tested implicitly by ensuring the function works)
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-07 has HTTPRoute with create: true but no parentRefs
+	target := getDeployment("test-07")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// Should return true for create, but parentRefs should be empty
+	g.Expect(extensionConfig.ShallCreateHTTPRoute(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetHTTPRouteParentRefs(target)).To(BeNil())
+
+	// Verify the host is still generated correctly
+	host := extensionConfig.GetHTTPRouteHost(target)
+	g.Expect(host).To(HavePrefix("test-07-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
 func getDeployment(name string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

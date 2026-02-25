@@ -74,7 +74,8 @@ providerConfig:
         targetPort: 3000
         ingress:
           labels:
-            shoot: plutono
+            endpoint.shoot.gardener.cloud/advertise: "true"
+            endpoint.shoot.gardener.cloud/displayName: Plutono
           create: true
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
@@ -92,6 +93,9 @@ providerConfig:
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
             name: "ingress-wildcard-cert"
+          labels:
+            endpoint.shoot.gardener.cloud/advertise: "true"
+            endpoint.shoot.gardener.cloud/displayName: Prometheus
       - name: "garden--plutono"
         namespaceSelector:
           matchLabels:

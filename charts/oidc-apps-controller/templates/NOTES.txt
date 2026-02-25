@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-License-Identifier: Apache-2.0
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To verify the installation:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "oidc-apps-extension.name" . }}
+
+To check the controller logs:
+
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "oidc-apps-extension.name" . }} -f
+
+Configuration:
+  - Webhook port: {{ .Values.service.port }}
+  - Metrics enabled: {{ .Values.metrics.enableScraping }}
+{{- if .Values.metrics.enableScraping }}
+  - Metrics port: {{ .Values.metrics.port }}
+{{- end }}
+  - VPA enabled: {{ .Values.vpa.enabled }}
+  - HTTPRoute support: {{ if .Values.global.httpRoutes }}{{ .Values.global.httpRoutes.enabled }}{{ else }}false{{ end }}
+  - cert-manager integration: {{ .Values.certificate.create }}
+
+{{- if and .Values.global.httpRoutes .Values.global.httpRoutes.enabled }}
+
+HTTPRoute Support:
+  Gateway API HTTPRoute support is enabled. Ensure that Gateway API CRDs are
+  installed in your cluster before creating targets with httpRoute.create: true.
+
+  To install Gateway API CRDs:
+    kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+{{- end }}
+
+{{- if not .Values.certificate.create }}
+
+Certificate Management:
+  cert-manager integration is disabled. The controller will manage its own
+  webhook certificates. Certificates are stored in memory and rotated automatically.
+{{- end }}
+
+For more information, visit:
+  https://github.com/gardener/oidc-apps-controller

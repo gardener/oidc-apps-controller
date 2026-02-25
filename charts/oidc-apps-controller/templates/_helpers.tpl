@@ -77,7 +77,7 @@ Create the name of the certificate secret to use
 Create the certificate reference for the ca-injector
 */}}
 {{- define "oidc-apps-extension.certificateRef" -}}
-{{- printf "%s/%s" .Release.Namespace (include "oidc-apps-extension.clusterRoleName" .) -}}
+{{- printf "%s/%s" .Release.Namespace (include "oidc-apps-extension.fullname" .) -}}
 {{- end }}
 
 {{/*

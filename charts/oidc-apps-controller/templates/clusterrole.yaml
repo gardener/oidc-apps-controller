@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 # SPDX-License-Identifier: Apache-2.0
+{{- if .Values.clusterRole.create }}
 ---
-{{- if .Values.clusterRole.create -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -33,4 +33,9 @@ rules:
   - apiGroups: ["extensions.gardener.cloud"]
     resources: ["clusters"]
     verbs: [ "get","list","watch" ]
+  {{- if and .Values.global .Values.global.httpRoutes .Values.global.httpRoutes.enabled }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: [ "create", "get", "list", "watch", "update", "patch", "delete" ]
   {{- end }}
+{{- end }}
