@@ -14,6 +14,8 @@ const (
 	AnnotationSuffixKey = "oidc-application-controller/suffix"
 	// AnnotationOauth2SecertCehcksumKey holds the checksum of the ouath2 proxy confguration secret
 	AnnotationOauth2SecertCehcksumKey = "oidc-application-controller/oauth2-secret-checksum"
+	// AnnotationOidcCaChecksumKey holds the checksum of the oidc ca bundle
+	AnnotationOidcCaChecksumKey = "oidc-application-controller/oidc-ca-checksum"
 	// PodWebHookPath is the context path of the mutating webhook for pods
 	PodWebHookPath = "/oidc-mutate-v1-pod"
 	// VpaWebHookPath is the context path of the mutating webhook for pods

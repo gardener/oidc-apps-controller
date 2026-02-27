@@ -35,6 +35,11 @@ func addAnnotations(object client.Object) {
 	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
 	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
 
+	// Add OIDC CA checksum to trigger pod restart on CA changes
+	if checksum := getOidcCaSecretChecksum(object); checksum != "" {
+		annotations[constants.AnnotationOidcCaChecksumKey] = checksum
+	}
+
 	object.SetAnnotations(annotations)
 }
 
@@ -69,6 +74,15 @@ func get2ProxySecretChecksum(object client.Object) string {
 	}
 
 	return randutils.GenerateFullSha256(cfg)
+}
+
+func getOidcCaSecretChecksum(object client.Object) string {
+	oidcCABundle := configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object)
+	if oidcCABundle == "" {
+		return ""
+	}
+
+	return randutils.GenerateFullSha256(oidcCABundle)
 }
 
 // Add gardener specific labels to the target pods.

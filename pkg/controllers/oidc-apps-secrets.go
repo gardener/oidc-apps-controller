@@ -196,11 +196,13 @@ func createOidcCaBundleSecret(object client.Object) (corev1.Secret, error) {
 
 	oidcCABundle := configuration.GetOIDCAppsControllerConfig().GetOidcCABundle(object)
 	if len(oidcCABundle) > 0 {
+		checksum := randutils.GenerateFullSha256(oidcCABundle)
 		// TODO: verify the oidcCABundle str, it shall be CA certificates in PEM format
 		secret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.SecretNameOidcCa + "-" + suffix,
-				Namespace: object.GetNamespace(),
+				Name:        constants.SecretNameOidcCa + "-" + suffix,
+				Namespace:   object.GetNamespace(),
+				Annotations: map[string]string{constants.AnnotationOidcCaChecksumKey: checksum},
 				Labels: map[string]string{
 					constants.LabelKey:       constants.LabelValue,
 					constants.SecretLabelKey: constants.OidcCa2LabelValue,
