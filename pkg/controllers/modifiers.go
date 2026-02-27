@@ -519,7 +519,12 @@ func createOrPatchSecret(ctx context.Context, c client.Client, obj corev1.Secret
 		}
 
 		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to get secret: %w", err)
 	}
+
+	// Copy ResourceVersion for optimistic locking
+	obj.ResourceVersion = secret.ResourceVersion
 
 	// Update the secret
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
