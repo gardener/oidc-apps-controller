@@ -690,3 +690,209 @@ func patchPodWithNamespaceOperationAndWebhook(pod *corev1.Pod, namespace string,
 
 	return patchedPod
 }
+
+var _ = Describe("OIDC CA Checksum Tests", func() {
+	Context("when verifying OIDC CA checksum annotation on pods", func() {
+		var (
+			deployment      *appsv1.Deployment
+			replicaSet      *appsv1.ReplicaSet
+			pod             *corev1.Pod
+			localPodWebhook *webhook.PodMutator
+		)
+
+		BeforeEach(func() {
+			deployment = &appsv1.Deployment{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "apps/v1",
+					Kind:       "Deployment",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx",
+					Namespace: "nginx",
+					Labels:    map[string]string{"app": "nginx"},
+					UID:       "deployment-uid-ca",
+				},
+			}
+			replicaSet = &appsv1.ReplicaSet{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx-rs-0001",
+					Namespace: "nginx",
+					Labels:    map[string]string{"app": "nginx"},
+					UID:       "replicaset-uid-ca",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "Deployment",
+							Name:       "nginx",
+							UID:        "deployment-uid-ca",
+						},
+					},
+				},
+			}
+			pod = &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "Pod",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx-pod-ca",
+					Namespace: "nginx",
+					Labels:    map[string]string{"app": "nginx"},
+					UID:       "pod-uid-ca",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "ReplicaSet",
+							Name:       "nginx-rs-0001",
+							UID:        "replicaset-uid-ca",
+						},
+					},
+				},
+			}
+
+			s := runtime.NewScheme()
+			err := scheme.AddToScheme(s)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(s).
+				WithObjects(deployment, replicaSet, pod).
+				Build()
+
+			configuration.CreateControllerConfigOrDie(
+				filepath.Join(tmpDir, "config.yaml"),
+				configuration.WithClient(fakeClient),
+				configuration.WithLog(_log),
+			)
+
+			localPodWebhook = &webhook.PodMutator{
+				Client:  fakeClient,
+				Decoder: admission.NewDecoder(s),
+			}
+		})
+
+		It("should add OIDC CA checksum annotation to pods when oidcCABundle is configured", func() {
+			patchedPod := patchPodWithWebhook(pod, localPodWebhook)
+
+			// Verify the OIDC CA checksum annotation is present
+			annotations := patchedPod.GetAnnotations()
+			Expect(annotations).To(HaveKey(constants.AnnotationOidcCaChecksumKey),
+				"Pod should have OIDC CA checksum annotation when oidcCABundle is configured")
+
+			checksum := annotations[constants.AnnotationOidcCaChecksumKey]
+			Expect(checksum).NotTo(BeEmpty(), "OIDC CA checksum should not be empty")
+
+			_log.Info("OIDC CA checksum annotation verified", "checksum", checksum)
+		})
+
+		It("should generate consistent OIDC CA checksum for the same CA bundle", func() {
+			// First call
+			patchedPod1 := patchPodWithWebhook(pod, localPodWebhook)
+			checksum1 := patchedPod1.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+
+			// Second call with the same configuration
+			patchedPod2 := patchPodWithWebhook(pod, localPodWebhook)
+			checksum2 := patchedPod2.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+
+			Expect(checksum1).NotTo(BeEmpty(), "First checksum should not be empty")
+			Expect(checksum2).NotTo(BeEmpty(), "Second checksum should not be empty")
+			Expect(checksum1).To(Equal(checksum2),
+				"Same oidcCABundle should produce same checksum")
+
+			_log.Info("Consistent checksum verified", "checksum1", checksum1, "checksum2", checksum2)
+		})
+
+		It("should match the expected deterministic checksum value based on oidcCABundle content", func() {
+			patchedPod := patchPodWithWebhook(pod, localPodWebhook)
+			actualChecksum := patchedPod.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+
+			// The oidcCABundle in test configuration.yaml is "Y2VydGlmaWNhdGUK" (base64 of "certificate\n")
+			// After decoding, the CA bundle content is "certificate\n"
+			expectedChecksum := randutils.GenerateFullSha256("certificate\n")
+
+			Expect(actualChecksum).To(Equal(expectedChecksum),
+				"OIDC CA checksum should match expected value based on CA bundle content")
+
+			_log.Info("Expected checksum value verified", "expected", expectedChecksum, "actual", actualChecksum)
+		})
+
+		It("should maintain OIDC CA checksum stability across multiple webhook invocations", func() {
+			const iterations = 5
+
+			var checksums []string
+
+			for range iterations {
+				patchedPod := patchPodWithWebhook(pod, localPodWebhook)
+				checksum := patchedPod.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+				checksums = append(checksums, checksum)
+			}
+
+			// Verify all checksums are identical
+			for i := 1; i < iterations; i++ {
+				Expect(checksums[i]).To(Equal(checksums[0]),
+					"OIDC CA checksum should be identical across all invocations")
+			}
+
+			_log.Info("Multiple invocations stability verified", "iterations", iterations, "checksum", checksums[0])
+		})
+
+		It("should maintain OIDC CA checksum consistency between CREATE and UPDATE operations", func() {
+			// Simulate CREATE operation
+			patchedOnCreate := patchPodWithOperationAndWebhook(pod, adminssionv1.Create, localPodWebhook)
+			checksumOnCreate := patchedOnCreate.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+
+			// Simulate UPDATE operation (e.g., VPA in-place update)
+			patchedOnUpdate := patchPodWithOperationAndWebhook(pod, adminssionv1.Update, localPodWebhook)
+			checksumOnUpdate := patchedOnUpdate.GetAnnotations()[constants.AnnotationOidcCaChecksumKey]
+
+			Expect(checksumOnCreate).To(Equal(checksumOnUpdate),
+				"OIDC CA checksum should be identical between CREATE and UPDATE operations")
+
+			_log.Info("CREATE vs UPDATE consistency verified",
+				"createChecksum", checksumOnCreate,
+				"updateChecksum", checksumOnUpdate)
+		})
+	})
+
+	Context("when verifying that different CA bundle content produces different checksums", func() {
+		It("should produce different checksums for different CA bundle content", func() {
+			// This test verifies that the checksum function produces different values
+			// for different CA bundle content, which is the mechanism that triggers pod restarts
+			// when the CA bundle changes.
+			caBundle1 := "certificate\n"
+			caBundle2 := "new-certificate\n"
+
+			checksum1 := randutils.GenerateFullSha256(caBundle1)
+			checksum2 := randutils.GenerateFullSha256(caBundle2)
+
+			Expect(checksum1).NotTo(BeEmpty(), "First checksum should not be empty")
+			Expect(checksum2).NotTo(BeEmpty(), "Second checksum should not be empty")
+			Expect(checksum1).NotTo(Equal(checksum2),
+				"Different CA bundle content should produce different checksums")
+
+			_log.Info("CA bundle checksum differentiation verified",
+				"caBundle1", caBundle1,
+				"checksum1", checksum1,
+				"caBundle2", caBundle2,
+				"checksum2", checksum2)
+		})
+
+		It("should produce identical checksums for identical CA bundle content", func() {
+			caBundle := "same-certificate\n"
+
+			checksum1 := randutils.GenerateFullSha256(caBundle)
+			checksum2 := randutils.GenerateFullSha256(caBundle)
+
+			Expect(checksum1).To(Equal(checksum2),
+				"Identical CA bundle content should produce identical checksums")
+
+			_log.Info("CA bundle checksum consistency verified",
+				"caBundle", caBundle,
+				"checksum", checksum1)
+		})
+	})
+})
