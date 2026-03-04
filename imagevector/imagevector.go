@@ -6,8 +6,9 @@ package imagevector
 import (
 	_ "embed"
 
-	"github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/util/runtime"
+
+	"github.com/gardener/oidc-apps-controller/pkg/imagevector"
 )
 
 var (

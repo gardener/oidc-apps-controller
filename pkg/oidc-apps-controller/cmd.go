@@ -14,7 +14,6 @@ import (
 	"time"
 
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -33,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	crhealthz "sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -47,6 +46,7 @@ import (
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 	"github.com/gardener/oidc-apps-controller/pkg/controllers"
+	"github.com/gardener/oidc-apps-controller/pkg/healthz"
 	"github.com/gardener/oidc-apps-controller/pkg/notifiers"
 	oidcappswebhook "github.com/gardener/oidc-apps-controller/pkg/webhook"
 )
@@ -212,11 +212,11 @@ func RunController(ctx context.Context, o *Options) error {
 		return fmt.Errorf("could not initialize mutating webhooks: %w", err)
 	}
 
-	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
+	if err := mgr.AddReadyzCheck("informer-sync", healthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
 		return fmt.Errorf("could not initialize controller readycheck: %w", err)
 	}
 
-	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+	if err := mgr.AddHealthzCheck("ping", crhealthz.Ping); err != nil {
 		return fmt.Errorf("could not initialize controller healthcheck: %w", err)
 	}
 
