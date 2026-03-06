@@ -61,3 +61,5 @@ Please find further resources about out project here:
 * [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
 * [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
 * [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)
+
+<p align="center"><img alt="Bundesministerium für Wirtschaft und Energie (BMWE)-EU funding logo" src="https://apeirora.eu/assets/img/BMWK-EU.png" width="400"/></p>
