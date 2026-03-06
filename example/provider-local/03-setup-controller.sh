@@ -75,7 +75,7 @@ providerConfig:
         ingress:
           labels:
             endpoint.shoot.gardener.cloud/advertise: "true"
-            endpoint.shoot.gardener.cloud/displayName: Plutono
+            endpoint.shoot.gardener.cloud/application: creadtiv--plutono
           create: true
           ingressClassName: "nginx-ingress-gardener"
           tlsSecretRef:
@@ -95,7 +95,7 @@ providerConfig:
             name: "ingress-wildcard-cert"
           labels:
             endpoint.shoot.gardener.cloud/advertise: "true"
-            endpoint.shoot.gardener.cloud/displayName: Prometheus
+            endpoint.shoot.gardener.cloud/application: prometheus--prometheus
       - name: "garden--plutono"
         namespaceSelector:
           matchLabels:
