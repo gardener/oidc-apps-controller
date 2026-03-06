@@ -1,0 +1,25 @@
+ocm:
+  component_name: github.com/gardener/kube-rbac-proxy-watcher
+  component_version: v0.4.0
+release_notes:
+- audience: operator
+  author:
+    hostname: github.com
+    type: githubUser
+    username: nickytd
+  category: other
+  contents: Updated Go version from 1.26.0 to 1.26.1.
+  mimetype: text/markdown
+  reference: '[#113](https://github.com/gardener/kube-rbac-proxy-watcher/pull/113)'
+  type: standard
+- audience: developer
+  author:
+    hostname: github.com
+    type: githubUser
+    username: nickytd
+  category: other
+  contents: Added `check-go-fix` Makefile target to verify code compliance with `go
+    fix` during CI verification.
+  mimetype: text/markdown
+  reference: '[#109](https://github.com/gardener/kube-rbac-proxy-watcher/pull/109)'
+  type: standard
