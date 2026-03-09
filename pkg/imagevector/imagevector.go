@@ -6,6 +6,7 @@ package imagevector
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	// OverrideEnv is the environment variable prefix used for image overrides.
-	OverrideEnv = "IMAGEVECTOR_OVERRIDE"
+	// OverrideEnv is the name of the environment variable containing the path to the image vector override file.
+	OverrideEnv = "IMAGEVECTOR_OVERWRITE"
 )
 
 // ImageVector is a collection of image definitions.
@@ -33,6 +34,10 @@ type Image struct {
 // String returns the full image reference.
 func (i *Image) String() string {
 	if i.Tag != "" {
+		if strings.HasPrefix(i.Tag, "sha256:") {
+			return fmt.Sprintf("%s@%s", i.Repository, i.Tag)
+		}
+
 		return fmt.Sprintf("%s:%s", i.Repository, i.Tag)
 	}
 
@@ -76,42 +81,75 @@ func Read(data []byte) (ImageVector, error) {
 	return &imageVector{images: images}, nil
 }
 
-// WithEnvOverride returns a new ImageVector with environment variable overrides applied.
-// Environment variables should be in the format: <envPrefix>_<IMAGE_NAME>_REPOSITORY and <envPrefix>_<IMAGE_NAME>_TAG
-// For example: IMAGEVECTOR_OVERRIDE_OAUTH2_PROXY_REPOSITORY=my.registry.com/oauth2-proxy
-func WithEnvOverride(vec ImageVector, envPrefix string) (ImageVector, error) {
-	baseVec, ok := vec.(*imageVector)
+// ReadFile reads the YAML image vector from the given file path.
+func ReadFile(path string) (ImageVector, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image vector file %q: %w", path, err)
+	}
+
+	return Read(data)
+}
+
+// Merge merges the override ImageVector into the base ImageVector.
+// Images from the override vector replace images with the same name in the base vector.
+func Merge(base, override ImageVector) ImageVector {
+	baseVec, ok := base.(*imageVector)
 	if !ok {
+		return base
+	}
+
+	overrideVec, ok := override.(*imageVector)
+	if !ok {
+		return base
+	}
+
+	merged := make(map[string]*Image, len(baseVec.images))
+	maps.Copy(merged, baseVec.images)
+
+	for name, img := range overrideVec.images {
+		if existing, ok := merged[name]; ok {
+			mergedImg := &Image{
+				Name:             existing.Name,
+				Repository:       existing.Repository,
+				Tag:              existing.Tag,
+				SourceRepository: existing.SourceRepository,
+			}
+
+			if img.Repository != "" {
+				mergedImg.Repository = img.Repository
+			}
+
+			if img.Tag != "" {
+				mergedImg.Tag = img.Tag
+			}
+
+			if img.SourceRepository != "" {
+				mergedImg.SourceRepository = img.SourceRepository
+			}
+
+			merged[name] = mergedImg
+		} else {
+			merged[name] = img
+		}
+	}
+
+	return &imageVector{images: merged}
+}
+
+// WithEnvOverride returns a new ImageVector with overrides applied from a YAML file.
+// The env parameter is the name of the environment variable that contains the path to the override file.
+// If the environment variable is not set, the original vector is returned unchanged.
+func WithEnvOverride(vec ImageVector, env string) (ImageVector, error) {
+	overwritePath := os.Getenv(env)
+	if len(overwritePath) == 0 {
 		return vec, nil
 	}
 
-	// Create a copy of the image map
-	overriddenImages := make(map[string]*Image, len(baseVec.images))
-	for name, img := range baseVec.images {
-		// Create a copy of the image
-		imgCopy := &Image{
-			Name:             img.Name,
-			Repository:       img.Repository,
-			Tag:              img.Tag,
-			SourceRepository: img.SourceRepository,
-		}
-
-		// Check for repository override
-		envVarName := strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
-
-		repoEnvKey := fmt.Sprintf("%s_%s_REPOSITORY", envPrefix, envVarName)
-		if repoOverride := os.Getenv(repoEnvKey); repoOverride != "" {
-			imgCopy.Repository = repoOverride
-		}
-
-		// Check for tag override
-		tagEnvKey := fmt.Sprintf("%s_%s_TAG", envPrefix, envVarName)
-		if tagOverride := os.Getenv(tagEnvKey); tagOverride != "" {
-			imgCopy.Tag = tagOverride
-		}
-
-		overriddenImages[name] = imgCopy
+	override, err := ReadFile(overwritePath)
+	if err != nil {
+		return nil, err
 	}
 
-	return &imageVector{images: overriddenImages}, nil
+	return Merge(vec, override), nil
 }
