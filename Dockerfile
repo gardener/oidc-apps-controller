@@ -6,7 +6,7 @@ WORKDIR /src
 
 # Copy the source code into the container
 COPY . .
-RUN go mod download
+RUN go mod download && cd tools && go mod download
 
 # Build the application
 RUN make build
