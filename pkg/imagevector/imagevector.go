@@ -83,6 +83,7 @@ func Read(data []byte) (ImageVector, error) {
 
 // ReadFile reads the YAML image vector from the given file path.
 func ReadFile(path string) (ImageVector, error) {
+	// #nosec G304 G703 //nolint:gosec // The file path is controlled.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read image vector file %q: %w", path, err)
