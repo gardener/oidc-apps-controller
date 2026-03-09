@@ -12,6 +12,8 @@ BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 TOOLS_DIR                   := $(REPO_ROOT)/tools
+TOOLS_MOD                   := $(TOOLS_DIR)/go.mod
+GO_TOOL                     := go tool -modfile=$(TOOLS_MOD)
 ENVTEST_K8S_VERSION         ?= 1.32.0
 
 GCI_OPT                     ?= -s standard -s default -s "prefix($(shell go list -m))" --skip-generated
@@ -28,7 +30,7 @@ $(TOOLS_DIR):
 # Targets                               #
 #########################################
 .DEFAULT_GOAL := all
-all: verify build
+all: check build test envtest
 
 .PHONY: verify
 verify: check check-go-fix test envtest sast
@@ -58,16 +60,17 @@ docker-push:
 .PHONY: tidy
 tidy:
 	@go mod tidy
+	@cd $(TOOLS_DIR) && go mod tidy
 
 .PHONY: gci
 gci: tidy
 	@echo "Running gci..."
-	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
+	@$(GO_TOOL) gci write $(GCI_OPT) $(SRC_DIRS)
 
 .PHONY: fmt
 fmt: tidy
 	@echo "Running $@..."
-	@go tool golangci-lint fmt \
+	@$(GO_TOOL) golangci-lint fmt \
     	--config=$(REPO_ROOT)/.golangci.yaml \
     	$(SRC_DIRS)
 
@@ -87,7 +90,7 @@ check: tidy fmt gci lint
 .PHONY: lint
 lint: tidy
 	@echo "Running $@..."
-	@go tool golangci-lint run \
+	@$(GO_TOOL) golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
 
@@ -101,22 +104,22 @@ clean:
 	@echo "Running $@..."
 	@rm -f $(REPO_ROOT)/build/$(NAME)
 	@rm -f $(REPO_ROOT)/gosec-report.sarif
-	@go tool setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
+	@$(GO_TOOL) setup-envtest cleanup --bin-dir=$(TOOLS_DIR)
 
 
 .PHONY: test
 test: tidy
 	@go generate $(SRC_DIRS)
-	@go tool gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	@$(GO_TOOL) gotestsum --format-hide-empty-pkg $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: envtest
 envtest: tidy
 	@KUBEBUILDER_ASSETS=$(shell \
-		go tool setup-envtest \
+		$(GO_TOOL) setup-envtest \
 		use $(ENVTEST_K8S_VERSION) \
 		--bin-dir=$(TOOLS_DIR) \
 		-p path 2>/dev/null || true) \
-		go tool gotestsum \
+		$(GO_TOOL) gotestsum \
 			--format-hide-empty-pkg \
 			$(REPO_ROOT)/test/... \
 			--ginkgo.v \
@@ -128,7 +131,7 @@ add-license-headers: tidy
 
 .PHONY: govulncheck
 govulncheck: tidy
-	@go tool govulncheck $(REPO_ROOT)/...
+	@$(GO_TOOL) govulncheck $(REPO_ROOT)/...
 
 .PHONY: sast
 sast: tidy $(GOSEC)
