@@ -14,7 +14,7 @@ tool (
 )
 
 require (
-	github.com/gardener/gardener/pkg/apis v1.137.2
+	github.com/gardener/gardener/pkg/apis v1.137.4
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/spf13/cobra v1.10.2
