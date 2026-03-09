@@ -450,6 +450,92 @@ images:
 	}
 }
 
+func TestWithEnvOverrideSHA256Digests(t *testing.T) {
+	// Simulate the real images.yaml base vector
+	baseYAML := `
+images:
+  - name: kube-rbac-proxy-watcher
+    sourceRepository: github.com/gardener/kube-rbac-proxy-watcher
+    repository: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/kube-rbac-proxy-watcher
+    tag: "v0.4.0"
+  - name: oauth2-proxy
+    sourceRepository: github.com/oauth2-proxy/oauth2-proxy
+    repository: quay.io/oauth2-proxy/oauth2-proxy
+    tag: "v7.14.3"
+`
+
+	// Simulate images_overwrite.yaml with sha256 digest tags and redirected repositories
+	overwriteYAML := `
+images:
+  - name: kube-rbac-proxy-watcher
+    repository: europe-docker.pkg.dev/sap-se-gcp-k8s-delivery/releases-staging-public/europe-docker_pkg_dev/gardener-project/releases/gardener/extensions/kube-rbac-proxy-watcher
+    sourceRepository: github.com/gardener/kube-rbac-proxy-watcher
+    tag: sha256:27c5f6e6107749b0e82b0a61495479393a0ae53a39ed0bb59825d49b2ffdf06b
+  - name: oauth2-proxy
+    repository: europe-docker.pkg.dev/sap-se-gcp-k8s-delivery/releases-staging-public/quay_io/oauth2-proxy/oauth2-proxy
+    tag: sha256:014a5d2a841763a0693513eec575628cd42efdaaf54599c653b3bfb65a7f036e
+`
+
+	overrideFile := filepath.Join(t.TempDir(), "images_overwrite.yaml")
+	if err := os.WriteFile(overrideFile, []byte(overwriteYAML), 0600); err != nil {
+		t.Fatalf("Failed to write override file: %v", err)
+	}
+
+	t.Setenv("IMAGEVECTOR_OVERWRITE", overrideFile)
+
+	vec, err := imagevector.Read([]byte(baseYAML))
+	if err != nil {
+		t.Fatalf("Failed to read base image vector: %v", err)
+	}
+
+	overriddenVec, err := imagevector.WithEnvOverride(vec, imagevector.OverrideEnv)
+	if err != nil {
+		t.Fatalf("Failed to apply environment overrides: %v", err)
+	}
+
+	// Verify kube-rbac-proxy-watcher override
+	krbp, err := overriddenVec.FindImage("kube-rbac-proxy-watcher")
+	if err != nil {
+		t.Fatalf("Failed to find kube-rbac-proxy-watcher: %v", err)
+	}
+
+	expectedKrbpRepo := "europe-docker.pkg.dev/sap-se-gcp-k8s-delivery/releases-staging-public/europe-docker_pkg_dev/gardener-project/releases/gardener/extensions/kube-rbac-proxy-watcher"
+	if krbp.Repository != expectedKrbpRepo {
+		t.Errorf("Expected repository %q, got %q", expectedKrbpRepo, krbp.Repository)
+	}
+
+	expectedKrbpTag := "sha256:27c5f6e6107749b0e82b0a61495479393a0ae53a39ed0bb59825d49b2ffdf06b"
+	if krbp.Tag != expectedKrbpTag {
+		t.Errorf("Expected tag %q, got %q", expectedKrbpTag, krbp.Tag)
+	}
+
+	expectedKrbpRef := expectedKrbpRepo + "@" + expectedKrbpTag
+	if krbp.String() != expectedKrbpRef {
+		t.Errorf("Expected String() %q, got %q", expectedKrbpRef, krbp.String())
+	}
+
+	// Verify oauth2-proxy override
+	oauth2, err := overriddenVec.FindImage("oauth2-proxy")
+	if err != nil {
+		t.Fatalf("Failed to find oauth2-proxy: %v", err)
+	}
+
+	expectedOauth2Repo := "europe-docker.pkg.dev/sap-se-gcp-k8s-delivery/releases-staging-public/quay_io/oauth2-proxy/oauth2-proxy"
+	if oauth2.Repository != expectedOauth2Repo {
+		t.Errorf("Expected repository %q, got %q", expectedOauth2Repo, oauth2.Repository)
+	}
+
+	expectedOauth2Tag := "sha256:014a5d2a841763a0693513eec575628cd42efdaaf54599c653b3bfb65a7f036e"
+	if oauth2.Tag != expectedOauth2Tag {
+		t.Errorf("Expected tag %q, got %q", expectedOauth2Tag, oauth2.Tag)
+	}
+
+	expectedOauth2Ref := expectedOauth2Repo + "@" + expectedOauth2Tag
+	if oauth2.String() != expectedOauth2Ref {
+		t.Errorf("Expected String() %q, got %q", expectedOauth2Ref, oauth2.String())
+	}
+}
+
 func TestMergePreservesNonOverriddenImages(t *testing.T) {
 	// Override only one image; the other should survive unchanged
 	overrideYAML := `
