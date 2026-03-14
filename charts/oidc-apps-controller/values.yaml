@@ -199,6 +199,8 @@ targets:
       tlsSecretRef:
       # Ingress class name
       ingressClassName:
+      # Default redirect path. When set, requests to "/" are redirected to this path (e.g. "/select/vmui")
+      defaultPath:
     # Target HTTPRoute entry-point (alternative to ingress, requires global.httpRoutes.enabled: true)
     # Note: Each target can override global oauth2Proxy, kubeRbacProxy, labels, annotations,
     # domainName, oidcCABundle, and oidcCASecretRef configurations
@@ -217,6 +219,8 @@ targets:
       # - name: my-gateway
       #   namespace: gateway-system
       #   sectionName: https
+      # Default redirect path. When set, requests to "/" are redirected to this path (e.g. "/dashboard")
+      defaultPath:
 
 # In case of Gardener, seeds must configure which client ID to be used the client name.
 # They use the annotation key `oidc-apps.extensions.gardener.cloud/client-name`
