@@ -66,6 +66,8 @@ func createHTTPRouteForDeployment(object client.Object) (gatewayv1.HTTPRoute, er
 		httpRoute.Annotations = annotations
 	}
 
+	applyHTTPRouteDefaultPathRedirect(&httpRoute, object)
+
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetHTTPRouteLabels(object)
 	maps.Copy(httpRoute.Labels, extraLabels)
 
@@ -127,10 +129,44 @@ func createHTTPRouteForStatefulSetPod(pod *corev1.Pod, object client.Object) (ga
 		httpRoute.Annotations = annotations
 	}
 
+	applyHTTPRouteDefaultPathRedirect(&httpRoute, object)
+
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetHTTPRouteLabels(object)
 	maps.Copy(httpRoute.Labels, extraLabels)
 
 	return httpRoute, nil
+}
+
+func applyHTTPRouteDefaultPathRedirect(httpRoute *gatewayv1.HTTPRoute, object client.Object) {
+	defaultPath := configuration.GetOIDCAppsControllerConfig().GetHTTPRouteDefaultPath(object)
+	if defaultPath == "" {
+		return
+	}
+
+	redirectRule := gatewayv1.HTTPRouteRule{
+		Matches: []gatewayv1.HTTPRouteMatch{
+			{
+				Path: &gatewayv1.HTTPPathMatch{
+					Type:  ptr.To(gatewayv1.PathMatchExact),
+					Value: new("/"),
+				},
+			},
+		},
+		Filters: []gatewayv1.HTTPRouteFilter{
+			{
+				Type: gatewayv1.HTTPRouteFilterRequestRedirect,
+				RequestRedirect: &gatewayv1.HTTPRequestRedirectFilter{
+					Path: &gatewayv1.HTTPPathModifier{
+						Type:            gatewayv1.FullPathHTTPPathModifier,
+						ReplaceFullPath: new(defaultPath),
+					},
+					StatusCode: new(302),
+				},
+			},
+		},
+	}
+
+	httpRoute.Spec.Rules = append([]gatewayv1.HTTPRouteRule{redirectRule}, httpRoute.Spec.Rules...)
 }
 
 // convertParentRefs converts configuration parent refs to Gateway API parent refs

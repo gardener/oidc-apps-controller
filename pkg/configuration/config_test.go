@@ -362,3 +362,37 @@ func getTestNamespace() *corev1.Namespace {
 		},
 	}
 }
+
+func TestGetIngressDefaultPath(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-08")).
+		WithObjects(getDeployment("test-02")).
+		Build()
+
+	g.Expect(extensionConfig.GetIngressDefaultPath(getDeployment("test-08"))).To(Equal("/select/vmui"))
+	g.Expect(extensionConfig.GetIngressDefaultPath(getDeployment("test-02"))).To(BeEmpty())
+}
+
+func TestGetHTTPRouteDefaultPath(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{HTTPRoutes: &HTTPRoutesGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-09")).
+		WithObjects(getDeployment("test-05")).
+		Build()
+
+	g.Expect(extensionConfig.GetHTTPRouteDefaultPath(getDeployment("test-09"))).To(Equal("/dashboard"))
+	g.Expect(extensionConfig.GetHTTPRouteDefaultPath(getDeployment("test-05"))).To(BeEmpty())
+}

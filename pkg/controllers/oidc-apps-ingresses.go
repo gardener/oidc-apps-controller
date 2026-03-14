@@ -71,6 +71,8 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 		ingress.Annotations = annotations
 	}
 
+	applyIngressDefaultPathRedirect(&ingress, object)
+
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
 	maps.Copy(ingress.Labels, extraLabels)
 
@@ -136,8 +138,30 @@ func createIngressForStatefulSetPod(pod *corev1.Pod, object client.Object) (netw
 		ingress.Annotations = annotations
 	}
 
+	applyIngressDefaultPathRedirect(&ingress, object)
+
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIngressLabels(object)
 	maps.Copy(ingress.Labels, extraLabels)
 
 	return ingress, nil
+}
+
+func applyIngressDefaultPathRedirect(ingress *networkingv1.Ingress, object client.Object) {
+	defaultPath := configuration.GetOIDCAppsControllerConfig().GetIngressDefaultPath(object)
+	if defaultPath == "" {
+		return
+	}
+
+	if ingress.Annotations == nil {
+		ingress.Annotations = make(map[string]string)
+	}
+
+	key := "nginx.ingress.kubernetes.io/configuration-snippet"
+	snippet := fmt.Sprintf("rewrite ^/$ %s redirect;", defaultPath)
+
+	if existing, ok := ingress.Annotations[key]; ok {
+		ingress.Annotations[key] = existing + "\n" + snippet
+	} else {
+		ingress.Annotations[key] = snippet
+	}
 }
