@@ -435,7 +435,7 @@
               "defaultPath": {
                 "type": ["string", "null"],
                 "description": "Default redirect path. Requests to / are redirected to this path",
-                "pattern": "^/[^;\\n\\r]*$"
+                "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
               }
             }
           },
@@ -484,7 +484,7 @@
               "defaultPath": {
                 "type": ["string", "null"],
                 "description": "Default redirect path. Requests to / are redirected to this path",
-                "pattern": "^/[^;\\n\\r]*$"
+                "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
               }
             }
           },

@@ -628,10 +628,12 @@ func isValidDefaultPath(path string) bool {
 
 	// Allowlist: only URL-safe path characters
 	for _, c := range path {
-		if !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') &&
-			c != '/' && c != '-' && c != '_' && c != '.' && c != '~' {
-			return false
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '/' || c == '-' || c == '_' || c == '.' || c == '~' {
+			continue
 		}
+
+		return false
 	}
 
 	return true
