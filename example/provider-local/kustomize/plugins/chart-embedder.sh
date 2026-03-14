@@ -109,6 +109,7 @@ items:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: victoriametrics--victoria-logs
             create: true
+            defaultPath: "/select/vmui"
             ingressClassName: "nginx-ingress-gardener"
             tlsSecretRef:
               name: "ingress-wildcard-cert"
@@ -183,6 +184,7 @@ items:
           targetPort: 9428
           ingress:
             create: true
+            defaultPath: "/select/vmui"
             ingressClassName: "nginx-ingress-gardener"
             tlsSecretRef:
               name: "ingress-wildcard-cert"

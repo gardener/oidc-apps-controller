@@ -14,7 +14,7 @@ BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64
 TOOLS_DIR                   := $(REPO_ROOT)/tools
 TOOLS_MOD                   := $(TOOLS_DIR)/go.mod
 GO_TOOL                     := go tool -modfile=$(TOOLS_MOD)
-ENVTEST_K8S_VERSION         ?= 1.32.0
+ENVTEST_K8S_VERSION         ?= 1.35.0
 
 GCI_OPT                     ?= -s standard -s default -s "prefix($(shell go list -m))" --skip-generated
 

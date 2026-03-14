@@ -97,6 +97,7 @@ type IngressConf struct {
 	Labels           map[string]string      `json:"labels,omitzero"`
 	TLSSecretRef     corev1.SecretReference `json:"tlsSecretRef,omitzero"`
 	IngressClassName string                 `json:"ingressClassName,omitzero"`
+	DefaultPath      string                 `json:"defaultPath,omitzero"`
 }
 
 // HTTPRouteConf holds configuration for the Gateway API HTTPRoute entry-point
@@ -107,6 +108,7 @@ type HTTPRouteConf struct {
 	Annotations map[string]string    `json:"annotations,omitzero"`
 	Labels      map[string]string    `json:"labels,omitzero"`
 	ParentRefs  []HTTPRouteParentRef `json:"parentRefs,omitzero"`
+	DefaultPath string               `json:"defaultPath,omitzero"`
 }
 
 // HTTPRouteParentRef defines a reference to a parent Gateway
@@ -516,6 +518,17 @@ func (c *OIDCAppsControllerConfig) GetIngressLabels(object client.Object) map[st
 	return nil
 }
 
+// GetIngressDefaultPath returns the default redirect path for the ingress of the given target.
+// The path must start with "/" to be valid; invalid paths are ignored.
+func (c *OIDCAppsControllerConfig) GetIngressDefaultPath(object client.Object) string {
+	t := c.FetchTarget(object)
+	if t.Ingress != nil && isValidDefaultPath(t.Ingress.DefaultPath) {
+		return t.Ingress.DefaultPath
+	}
+
+	return ""
+}
+
 // ShallCreateHTTPRoute returns true if the target workload shall create an HTTPRoute
 func (c *OIDCAppsControllerConfig) ShallCreateHTTPRoute(object client.Object) bool {
 	// HTTPRoute support must be enabled via global.httpRoutes.enabled configuration
@@ -595,6 +608,35 @@ func (c *OIDCAppsControllerConfig) GetHTTPRouteLabels(object client.Object) map[
 	}
 
 	return nil
+}
+
+// GetHTTPRouteDefaultPath returns the default redirect path for the HTTPRoute of the given target.
+// The path must start with "/" to be valid; invalid paths are ignored.
+func (c *OIDCAppsControllerConfig) GetHTTPRouteDefaultPath(object client.Object) string {
+	t := c.FetchTarget(object)
+	if t.HTTPRoute != nil && isValidDefaultPath(t.HTTPRoute.DefaultPath) {
+		return t.HTTPRoute.DefaultPath
+	}
+
+	return ""
+}
+
+func isValidDefaultPath(path string) bool {
+	if !strings.HasPrefix(path, "/") || len(path) < 2 {
+		return false
+	}
+
+	// Allowlist: only URL-safe path characters
+	for _, c := range path {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '/' || c == '-' || c == '_' || c == '.' || c == '~' {
+			continue
+		}
+
+		return false
+	}
+
+	return true
 }
 
 // FetchTarget fetches the target associated with the given object.

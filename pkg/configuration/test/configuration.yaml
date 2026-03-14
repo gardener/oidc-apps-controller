@@ -110,3 +110,32 @@ targets:
     httpRoute:
       create: true
       hostPrefix: "test-07-prefix"
+
+  # A target with ingress defaultPath
+  - name: test-08
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-08
+    ingress:
+      create: true
+      defaultPath: "/select/vmui"
+      tlsSecretRef:
+        name: "ingress-tls"
+
+  # A target with HTTPRoute defaultPath
+  - name: test-09
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-09
+    httpRoute:
+      create: true
+      defaultPath: "/dashboard"
+      parentRefs:
+        - name: "my-gateway"
+          namespace: "gateway-system"

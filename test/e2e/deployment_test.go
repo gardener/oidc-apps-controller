@@ -408,6 +408,64 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 		})
 	}) // End of Context("when a deployment a target with a custom redirectURL")
+
+	Context("when a deployment is a target with ingress defaultPath", func() {
+		BeforeAll(func(ctx SpecContext) {
+			deployment := createDefaultPathTargetDeployment()
+			Eventually(func() error {
+				return clt.Create(ctx, deployment)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			replicaSet := createReplicaSet(deployment)
+			Eventually(func() error {
+				return clt.Create(ctx, replicaSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			pod := createPod(replicaSet)
+			Eventually(func() error {
+				return clt.Create(ctx, pod)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		AfterAll(func(ctx SpecContext) {
+			cleanUpAllDeployments(ctx)
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be an ingress with nginx redirect annotation for defaultPath", func(ctx SpecContext) {
+			ingresses := networkingv1.IngressList{}
+			suffix := randutils.GenerateSha256(strings.Join([]string{defaultPathTarget, defaultNamespace}, "-"))
+			Eventually(func() error {
+				if err = clt.List(ctx, &ingresses,
+					client.InNamespace(defaultNamespace),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.LabelKey: constants.LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+
+				for _, ingress := range ingresses.Items {
+					if ingress.Name != constants.IngressName+"-"+suffix {
+						continue
+					}
+
+					snippet, found := ingress.Annotations["nginx.ingress.kubernetes.io/configuration-snippet"]
+					if !found {
+						return fmt.Errorf("configuration-snippet annotation not found on ingress %s", ingress.Name)
+					}
+
+					if snippet != "rewrite ^/$ /select/vmui redirect;" {
+						return fmt.Errorf("unexpected configuration-snippet value: %s", snippet)
+					}
+
+					return nil
+				}
+
+				return fmt.Errorf("ingress %s not found", constants.IngressName+"-"+suffix)
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
+	}) // End of Context("when a deployment is a target with ingress defaultPath")
 })
 
 func cleanUpAllDeployments(ctx SpecContext) {
