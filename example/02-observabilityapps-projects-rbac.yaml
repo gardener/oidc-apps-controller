@@ -12,4 +12,5 @@ rules:
     resources:
       - observabilityapps/plutono
       - observabilityapps/prometheus-shoot
+      - observabilityapps/vlsingle-victoria-logs
     verbs: ["get", "create"]
