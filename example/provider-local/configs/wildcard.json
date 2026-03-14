@@ -1,0 +1,15 @@
+{
+  "CN": "wildcard",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "O": "docker:provider-local:wildcard"
+  }
+  ],
+  "hosts": [
+    "*.ingress.local.seed.local.gardener.cloud"
+  ]
+}

@@ -1,0 +1,12 @@
+---
+apiVersion: core.gardener.cloud/v1beta1
+kind: ControllerRegistration
+metadata:
+  name: oidc-apps-controller
+  annotations:
+    security.gardener.cloud/pod-security-enforce: baseline
+spec:
+  deployment:
+    deploymentRefs:
+    - name: oidc-apps-controller
+    policy: Always

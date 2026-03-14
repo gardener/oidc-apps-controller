@@ -1,0 +1,13 @@
+---
+apiVersion: core.gardener.cloud/v1beta1
+kind: Project
+metadata:
+  name: local
+  namespace: garden-local
+spec:
+  namespace: garden-local
+  members:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: project-viewer@gardener.local
+    role: viewer

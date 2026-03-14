@@ -1,0 +1,12 @@
+apiVersion: oidc-apps.gardener.cloud/v1
+kind: ChartEmbedder
+metadata:
+  name: controller-deployment-generator
+  annotations:
+    config.kubernetes.io/function: |
+      exec:
+        path: ./plugins/chart-embedder.sh
+spec:
+  chartsParentDir: ../../../charts
+  chartName: oidc-apps-controller
+  caCertPath: ../certs/ca.pem
