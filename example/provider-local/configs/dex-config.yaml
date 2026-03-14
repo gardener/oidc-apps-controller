@@ -66,6 +66,8 @@ staticClients:
       - "https://prometheus-shoot-shoot--local--local-0.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://pl-b5e187.ingress.local.seed.local.gardener.cloud/oauth2/callback"
       - "https://plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://vlsingle-victoria-logs-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback"
+      - "https://vlsingle-victoria-logs-shoot--local--local.ingress.local.seed.local.gardener.cloud/oauth2/callback"
     name: "oauth2-proxy"
     public: true
 
