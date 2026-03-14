@@ -622,8 +622,19 @@ func (c *OIDCAppsControllerConfig) GetHTTPRouteDefaultPath(object client.Object)
 }
 
 func isValidDefaultPath(path string) bool {
-	return strings.HasPrefix(path, "/") &&
-		!strings.ContainsAny(path, ";\n\r")
+	if !strings.HasPrefix(path, "/") || len(path) < 2 {
+		return false
+	}
+
+	// Allowlist: only URL-safe path characters
+	for _, c := range path {
+		if !(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') &&
+			c != '/' && c != '-' && c != '_' && c != '.' && c != '~' {
+			return false
+		}
+	}
+
+	return true
 }
 
 // FetchTarget fetches the target associated with the given object.
