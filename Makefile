@@ -53,6 +53,70 @@ docker-push:
 	@docker push $(IMAGE_REPOSITORY):latest
 	@docker push $(IMAGE_REPOSITORY):$(IMAGE_TAG)
 
+PROVIDER_LOCAL_DIR      := $(REPO_ROOT)/example/provider-local
+
+.PHONY: deploy
+deploy:
+	@# --- Prerequisites ---
+	@kubectl config current-context | grep -q "kind-gardener-local" || \
+		{ echo "Error: current kubectl context is not kind-gardener-local"; exit 1; }
+	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
+		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
+	@# --- Dex/LDAP infrastructure ---
+	@if [ ! -f "$(PROVIDER_LOCAL_DIR)/certs/ca.pem" ] || [ ! -f "$(PROVIDER_LOCAL_DIR)/certs/dex.pem" ]; then \
+		echo "Generating certificates..."; \
+		$(PROVIDER_LOCAL_DIR)/00-setup_certs.sh; \
+	fi
+	@if [ ! -f "$(PROVIDER_LOCAL_DIR)/configs/local.ldif" ]; then \
+		echo "Generating local.ldif with default passwords..."; \
+		if command -v slappasswd > /dev/null 2>&1; then \
+			op_hash=$$(slappasswd -s admin); \
+			pv_hash=$$(slappasswd -s admin); \
+			sed "s|^userpassword: # TODO: Add operator password.*|userpassword: $$op_hash|" \
+				$(PROVIDER_LOCAL_DIR)/configs/local.ldif.tmpl | \
+			sed "s|^userpassword: # TODO: Add project-viewer password.*|userpassword: $$pv_hash|" \
+				> $(PROVIDER_LOCAL_DIR)/configs/local.ldif; \
+		else \
+			sed "s|^userpassword: # TODO: Add operator password.*|userpassword: admin|" \
+				$(PROVIDER_LOCAL_DIR)/configs/local.ldif.tmpl | \
+			sed "s|^userpassword: # TODO: Add project-viewer password.*|userpassword: admin|" \
+				> $(PROVIDER_LOCAL_DIR)/configs/local.ldif; \
+		fi \
+	fi
+	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
+	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
+		echo "Starting Dex IdP and OpenLDAP..."; \
+		cd $(PROVIDER_LOCAL_DIR) && docker compose down 2>/dev/null; \
+		docker volume rm provider-local_ldap provider-local_sqlite3 -f 2>/dev/null; \
+		cd $(PROVIDER_LOCAL_DIR) && docker compose up -d; \
+		echo "Waiting for dexidp..."; \
+		while ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
+		echo "Waiting for ldap..."; \
+		while ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
+		echo "Dex and LDAP are running."; \
+	else \
+		echo "Dex and LDAP are already running."; \
+	fi
+	@# --- Build and load image ---
+	@KIND_ARCH=$$(docker image inspect $$(docker inspect gardener-local-control-plane -f '{{.Config.Image}}') -f '{{.Architecture}}' 2>/dev/null || echo "amd64"); \
+		echo "Building image for linux/$${KIND_ARCH}..."; \
+		docker build --platform "linux/$${KIND_ARCH}" \
+			--tag $(IMAGE_REPOSITORY):latest \
+			--tag $(IMAGE_REPOSITORY):$(IMAGE_TAG) \
+			-f Dockerfile --target oidc-apps-controller $(REPO_ROOT); \
+		kind load docker-image $(IMAGE_REPOSITORY):latest $(IMAGE_REPOSITORY):$(IMAGE_TAG) --name gardener-local
+	@# --- Apply via kustomize ---
+	@kubectl annotate seed local oidc-apps.extensions.gardener.cloud/client-name=local --overwrite
+	@echo "Applying kustomize manifests..."
+	@IMAGE_REPOSITORY=$(IMAGE_REPOSITORY) IMAGE_TAG=$(IMAGE_TAG) \
+		kustomize build --enable-alpha-plugins --enable-exec \
+		$(PROVIDER_LOCAL_DIR)/kustomize | kubectl apply --server-side --force-conflicts -f -
+	@echo "Deploy complete."
+
+.PHONY: deploy-check
+deploy-check:
+	@$(PROVIDER_LOCAL_DIR)/01-check_environment.sh
+
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
