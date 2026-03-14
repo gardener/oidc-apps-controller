@@ -1,13 +1,20 @@
-# This document describes how to setup the scenario using provider-local dev environment
+# Provider-local dev environment
 
-The dev environment consists of provider-local setup and DexIdp with OpenLdap as a backend to facilitate the OIDC authentication. The DexIdp and OpenLdap containers are provisioned with docker-compose in the same Kind network created by the provider-local scenario.
+The dev environment consists of a provider-local Gardener setup with DexIdP and OpenLDAP as a backend to facilitate OIDC authentication. The DexIdP and OpenLDAP containers are provisioned with docker-compose in the same Kind network created by the provider-local scenario.
 
-Required dependencies: docker-compose, cfssl
+## Required dependencies
 
-Prerequisites:
+- docker-compose
+- cfssl (for certificate generation)
+- kustomize (v5+, standalone binary)
+- kind
+- yq
 
-- A fully function gardener provider-local setup with KUBECONFIG env variable set accordingly.
-- Following records are present in /etc/hosts. Here is how to append them.
+## Prerequisites
+
+- A fully functional gardener provider-local setup with KUBECONFIG env variable set to `kind-gardener-local` context.
+- A shoot named `local` in the `garden-local` namespace.
+- Following records are present in /etc/hosts:
 
 ```sh
 cat <<EOF | sudo tee -a /etc/hosts
@@ -15,35 +22,52 @@ cat <<EOF | sudo tee -a /etc/hosts
 127.0.0.1 dexidp
 # setup seed
 127.0.0.1 plutono-garden.ingress.local.seed.local.gardener.cloud
-127.0.0.1 seed-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
-127.0.0.1 aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud
+127.0.0.1 prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud
+127.0.0.1 prometheus-aggregate-garden-0.ingress.local.seed.local.gardener.cloud
 127.0.0.1 prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud
+127.0.0.1 vlsingle-victoria-logs-garden.ingress.local.seed.local.gardener.cloud
 # setup shoot
-127.0.0.1 prometheus-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
+127.0.0.1 prometheus-shoot-shoot--local--local-0.ingress.local.seed.local.gardener.cloud
 127.0.0.1 plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud
+127.0.0.1 vlsingle-victoria-logs-shoot--local--local.ingress.local.seed.local.gardener.cloud
 EOF
 ```
 
-Setup:
+## Deploy
 
-1. Steps 00-01:
-   Follow 00- and 01- groups of shell scripts to bring up DexIdP and OpenLdap components
-2. Step 02:
-   Verify the environment with 02-check_environment.sh
-3. Step 03
-   Apply the odic-apps-controller setup with 03-setup-
+From the repository root, run:
 
-Following URLs shall trigger OIDC authorization flow:
+```sh
+make deploy
+```
 
-- [https://plutono-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback](https://plutono-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback)
-- [https://seed-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback](https://seed-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback)
-- [https://aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback](https://aggregate-prometheus-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback)
+This single command will:
+1. Validate prerequisites (kubectl context is `kind-gardener-local`, shoot `local` exists)
+2. Generate TLS certificates if missing (CA, Dex, wildcard)
+3. Generate LDAP config (`local.ldif`) with default passwords if missing
+4. Start DexIdP and OpenLDAP containers if not already running
+5. Build the controller Docker image for the kind node's architecture
+6. Load the image into the kind cluster
+7. Apply RBAC resources, project member patch, ControllerDeployment, and ControllerRegistration via kustomize
 
-In case the local shoot is provided:
+## Verify environment
 
-1. Step 01
-   Patch the project resource, adding additional member with 04-setup_project.sh
+To check that all prerequisites, services, Gardener resources, and /etc/hosts entries are correctly configured:
 
-Following URLs shall trigger OIDC authorization flow:
+```sh
+make deploy-check
+```
 
-- [https://pr-404698-0.ingress.local.seed.local.gardener.cloud/oauth2/callback](https://pr-404698-0.ingress.local.seed.local.gardener.cloud/oauth2/callback)
+## OIDC authorization flow URLs
+
+Seed:
+- https://plutono-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://prometheus-seed-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://prometheus-aggregate-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://prometheus-cache-garden-0.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://vlsingle-victoria-logs-garden.ingress.local.seed.local.gardener.cloud/oauth2/callback
+
+Shoot:
+- https://prometheus-shoot-shoot--local--local-0.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://plutono-shoot--local--local.ingress.local.seed.local.gardener.cloud/oauth2/callback
+- https://vlsingle-victoria-logs-shoot--local--local.ingress.local.seed.local.gardener.cloud/oauth2/callback
