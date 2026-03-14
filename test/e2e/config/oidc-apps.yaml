@@ -56,3 +56,23 @@ targets:
       create: false
     httproute:
       create: false
+  - name: "nginx-target-default-path"
+    labelSelector:
+      matchLabels:
+        app: nginx-target-default-path
+    ingress:
+      create: true
+      ingressClassName: "nginx"
+      defaultPath: "/select/vmui"
+  - name: "nginx-target-httproute-default-path"
+    labelSelector:
+      matchLabels:
+        app: nginx-target-httproute-default-path
+    ingress:
+      create: false
+    httpRoute:
+      create: true
+      defaultPath: "/dashboard"
+      parentRefs:
+        - name: "test-gateway"
+          namespace: "default"

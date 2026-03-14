@@ -231,6 +231,84 @@ var _ = Describe("Oidc Apps HTTPRoute Deployment Target Test", Ordered, func() {
 			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
 		})
 	}) // End of Context("when HTTPRoute create is set to false")
+
+	Context("when a deployment is a target with HTTPRoute defaultPath", Ordered, func() {
+		BeforeAll(func(ctx SpecContext) {
+			deployment := createHTTPRouteDefaultPathTargetDeployment()
+			Eventually(func() error {
+				return clt.Create(ctx, deployment)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			replicaSet := createReplicaSet(deployment)
+			Eventually(func() error {
+				return clt.Create(ctx, replicaSet)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+
+			pod := createPod(replicaSet)
+			Eventually(func() error {
+				return clt.Create(ctx, pod)
+			}).WithPolling(100 * time.Millisecond).Should(Succeed())
+		}, NodeTimeout(5*time.Second))
+
+		AfterAll(func(ctx SpecContext) {
+			cleanUpAllDeployments(ctx)
+		}, NodeTimeout(5*time.Second))
+
+		It("there shall be an HTTPRoute with a redirect rule for defaultPath", func(ctx SpecContext) {
+			httpRoutes := gatewayv1.HTTPRouteList{}
+			suffix := randutils.GenerateSha256(strings.Join([]string{httpRouteDefaultPathTarget, defaultNamespace}, "-"))
+			Eventually(func() error {
+				if err = clt.List(ctx, &httpRoutes,
+					client.InNamespace(defaultNamespace),
+					client.MatchingLabelsSelector{
+						Selector: labels.SelectorFromSet(map[string]string{
+							constants.LabelKey: constants.LabelValue,
+						}),
+					}); err != nil {
+					return err
+				}
+
+				for _, httpRoute := range httpRoutes.Items {
+					if httpRoute.Name != constants.HTTPRouteName+"-"+suffix {
+						continue
+					}
+
+					// With defaultPath, there should be 2 rules: redirect + backend
+					if len(httpRoute.Spec.Rules) != 2 {
+						return fmt.Errorf("expected 2 rules (redirect + backend), got %d", len(httpRoute.Spec.Rules))
+					}
+
+					// First rule should be the redirect
+					redirectRule := httpRoute.Spec.Rules[0]
+					if len(redirectRule.Filters) != 1 {
+						return fmt.Errorf("expected 1 filter on redirect rule, got %d", len(redirectRule.Filters))
+					}
+
+					if redirectRule.Filters[0].Type != gatewayv1.HTTPRouteFilterRequestRedirect {
+						return fmt.Errorf("expected RequestRedirect filter, got %s", redirectRule.Filters[0].Type)
+					}
+
+					redirect := redirectRule.Filters[0].RequestRedirect
+					if redirect == nil || redirect.Path == nil || redirect.Path.ReplaceFullPath == nil {
+						return errors.New("redirect filter path is not set")
+					}
+
+					if *redirect.Path.ReplaceFullPath != "/dashboard" {
+						return fmt.Errorf("expected redirect to /dashboard, got %s", *redirect.Path.ReplaceFullPath)
+					}
+
+					// Second rule should be the catch-all backend
+					if len(httpRoute.Spec.Rules[1].BackendRefs) == 0 {
+						return errors.New("backend rule has no backendRefs")
+					}
+
+					return nil
+				}
+
+				return fmt.Errorf("HTTPRoute %s not found", constants.HTTPRouteName+"-"+suffix)
+			}, 5*time.Second, 250*time.Millisecond).Should(Succeed())
+		})
+	}) // End of Context("when a deployment is a target with HTTPRoute defaultPath")
 })
 
 var _ = Describe("Oidc Apps HTTPRoute StatefulSet Target Test", Ordered, func() {
