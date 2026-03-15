@@ -396,3 +396,34 @@ func TestGetHTTPRouteDefaultPath(t *testing.T) {
 	g.Expect(extensionConfig.GetHTTPRouteDefaultPath(getDeployment("test-09"))).To(Equal("/dashboard"))
 	g.Expect(extensionConfig.GetHTTPRouteDefaultPath(getDeployment("test-05"))).To(BeEmpty())
 }
+
+func TestIsValidDefaultPath(t *testing.T) {
+	g := NewWithT(t)
+
+	// Valid paths
+	g.Expect(isValidDefaultPath("/dashboard")).To(BeTrue())
+	g.Expect(isValidDefaultPath("/select/vmui")).To(BeTrue())
+	g.Expect(isValidDefaultPath("/my-app/v2")).To(BeTrue())
+	g.Expect(isValidDefaultPath("/path_with.dots~tilde")).To(BeTrue())
+
+	// Invalid: empty, root only, missing leading slash
+	g.Expect(isValidDefaultPath("")).To(BeFalse())
+	g.Expect(isValidDefaultPath("/")).To(BeFalse())
+	g.Expect(isValidDefaultPath("no-leading-slash")).To(BeFalse())
+
+	// Invalid: disallowed characters
+	g.Expect(isValidDefaultPath("/path?query=1")).To(BeFalse())
+	g.Expect(isValidDefaultPath("/path#anchor")).To(BeFalse())
+	g.Expect(isValidDefaultPath("/path;inject")).To(BeFalse())
+	g.Expect(isValidDefaultPath("/path with spaces")).To(BeFalse())
+
+	// Exactly maxDefaultPathLength characters: valid
+	pathAtLimit := "/" + strings.Repeat("a", maxDefaultPathLength-1)
+	g.Expect(len(pathAtLimit)).To(Equal(maxDefaultPathLength))
+	g.Expect(isValidDefaultPath(pathAtLimit)).To(BeTrue())
+
+	// maxDefaultPathLength + 1 characters: exceeds limit
+	pathOverLimit := "/" + strings.Repeat("a", maxDefaultPathLength)
+	g.Expect(len(pathOverLimit)).To(Equal(maxDefaultPathLength + 1))
+	g.Expect(isValidDefaultPath(pathOverLimit)).To(BeFalse())
+}
