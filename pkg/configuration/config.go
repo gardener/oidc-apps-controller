@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -621,22 +622,14 @@ func (c *OIDCAppsControllerConfig) GetHTTPRouteDefaultPath(object client.Object)
 	return ""
 }
 
+// maxDefaultPathLength caps the redirect path to a reasonable length, preventing
+// excessively long paths from being used in nginx configuration-snippet annotations.
+const maxDefaultPathLength = 32
+
+var validDefaultPathRe = regexp.MustCompile(`^/[-a-zA-Z0-9/_.~]+$`)
+
 func isValidDefaultPath(path string) bool {
-	if !strings.HasPrefix(path, "/") || len(path) < 2 {
-		return false
-	}
-
-	// Allowlist: only URL-safe path characters
-	for _, c := range path {
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
-			c == '/' || c == '-' || c == '_' || c == '.' || c == '~' {
-			continue
-		}
-
-		return false
-	}
-
-	return true
+	return len(path) <= maxDefaultPathLength && validDefaultPathRe.MatchString(path)
 }
 
 // FetchTarget fetches the target associated with the given object.
