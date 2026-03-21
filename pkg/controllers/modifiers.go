@@ -84,6 +84,10 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 
 func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client.Object) (*gatewayv1.HTTPRouteList,
 	error) {
+	if !configuration.GetOIDCAppsControllerConfig().IsHTTPRouteEnabled() {
+		return &gatewayv1.HTTPRouteList{}, nil
+	}
+
 	oidcHTTPRoutes := &gatewayv1.HTTPRouteList{}
 
 	if err := c.List(ctx, oidcHTTPRoutes,
