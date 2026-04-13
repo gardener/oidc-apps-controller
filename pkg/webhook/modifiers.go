@@ -30,7 +30,7 @@ func addAnnotations(object client.Object) {
 	}
 
 	annotations[constants.AnnotationKey] = object.GetName()
-	annotations[constants.AnnotationHostKey] = configuration.GetOIDCAppsControllerConfig().GetHost(object)
+	annotations[constants.AnnotationHostKey] = resolveHost(object)
 	annotations[constants.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
 	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
 	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
@@ -488,4 +488,13 @@ func shallAddOidcCaSecretName(object client.Object) bool {
 	}
 
 	return configuration.GetOIDCAppsControllerConfig().GetOidcCASecretName(object) != ""
+}
+
+func resolveHost(object client.Object) string {
+	cfg := configuration.GetOIDCAppsControllerConfig()
+	if cfg.IsHTTPRouteEnabled() {
+		return cfg.GetHTTPRouteHost(object)
+	}
+
+	return cfg.GetHost(object)
 }
