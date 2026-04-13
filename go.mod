@@ -3,7 +3,7 @@ module github.com/gardener/oidc-apps-controller
 go 1.26.1
 
 require (
-	github.com/gardener/gardener/pkg/apis v1.139.1
+	github.com/gardener/gardener/pkg/apis v1.140.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/spf13/cobra v1.10.2
