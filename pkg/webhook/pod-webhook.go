@@ -74,7 +74,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	// Add required annotations to pod spec template
 	addPodAnnotations(patch,
 		map[string]string{
-			constants.AnnotationHostKey: configuration.GetOIDCAppsControllerConfig().GetHost(owner),
+			constants.AnnotationHostKey: resolveHost(owner),
 		},
 	)
 
@@ -144,7 +144,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	// URL needs to reflect the target pod index. When the redirect URL is constructed the pod index is appended to the
 	// host name.
 	if present {
-		hostPrefix := configuration.GetOIDCAppsControllerConfig().GetHost(owner)
+		hostPrefix := resolveHost(owner)
 		if configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner) != "" {
 			hostPrefix = configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner)
 			// It does container https:// prefix and /oauth2/callback suffix
