@@ -422,6 +422,128 @@ var _ = Describe("Cookie Secret Deterministic Generation Tests", func() {
 		})
 	})
 
+	Context("when HTTPRoute is enabled, host annotation uses HTTPRoute hostPrefix", func() {
+		var (
+			deployment      *appsv1.Deployment
+			replicaSet      *appsv1.ReplicaSet
+			pod             *corev1.Pod
+			localPodWebhook *webhook.PodMutator
+			savedGlobal     configuration.Global
+			savedTargets    []configuration.Target
+		)
+
+		BeforeEach(func() {
+			deployment = &appsv1.Deployment{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "apps/v1",
+					Kind:       "Deployment",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx",
+					Namespace: "nginx",
+					Labels:    map[string]string{"app": "nginx"},
+					UID:       "deployment-uid-httproute",
+				},
+			}
+			replicaSet = &appsv1.ReplicaSet{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx-rs-0001",
+					Namespace: "nginx",
+					UID:       "replicaset-uid-httproute",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "Deployment",
+							Name:       "nginx",
+							UID:        "deployment-uid-httproute",
+						},
+					},
+				},
+			}
+			pod = &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "Pod",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nginx-pod-1",
+					Namespace: "nginx",
+					UID:       "pod-uid-httproute",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: "apps/v1",
+							Kind:       "ReplicaSet",
+							Name:       "nginx-rs-0001",
+							UID:        "replicaset-uid-httproute",
+						},
+					},
+				},
+			}
+
+			s := runtime.NewScheme()
+			err := scheme.AddToScheme(s)
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(s).
+				WithObjects(deployment, replicaSet, pod).
+				Build()
+
+			cfg := configuration.GetOIDCAppsControllerConfig()
+			savedGlobal = cfg.Global
+			savedTargets = cfg.Targets
+
+			cfg.Global = configuration.Global{
+				DomainName: "example.org",
+				HTTPRoutes: &configuration.HTTPRoutesGlobalConf{Enabled: true},
+				Oauth2Proxy: &configuration.Oauth2ProxyConfig{
+					ClientID:      "client-id",
+					ClientSecret:  "client-secret",
+					OidcIssuerURL: "https://oidc-provider.org",
+				},
+			}
+			cfg.Targets = []configuration.Target{
+				{
+					Name: "nginx",
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "nginx"},
+					},
+					HTTPRoute: &configuration.HTTPRouteConf{
+						Create:     true,
+						HostPrefix: "my-httproute-prefix",
+					},
+				},
+			}
+			cfg.SetClient(fakeClient)
+
+			localPodWebhook = &webhook.PodMutator{
+				Client:  fakeClient,
+				Decoder: admission.NewDecoder(s),
+			}
+		})
+
+		It("should set the host annotation with the HTTPRoute hostPrefix", func() {
+			patchedPod := patchPodWithWebhook(pod, localPodWebhook)
+
+			hostAnnotation := patchedPod.GetAnnotations()[constants.AnnotationHostKey]
+			Expect(hostAnnotation).NotTo(BeEmpty(), "Host annotation should be set")
+			Expect(hostAnnotation).To(HavePrefix("my-httproute-prefix-"),
+				"Host annotation should use the HTTPRoute hostPrefix")
+			Expect(hostAnnotation).To(HaveSuffix(".example.org"),
+				"Host annotation should include the global domain")
+		})
+
+		AfterEach(func() {
+			cfg := configuration.GetOIDCAppsControllerConfig()
+			cfg.Global = savedGlobal
+			cfg.Targets = savedTargets
+		})
+	})
+
 	Context("VPA in-place update scenario integration test", func() {
 		var (
 			deployment      *appsv1.Deployment
