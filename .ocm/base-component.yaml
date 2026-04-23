@@ -1,5 +1,10 @@
 # SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 # SPDX-License-Identifier: Apache-2.0
+
+labels:
+  - name: cloud.gardener.cnudie/responsibles
+    value:
+      - type: codeowners
 main-source:
   labels:
     - name: cloud.gardener.cnudie/dso/scanning-hints/source_analysis/v1
