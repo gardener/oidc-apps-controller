@@ -1,6 +1,6 @@
 module github.com/gardener/oidc-apps-controller/tools
 
-go 1.26.2
+go 1.26.1
 
 tool (
 	github.com/daixiang0/gci
