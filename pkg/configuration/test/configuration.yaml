@@ -139,3 +139,87 @@ targets:
       parentRefs:
         - name: "my-gateway"
           namespace: "gateway-system"
+
+  # A target with VirtualService configuration
+  - name: test-10
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-10
+    istioGateway:
+      create: true
+      hostPrefix: "test-10-prefix"
+
+  # A target with specific VirtualService host
+  - name: test-11
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-11
+    istioGateway:
+      create: true
+      host: "custom.virtualservice.host"
+
+  # A target with VirtualService but empty gateways (for testing validation warning)
+  - name: test-12
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-12
+    istioGateway:
+      create: true
+      hostPrefix: "test-12-prefix"
+
+  # A target with VirtualService defaultPath
+  - name: test-13
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-13
+    istioGateway:
+      create: true
+      defaultPath: "/dashboard"
+
+  # A target with VirtualService and Gateway creation
+  - name: test-14
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-14
+    istioGateway:
+      create: true
+      hostPrefix: "test-14-prefix"
+      tlsSecretRef: "my-tls-secret"
+
+  # A target with Gateway but default selector (empty)
+  - name: test-15
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-15
+    istioGateway:
+      create: true
+      tlsSecretRef: "another-tls-secret"
+
+  # A target with Gateway disabled (create: false)
+  - name: test-16
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-16
+    istioGateway:
+      create: false
