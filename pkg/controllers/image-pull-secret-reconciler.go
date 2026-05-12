@@ -26,7 +26,7 @@ type ImagePullSecretReconciler struct {
 	SecretName string
 }
 
-// Reconcile propagates the private registry secrets through the namespaces
+// Reconcile propagates the private registry secrets through the namespaces of targets
 func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	_log := log.FromContext(ctx)
 
@@ -55,15 +55,17 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 		return reconcile.Result{}, err
 	}
 
+	// update namespace-local image pull secrets with the content of the original one,
+	// which is being reconciled
 	for _, imagePullSecret := range secretsList.Items {
 		imagePullSecret.StringData = map[string]string{
 			DOCKERCONFIGJSON: secret.StringData[DOCKERCONFIGJSON],
 		}
 
-		if err := r.Client.Update(ctx, secret); err != nil {
-			_log.Error(err, "Cannot update secret",
-				"name", secret.GetName(),
-				"namespace", secret.GetNamespace(),
+		if err := r.Client.Update(ctx, &imagePullSecret); err != nil {
+			_log.Error(err, "Cannot update image pull secret",
+				"name", imagePullSecret.GetName(),
+				"namespace", imagePullSecret.GetNamespace(),
 			)
 		}
 

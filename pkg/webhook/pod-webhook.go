@@ -54,16 +54,18 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 
 	// Simply return it the pod is not part of the described targets
 
-	target, owner := isTarget(ctx, p.Client, pod)
-	if !target {
+	isTarget, owner := isTarget(ctx, p.Client, pod)
+	if !isTarget {
 		return webhook.Allowed("not a target")
 	}
+
+	ownerHost := resolveHost(owner)
 
 	_log.Info("handling pod admission request")
 
 	patch := pod.DeepCopy()
 	clientID := configuration.GetOIDCAppsControllerConfig().GetClientID(owner)
-	ussuerURL := configuration.GetOIDCAppsControllerConfig().GetOidcIssuerURL(owner)
+	issuerURL := configuration.GetOIDCAppsControllerConfig().GetOidcIssuerURL(owner)
 	upstream := configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(owner)
 	upstreamURL := buildUpstreamURL(upstream, patch.Spec)
 	suffix := fetchTargetSuffix(owner)
@@ -74,7 +76,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	// Add required annotations to pod spec template
 	addPodAnnotations(patch,
 		map[string]string{
-			constants.AnnotationHostKey: resolveHost(owner),
+			constants.AnnotationHostKey: ownerHost,
 		},
 	)
 
@@ -130,7 +132,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 
 	// Add the kube-rbac-proxy sidecar to the pod template
 	addProxyContainer(constants.ContainerNameKubeRbacProxy, &patch.Spec, getKubeRbacProxyContainer(clientID,
-		ussuerURL, upstreamURL, patch, owner))
+		issuerURL, upstreamURL, patch, owner))
 
 	// Add image pull secret if the proxy container images are served from private registry
 	if len(p.ImagePullSecret) > 0 {
@@ -144,7 +146,7 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 	// URL needs to reflect the target pod index. When the redirect URL is constructed the pod index is appended to the
 	// host name.
 	if present {
-		hostPrefix := resolveHost(owner)
+		hostPrefix := ownerHost
 		if configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner) != "" {
 			hostPrefix = configuration.GetOIDCAppsControllerConfig().GetRedirectURL(owner)
 			// It does container https:// prefix and /oauth2/callback suffix

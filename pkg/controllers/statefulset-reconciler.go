@@ -19,7 +19,7 @@ type StatefulSetReconciler struct {
 	Client client.Client
 }
 
-// Reconcile creates the auth & zutz secrets mounted to the target statefulset
+// Reconcile creates the auth & autz secrets mounted to the target statefulset
 func (s *StatefulSetReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	reconciledStatefulSet := &appsv1.StatefulSet{}
 

@@ -19,7 +19,7 @@ type DeploymentReconciler struct {
 	Client client.Client
 }
 
-// Reconcile creates the auth & zutz secrets mounted to the target deployment
+// Reconcile creates the auth & authz secrets mounted to the target deployment
 func (d *DeploymentReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	reconciledDeployment := &appsv1.Deployment{}
 	if err := d.Client.Get(ctx, request.NamespacedName, reconciledDeployment); client.IgnoreNotFound(err) != nil {

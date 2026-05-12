@@ -33,7 +33,7 @@ func addAnnotations(object client.Object) {
 	annotations[constants.AnnotationHostKey] = resolveHost(object)
 	annotations[constants.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
 	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
-	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
+	annotations[constants.AnnotationOauth2SecretChecksumKey] = get2ProxySecretChecksum(object)
 
 	object.SetAnnotations(annotations)
 }
