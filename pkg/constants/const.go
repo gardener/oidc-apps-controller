@@ -65,6 +65,8 @@ const (
 	GardenerPublicLabelsKey = "networking.gardener.cloud/to-public-networks"
 	// GardenerPrivateLabelsKey is aworkload label used by the gardener network policy controller to manage access to private networks
 	GardenerPrivateLabelsKey = "networking.gardener.cloud/to-private-networks"
+	// GardenerDNSLabelsKey is a label used by the gardener network policy controller to manage egress to in-cluster DNS
+	GardenerDNSLabelsKey = "networking.gardener.cloud/to-dns"
 
 	// Oauth2VolumeName is the volume name of the oauth2-proxy configuration
 	Oauth2VolumeName = "oauth2-proxy"

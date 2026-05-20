@@ -82,6 +82,7 @@ func addPodLabels(pod *corev1.Pod, lbls map[string]string) {
 
 	labels[constants.GardenerPublicLabelsKey] = "allowed"
 	labels[constants.GardenerPrivateLabelsKey] = "allowed"
+	labels[constants.GardenerDNSLabelsKey] = "allowed"
 
 	if len(lbls) == 0 {
 		pod.SetLabels(labels)
