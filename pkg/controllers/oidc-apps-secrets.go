@@ -42,8 +42,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	}
 
 	// TODO(bobi-wan): do we want to error out when running the controller 
-	// and a target has no configured secret? We actually enter this case
-	// in the dev inventory (clientsecretfile = /dev/null)
+	// and a target has no configured oauth secret?
 	if secret == "" {
 		opts = append(opts, configuration.WithClientSecretFile("/dev/null"))
 	} else {
