@@ -36,7 +36,7 @@ func TestAddFlagsDefaults(t *testing.T) {
 
 	// Check defaults are applied after parsing
 	g.Expect(o.controllerConfigPath).To(Equal("extension-config.yaml"))
-	g.Expect(o.useCertManager).To(BeFalse())
+	g.Expect(o.useExternalCertManager).To(BeFalse())
 	g.Expect(o.webhookPort).To(Equal(10250))
 	g.Expect(o.metricsPort).To(Equal(8080))
 	g.Expect(o.webhookCertsDir).To(Equal("./certs"))
