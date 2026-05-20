@@ -4,10 +4,10 @@
 
 set -euo pipefail
 
-# Read the ResourceList from stdin
+# Read the ResourceList from stdin. This is a wrapper of the functionConfig
 resourceList=$(cat)
 
-# Extract configuration from functionConfig
+# Extract configuration from functionConfig.
 chartsParentDir=$(echo "$resourceList" | yq e '.functionConfig.spec.chartsParentDir' -)
 chartName=$(echo "$resourceList" | yq e '.functionConfig.spec.chartName' -)
 caCertPath=$(echo "$resourceList" | yq e '.functionConfig.spec.caCertPath' -)
@@ -20,6 +20,8 @@ ca_bundle=$(base64 < "$caCertPath" | tr -d '\n')
 image_repository="${IMAGE_REPOSITORY:-europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/oidc-apps-controller}"
 image_tag="${IMAGE_TAG:-latest}"
 
+# Here we return an output ResourceList. Since this is a generator KRM plugin, 
+# the .items here is what kustomize actually builds.
 cat <<EOF
 kind: ResourceList
 items:
