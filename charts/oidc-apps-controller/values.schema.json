@@ -290,6 +290,22 @@
             }
           }
         },
+        "istioGateway": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Istio VirtualService support"
+            },
+            "selector": {
+              "type": "object",
+              "description": "Label selector for the Istio ingress gateway pods",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "oauth2Proxy": {
           "type": ["object", "null"],
           "properties": {
@@ -485,6 +501,49 @@
                 "type": ["string", "null"],
                 "description": "Default redirect path. Requests to / are redirected to this path",
                 "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
+              }
+            }
+          },
+          "istioGateway": {
+            "type": ["object", "null"],
+            "properties": {
+              "create": {
+                "type": ["boolean", "null"]
+              },
+              "hostPrefix": {
+                "type": "string"
+              },
+              "host": {
+                "type": ["string", "null"]
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "defaultPath": {
+                "type": ["string", "null"],
+                "description": "Default redirect path. Requests to / are redirected to this path",
+                "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
+              },
+              "deniedPaths": {
+                "type": "array",
+                "description": "Paths to deny with HTTP 403. Each entry is a prefix match.",
+                "items": {
+                  "type": "string",
+                  "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
+                }
+              },
+              "tlsSecretRef": {
+                "type": ["string", "null"],
+                "description": "TLS credential name (Kubernetes secret containing TLS certificate)"
               }
             }
           },
