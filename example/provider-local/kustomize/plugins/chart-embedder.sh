@@ -56,6 +56,8 @@ items:
         - name: local
           clientId: local
       global:
+        istioGateway:
+          enabled: true
         oauth2Proxy:
           sslInsecureSkipVerify: false
           insecureOidcSkipIssuerVerification: false
@@ -72,14 +74,12 @@ items:
             matchLabels:
               component: plutono
           targetPort: 3000
-          ingress:
+          istioGateway:
+            create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: creadtiv--plutono
-            create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "shoot--prometheus"
           namespaceSelector:
             matchLabels:
@@ -88,14 +88,12 @@ items:
             matchLabels:
               app: prometheus
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: prometheus--prometheus
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "shoot--victoria-logs"
           namespaceSelector:
             matchLabels:
@@ -104,15 +102,13 @@ items:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
           targetPort: 9428
-          ingress:
+          istioGateway:
+            create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: victoriametrics--victoria-logs
-            create: true
             defaultPath: "/select/vmui"
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--plutono"
           namespaceSelector:
             matchLabels:
@@ -121,14 +117,11 @@ items:
             matchLabels:
               component: plutono
           targetPort: 3000
-          ingress:
+          istioGateway:
+            create: true
             labels:
               seed: plutono
-            create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-seed"
           namespaceSelector:
             matchLabels:
@@ -138,12 +131,9 @@ items:
               name: seed
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-aggregate"
           namespaceSelector:
             matchLabels:
@@ -153,12 +143,9 @@ items:
               name: aggregate
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-cache"
           namespaceSelector:
             matchLabels:
@@ -168,12 +155,9 @@ items:
               name: cache
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--victoria-logs"
           namespaceSelector:
             matchLabels:
@@ -182,11 +166,8 @@ items:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
           targetPort: 9428
-          ingress:
+          istioGateway:
             create: true
             defaultPath: "/select/vmui"
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
 EOF

@@ -129,7 +129,7 @@ global:
   # When enabled, the controller registers Istio networking scheme and watches VirtualService resources
   # Requires Istio CRDs to be installed in the cluster
   istioGateway:
-    enabled: true
+    enabled: false
     # Label selector for the Istio ingress gateway pods
     selector:
       istio: ingressgateway
@@ -234,7 +234,7 @@ targets:
     # Note: Each target can override global oauth2Proxy, kubeRbacProxy, labels, annotations,
     # domainName, oidcCABundle, and oidcCASecretRef configurations
     istioGateway:
-      create: true
+      create: false
       # Target URL prefix, to concatenate to the domainName, if not uses the target {{name}}-{{namespace}}
       hostPrefix: ""
       # Target host for the Gateway if different from the {{hostPrefix}} + {{domainName}}
