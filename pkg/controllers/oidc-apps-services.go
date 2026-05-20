@@ -24,6 +24,9 @@ func createOauth2Service(selectors client.MatchingLabels, object client.Object) 
 			Name:      constants.ServiceNameOauth2Service + "-" + addOptionalIndex(index+"-") + suffix,
 			Namespace: object.GetNamespace(),
 			Labels:    map[string]string{constants.LabelKey: constants.LabelValue},
+			Annotations: map[string]string{
+				"networking.istio.io/exportTo": "*",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
