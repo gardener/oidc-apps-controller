@@ -39,6 +39,10 @@ const (
 	IngressName = "oauth2-ingress"
 	// HTTPRouteName is the name of the oauth2 HTTPRoute
 	HTTPRouteName = "oauth2-httproute"
+	// IstioVirtualServiceName is the name of the oauth2 VirtualService
+	IstioVirtualServiceName = "oauth2-virtualservice"
+	// IstioGatewayName is the name of the Istio Gateway
+	IstioGatewayName = "oauth2-gateway"
 
 	// LabelKey is the label added to dependent configuration secrets
 	LabelKey = "oidc-application-controller/component"

@@ -23,7 +23,7 @@ func createIngressForDeployment(object client.Object) (networkingv1.Ingress, err
 	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	ingressClassName := new(configuration.GetOIDCAppsControllerConfig().GetIngressClassName(object))
 	ingressTLSSecretName := configuration.GetOIDCAppsControllerConfig().GetIngressTLSSecretName(object)
-	host := configuration.GetOIDCAppsControllerConfig().GetHost(object)
+	host := configuration.GetOIDCAppsControllerConfig().GetIngressHost(object)
 
 	ingress := networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
