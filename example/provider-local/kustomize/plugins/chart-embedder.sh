@@ -72,6 +72,7 @@ items:
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               component: plutono
@@ -86,6 +87,7 @@ items:
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               app: prometheus
@@ -100,6 +102,7 @@ items:
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
@@ -114,7 +117,7 @@ items:
         - name: "garden--plutono"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               component: plutono
@@ -127,7 +130,7 @@ items:
         - name: "garden--prometheus-seed"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: seed
@@ -139,7 +142,7 @@ items:
         - name: "garden--prometheus-aggregate"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: aggregate
@@ -151,7 +154,7 @@ items:
         - name: "garden--prometheus-cache"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: cache
@@ -163,7 +166,7 @@ items:
         - name: "garden--victoria-logs"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
