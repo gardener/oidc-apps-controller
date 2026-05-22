@@ -81,7 +81,7 @@ items:
             create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
-              endpoint.shoot.gardener.cloud/application: creadtiv--plutono
+              endpoint.shoot.gardener.cloud/application: credativ--plutono
             tlsSecretRef: "ingress-wildcard-cert"
         - name: "shoot--prometheus"
           namespaceSelector:
@@ -98,6 +98,10 @@ items:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: prometheus--prometheus
             tlsSecretRef: "ingress-wildcard-cert"
+            deniedPaths:
+              - "/-/reload"
+              - "/-/quit"
+              - "/api/v1/targets"
         - name: "shoot--victoria-logs"
           namespaceSelector:
             matchLabels:
