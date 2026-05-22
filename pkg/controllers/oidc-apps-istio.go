@@ -96,6 +96,7 @@ func buildGateway(suffix, index, host string, object client.Object) *istioclient
 // Used by VirtualService builder to auto-reference the created Gateway.
 func IstioGatewayNameForDeployment(object client.Object) string {
 	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
+
 	return constants.IstioGatewayName + "-" + suffix
 }
 
@@ -104,6 +105,7 @@ func IstioGatewayNameForDeployment(object client.Object) string {
 func IstioGatewayNameForStatefulSetPod(pod *corev1.Pod) string {
 	suffix := randutils.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
 	index := fetchStrIndexIfPresent(pod)
+
 	return constants.IstioGatewayName + "-" + addOptionalIndex(index+"-") + suffix
 }
 
@@ -284,6 +286,7 @@ func applyIstioGatewayDeniedPaths(vs *istioclientnetv1.VirtualService, object cl
 func createIstioDestinationRuleForDeployment(object client.Object) *istioclientnetv1.DestinationRule {
 	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	host := constants.ServiceNameOauth2Service + "-" + suffix + "." + object.GetNamespace() + ".svc.cluster.local"
+
 	return buildDestinationRule(suffix, "", host, object)
 }
 
@@ -291,6 +294,7 @@ func createIstioDestinationRuleForStatefulSetPod(pod *corev1.Pod, object client.
 	suffix := randutils.GenerateSha256(pod.GetName() + "-" + pod.GetNamespace())
 	index := fetchStrIndexIfPresent(pod)
 	host := constants.ServiceNameOauth2Service + "-" + addOptionalIndex(index+"-") + suffix + "." + object.GetNamespace() + ".svc.cluster.local"
+
 	return buildDestinationRule(suffix, index, host, object)
 }
 

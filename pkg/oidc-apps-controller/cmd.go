@@ -282,7 +282,9 @@ func setDomainEnv(domain string) error {
 	if err := os.Setenv(constants.GardenSeedDomainName, domain); err != nil {
 		return fmt.Errorf("could not set the garden domain name: %w", err)
 	}
+
 	_log.Info("Set domain name env variable", constants.GardenSeedDomainName, domain)
+
 	return nil
 }
 
@@ -293,9 +295,11 @@ func discoverDomainFromIngress(ctx context.Context, c client.Client) string {
 	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, ingress); err != nil {
 		return ""
 	}
+
 	if len(ingress.Spec.Rules) > 0 {
 		return stripAPIPrefix(ingress.Spec.Rules[0].Host)
 	}
+
 	return ""
 }
 
@@ -304,9 +308,11 @@ func discoverDomainFromIstioVirtualService(ctx context.Context, c client.Client)
 	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, vs); err != nil {
 		return ""
 	}
+
 	if len(vs.Spec.Hosts) > 0 {
 		return stripAPIPrefix(vs.Spec.Hosts[0])
 	}
+
 	return ""
 }
 

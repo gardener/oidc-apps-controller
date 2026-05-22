@@ -7,14 +7,14 @@ import "github.com/spf13/pflag"
 
 // Options holds the controller starup parameters
 type Options struct {
-	useExternalCertManager       bool
-	webhookPort          int
-	metricsPort          int
-	controllerConfigPath string
-	cacheSelectorString  string
-	webhookCertsDir      string
-	webhookName          string
-	registrySecret       string
+	useExternalCertManager bool
+	webhookPort            int
+	metricsPort            int
+	controllerConfigPath   string
+	cacheSelectorString    string
+	webhookCertsDir        string
+	webhookName            string
+	registrySecret         string
 }
 
 // AddFlags adds the controller parameters to the flag set

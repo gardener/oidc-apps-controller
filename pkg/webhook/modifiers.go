@@ -493,5 +493,6 @@ func shallAddOidcCaSecretName(object client.Object) bool {
 
 func resolveHost(object client.Object) string {
 	cfg := configuration.GetOIDCAppsControllerConfig()
+
 	return cfg.GetHost(object)
 }

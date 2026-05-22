@@ -646,6 +646,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 		// Create or update the oauth2 service setting the owner reference
 		selectors := client.MatchingLabels{}
+
 		targetLabelSelectors := configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod)
 		if targetLabelSelectors != nil {
 			selectors = targetLabelSelectors.MatchLabels
