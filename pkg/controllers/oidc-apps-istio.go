@@ -8,12 +8,11 @@ import (
 	"maps"
 	"strings"
 
+	istionetv1alpha3 "istio.io/api/networking/v1alpha3"
+	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	istionetv1alpha3 "istio.io/api/networking/v1alpha3"
-	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 
 	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"

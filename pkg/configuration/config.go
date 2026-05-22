@@ -67,7 +67,7 @@ type IstioGatewayGlobalConf struct {
 	// Enabled controls whether Istio Gateway support is active.
 	// When false, no Istio resources will be created regardless of target configuration.
 	// When true, the controller expects Istio CRDs to be present in the cluster.
-	Enabled  bool              `json:"enabled,omitzero"`
+	Enabled bool `json:"enabled,omitzero"`
 	// Selector is a set of labels indicating which workload the gateway configuration is applied to. Conceptually similar to ingressClassName, but for the Istio resources.
 	//Currently only set globally, as I don't see a scenario where targets use different selectors.
 	Selector map[string]string `json:"selector,omitzero"`

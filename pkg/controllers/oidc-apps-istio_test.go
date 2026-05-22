@@ -6,10 +6,8 @@ package controllers
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	. "github.com/onsi/gomega"
-
+	"github.com/stretchr/testify/assert"
 	istionetv1alpha3 "istio.io/api/networking/v1alpha3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

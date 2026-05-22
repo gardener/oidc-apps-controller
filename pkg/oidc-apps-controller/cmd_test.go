@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 )
 
 func TestGatewayAPISchemeInstallation(t *testing.T) {
