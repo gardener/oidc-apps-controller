@@ -275,7 +275,7 @@ func setGardenDomainNameEnvVar(ctx context.Context, cfg *rest.Config) error {
 	// not attempting to discover through an HTTPRoute, as the gardener project
 	// has no such implementation in place
 
-	return fmt.Errorf("could not discover seed domain: no kube-apiserver Ingress, VirtualService, or HTTPRoute found in garden namespace")
+	return errors.New("could not discover seed domain: no kube-apiserver Ingress, VirtualService, or HTTPRoute found in garden namespace")
 }
 
 func setDomainEnv(domain string) error {
