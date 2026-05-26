@@ -33,7 +33,7 @@ func addAnnotations(object client.Object) {
 	annotations[constants.AnnotationHostKey] = resolveHost(object)
 	annotations[constants.AnnotationTargetKey] = configuration.GetOIDCAppsControllerConfig().GetUpstreamTarget(object)
 	annotations[constants.AnnotationSuffixKey] = fetchTargetSuffix(object)
-	annotations[constants.AnnotationOauth2SecertCehcksumKey] = get2ProxySecretChecksum(object)
+	annotations[constants.AnnotationOauth2SecretChecksumKey] = get2ProxySecretChecksum(object)
 
 	object.SetAnnotations(annotations)
 }
@@ -82,6 +82,7 @@ func addPodLabels(pod *corev1.Pod, lbls map[string]string) {
 
 	labels[constants.GardenerPublicLabelsKey] = "allowed"
 	labels[constants.GardenerPrivateLabelsKey] = "allowed"
+	labels[constants.GardenerDNSLabelsKey] = "allowed"
 
 	if len(lbls) == 0 {
 		pod.SetLabels(labels)
@@ -492,9 +493,6 @@ func shallAddOidcCaSecretName(object client.Object) bool {
 
 func resolveHost(object client.Object) string {
 	cfg := configuration.GetOIDCAppsControllerConfig()
-	if cfg.IsHTTPRouteEnabled() {
-		return cfg.GetHTTPRouteHost(object)
-	}
 
 	return cfg.GetHost(object)
 }

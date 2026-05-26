@@ -10,7 +10,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -34,7 +33,7 @@ func createHTTPRouteForDeployment(object client.Object) (gatewayv1.HTTPRoute, er
 		},
 		Spec: gatewayv1.HTTPRouteSpec{
 			CommonRouteSpec: gatewayv1.CommonRouteSpec{
-				ParentRefs: convertParentRefs(parentRefs, object.GetNamespace()),
+				ParentRefs: convertParentRefs(parentRefs),
 			},
 			Hostnames: []gatewayv1.Hostname{gatewayv1.Hostname(host)},
 			Rules: []gatewayv1.HTTPRouteRule{
@@ -42,7 +41,7 @@ func createHTTPRouteForDeployment(object client.Object) (gatewayv1.HTTPRoute, er
 					Matches: []gatewayv1.HTTPRouteMatch{
 						{
 							Path: &gatewayv1.HTTPPathMatch{
-								Type:  ptr.To(gatewayv1.PathMatchPathPrefix),
+								Type:  new(gatewayv1.PathMatchPathPrefix),
 								Value: new("/"),
 							},
 						},
@@ -52,7 +51,7 @@ func createHTTPRouteForDeployment(object client.Object) (gatewayv1.HTTPRoute, er
 							BackendRef: gatewayv1.BackendRef{
 								BackendObjectReference: gatewayv1.BackendObjectReference{
 									Name: gatewayv1.ObjectName(constants.ServiceNameOauth2Service + "-" + suffix),
-									Port: ptr.To(gatewayv1.PortNumber(8080)),
+									Port: new(gatewayv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -97,7 +96,7 @@ func createHTTPRouteForStatefulSetPod(pod *corev1.Pod, object client.Object) (ga
 		},
 		Spec: gatewayv1.HTTPRouteSpec{
 			CommonRouteSpec: gatewayv1.CommonRouteSpec{
-				ParentRefs: convertParentRefs(parentRefs, object.GetNamespace()),
+				ParentRefs: convertParentRefs(parentRefs),
 			},
 			Hostnames: []gatewayv1.Hostname{gatewayv1.Hostname(podHost)},
 			Rules: []gatewayv1.HTTPRouteRule{
@@ -105,7 +104,7 @@ func createHTTPRouteForStatefulSetPod(pod *corev1.Pod, object client.Object) (ga
 					Matches: []gatewayv1.HTTPRouteMatch{
 						{
 							Path: &gatewayv1.HTTPPathMatch{
-								Type:  ptr.To(gatewayv1.PathMatchPathPrefix),
+								Type:  new(gatewayv1.PathMatchPathPrefix),
 								Value: new("/"),
 							},
 						},
@@ -115,7 +114,7 @@ func createHTTPRouteForStatefulSetPod(pod *corev1.Pod, object client.Object) (ga
 							BackendRef: gatewayv1.BackendRef{
 								BackendObjectReference: gatewayv1.BackendObjectReference{
 									Name: gatewayv1.ObjectName(constants.ServiceNameOauth2Service + "-" + addOptionalIndex(index+"-") + suffix),
-									Port: ptr.To(gatewayv1.PortNumber(8080)),
+									Port: new(gatewayv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -147,7 +146,7 @@ func applyHTTPRouteDefaultPathRedirect(httpRoute *gatewayv1.HTTPRoute, object cl
 		Matches: []gatewayv1.HTTPRouteMatch{
 			{
 				Path: &gatewayv1.HTTPPathMatch{
-					Type:  ptr.To(gatewayv1.PathMatchExact),
+					Type:  new(gatewayv1.PathMatchExact),
 					Value: new("/"),
 				},
 			},
@@ -170,7 +169,7 @@ func applyHTTPRouteDefaultPathRedirect(httpRoute *gatewayv1.HTTPRoute, object cl
 }
 
 // convertParentRefs converts configuration parent refs to Gateway API parent refs
-func convertParentRefs(refs []configuration.HTTPRouteParentRef, _ string) []gatewayv1.ParentReference {
+func convertParentRefs(refs []configuration.HTTPRouteParentRef) []gatewayv1.ParentReference {
 	if len(refs) == 0 {
 		return nil
 	}

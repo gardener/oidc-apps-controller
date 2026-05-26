@@ -29,29 +29,27 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
 	extConfig := configuration.GetOIDCAppsControllerConfig()
 
-	switch extConfig.GetClientSecret(object) {
-	case "":
-		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientID(extConfig.GetClientID(object)),
-			configuration.WithClientSecretFile("/dev/null"),
-			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
-			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
-			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
-			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
+	secret := extConfig.GetClientSecret(object)
 
-	default:
-		cfg = configuration.NewOAuth2Config(
-			configuration.WithClientID(extConfig.GetClientID(object)),
-			configuration.WithClientSecret(extConfig.GetClientSecret(object)),
-			configuration.WithScope(extConfig.GetScope(object)),
-			configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
-			configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
-			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
-			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
-			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object))).Parse()
+	opts := []configuration.OptOauth2{
+		configuration.WithClientID(extConfig.GetClientID(object)),
+		configuration.WithScope(extConfig.GetScope(object)),
+		configuration.WithRedirectURL(extConfig.GetRedirectURL(object)),
+		configuration.WithOidcIssuerURL(extConfig.GetOidcIssuerURL(object)),
+		configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
+		configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
+		configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
 	}
+
+	// TODO(bobi-wan): do we want to error out when running the controller
+	// and a target has no configured oauth secret?
+	if secret == "" {
+		opts = append(opts, configuration.WithClientSecretFile("/dev/null"))
+	} else {
+		opts = append(opts, configuration.WithClientSecret(extConfig.GetClientSecret(object)))
+	}
+
+	cfg = configuration.NewOAuth2Config(opts...).Parse()
 
 	checksum := randutils.GenerateFullSha256(cfg)
 
@@ -59,7 +57,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        constants.SecretNameOauth2Proxy + "-" + suffix,
 			Namespace:   object.GetNamespace(),
-			Annotations: map[string]string{constants.AnnotationOauth2SecertCehcksumKey: checksum},
+			Annotations: map[string]string{constants.AnnotationOauth2SecretChecksumKey: checksum},
 			Labels: map[string]string{
 				constants.LabelKey:       constants.LabelValue,
 				constants.SecretLabelKey: constants.Oauth2LabelValue,

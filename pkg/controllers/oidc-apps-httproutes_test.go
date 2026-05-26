@@ -15,10 +15,10 @@ import (
 
 func TestConvertParentRefs(t *testing.T) {
 	t.Run("Empty refs", func(t *testing.T) {
-		result := convertParentRefs(nil, "default")
+		result := convertParentRefs(nil)
 		assert.Nil(t, result)
 
-		result = convertParentRefs([]configuration.HTTPRouteParentRef{}, "default")
+		result = convertParentRefs([]configuration.HTTPRouteParentRef{})
 		assert.Nil(t, result)
 	})
 
@@ -31,7 +31,7 @@ func TestConvertParentRefs(t *testing.T) {
 			},
 		}
 
-		result := convertParentRefs(refs, "default")
+		result := convertParentRefs(refs)
 
 		assert.Len(t, result, 1)
 		assert.Equal(t, gatewayv1.ObjectName("my-gateway"), result[0].Name)
@@ -48,7 +48,7 @@ func TestConvertParentRefs(t *testing.T) {
 			},
 		}
 
-		result := convertParentRefs(refs, "default")
+		result := convertParentRefs(refs)
 
 		assert.Len(t, result, 1)
 		assert.Equal(t, gatewayv1.ObjectName("simple-gateway"), result[0].Name)
@@ -68,7 +68,7 @@ func TestConvertParentRefs(t *testing.T) {
 			},
 		}
 
-		result := convertParentRefs(refs, "default")
+		result := convertParentRefs(refs)
 
 		assert.Len(t, result, 2)
 		assert.Equal(t, gatewayv1.ObjectName("gateway-1"), result[0].Name)

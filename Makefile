@@ -58,8 +58,8 @@ PROVIDER_LOCAL_DIR      := $(REPO_ROOT)/example/provider-local
 .PHONY: deploy
 deploy:
 	@# --- Prerequisites ---
-	@kubectl config current-context | grep -q "kind-gardener-local" || \
-		{ echo "Error: current kubectl context is not kind-gardener-local"; exit 1; }
+	@kubectl config current-context | grep -q "virtual-garden" || \
+		{ echo "Error: current kubectl context is not virtual-garden"; exit 1; }
 	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
 		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
 	@# --- Dex/LDAP infrastructure ---
@@ -155,6 +155,15 @@ check: tidy fmt gci lint
 lint: tidy
 	@echo "Running $@..."
 	@$(GO_TOOL) golangci-lint run \
+	 	--config=$(REPO_ROOT)/.golangci.yaml \
+		$(SRC_DIRS)
+
+# same as above, but applies the changes for linters and formatters together
+.PHONY: fix
+fix: tidy
+	@echo "Running $@..."
+	@$(GO_TOOL) golangci-lint run \
+		--fix \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
 

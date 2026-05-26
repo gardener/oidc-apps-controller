@@ -13,6 +13,7 @@ import (
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -110,6 +111,96 @@ func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client
 	}
 
 	return &gatewayv1.HTTPRouteList{Items: ownedHTTPRoutes}, nil
+}
+
+func fetchOidcAppsVirtualServices(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.VirtualServiceList,
+	error) {
+	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
+		return &istioclientnetv1.VirtualServiceList{}, nil
+	}
+
+	oidcVirtualServices := &istioclientnetv1.VirtualServiceList{}
+
+	if err := c.List(ctx, oidcVirtualServices,
+		client.InNamespace(object.GetNamespace()),
+		client.MatchingLabelsSelector{
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
+		},
+	); err != nil {
+		return oidcVirtualServices, client.IgnoreNotFound(err)
+	}
+
+	ownedVirtualServices := make([]*istioclientnetv1.VirtualService, 0, len(oidcVirtualServices.Items))
+
+	for _, vs := range oidcVirtualServices.Items {
+		if isAnOwnedResource(object, vs) {
+			ownedVirtualServices = append(ownedVirtualServices, vs)
+		}
+	}
+
+	return &istioclientnetv1.VirtualServiceList{Items: ownedVirtualServices}, nil
+}
+
+func fetchOidcAppsIstioGateways(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.GatewayList,
+	error) {
+	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
+		return &istioclientnetv1.GatewayList{}, nil
+	}
+
+	oidcGateways := &istioclientnetv1.GatewayList{}
+
+	if err := c.List(ctx, oidcGateways,
+		client.InNamespace(object.GetNamespace()),
+		client.MatchingLabelsSelector{
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
+		},
+	); err != nil {
+		return oidcGateways, client.IgnoreNotFound(err)
+	}
+
+	ownedGateways := make([]*istioclientnetv1.Gateway, 0, len(oidcGateways.Items))
+
+	for _, gw := range oidcGateways.Items {
+		if isAnOwnedResource(object, gw) {
+			ownedGateways = append(ownedGateways, gw)
+		}
+	}
+
+	return &istioclientnetv1.GatewayList{Items: ownedGateways}, nil
+}
+
+func fetchOidcAppsDestinationRules(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.DestinationRuleList,
+	error) {
+	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
+		return &istioclientnetv1.DestinationRuleList{}, nil
+	}
+
+	oidcDestinationRules := &istioclientnetv1.DestinationRuleList{}
+
+	if err := c.List(ctx, oidcDestinationRules,
+		client.InNamespace(object.GetNamespace()),
+		client.MatchingLabelsSelector{
+			Selector: labels.SelectorFromSet(map[string]string{
+				constants.LabelKey: constants.LabelValue,
+			}),
+		},
+	); err != nil {
+		return oidcDestinationRules, client.IgnoreNotFound(err)
+	}
+
+	ownedDestinationRules := make([]*istioclientnetv1.DestinationRule, 0, len(oidcDestinationRules.Items))
+
+	for _, dr := range oidcDestinationRules.Items {
+		if isAnOwnedResource(object, dr) {
+			ownedDestinationRules = append(ownedDestinationRules, dr)
+		}
+	}
+
+	return &istioclientnetv1.DestinationRuleList{Items: ownedDestinationRules}, nil
 }
 
 func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Object) (*corev1.SecretList,
@@ -280,6 +371,18 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 		return err
 	}
 
+	if err = reconcileIstioGatewayForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
+	if err = reconcileIstioVirtualServiceForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
+	if err = reconcileIstioDestinationRuleForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
 	return patchVpa(ctx, c, object)
 }
 
@@ -369,6 +472,129 @@ func reconcileHTTPRouteForStatefulSetPod(ctx context.Context, c client.Client, p
 	return nil
 }
 
+func reconcileIstioVirtualServiceForDeployment(ctx context.Context, c client.Client, object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	oauth2VirtualService, err := createIstioVirtualServiceForDeployment(object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 virtualservice: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(object, oauth2VirtualService, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 virtualservice: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, oauth2VirtualService); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 virtualservice: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileIstioVirtualServiceForStatefulSetPod(ctx context.Context, c client.Client, pod *corev1.Pod,
+	object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	oauth2VirtualService, err := createIstioVirtualServiceForStatefulSetPod(pod, object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 virtualservice: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(pod, oauth2VirtualService, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 virtualservice: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, oauth2VirtualService); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 virtualservice: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileIstioGatewayForDeployment(ctx context.Context, c client.Client, object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	oauth2Gateway, err := createIstioGatewayForDeployment(object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 gateway: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(object, oauth2Gateway, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 gateway: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, oauth2Gateway); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 gateway: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileIstioGatewayForStatefulSetPod(ctx context.Context, c client.Client, pod *corev1.Pod,
+	object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	oauth2Gateway, err := createIstioGatewayForStatefulSetPod(pod, object)
+	if err != nil {
+		return fmt.Errorf("failed to create oauth2 gateway: %w", err)
+	}
+
+	if err = controllerutil.SetOwnerReference(pod, oauth2Gateway, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to oauth2 gateway: %w", err)
+	}
+
+	if err = createOrPatchObject(ctx, c, oauth2Gateway); err != nil {
+		return fmt.Errorf("failed to create or update oauth2 gateway: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileIstioDestinationRuleForDeployment(ctx context.Context, c client.Client, object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	dr := createIstioDestinationRuleForDeployment(object)
+
+	if err := controllerutil.SetOwnerReference(object, dr, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to istio destination rule: %w", err)
+	}
+
+	if err := createOrPatchObject(ctx, c, dr); err != nil {
+		return fmt.Errorf("failed to create or update istio destination rule: %w", err)
+	}
+
+	return nil
+}
+
+func reconcileIstioDestinationRuleForStatefulSetPod(ctx context.Context, c client.Client, pod *corev1.Pod,
+	object client.Object) error {
+	if !configuration.GetOIDCAppsControllerConfig().ShallCreateIstioGateway(object) {
+		return nil
+	}
+
+	dr := createIstioDestinationRuleForStatefulSetPod(pod, object)
+
+	if err := controllerutil.SetOwnerReference(pod, dr, c.Scheme()); err != nil {
+		return fmt.Errorf("failed to set owner reference to istio destination rule: %w", err)
+	}
+
+	if err := createOrPatchObject(ctx, c, dr); err != nil {
+		return fmt.Errorf("failed to create or update istio destination rule: %w", err)
+	}
+
+	return nil
+}
+
 func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, object *appsv1.StatefulSet) error {
 	var (
 		// Service for the oauth2-proxy sidecar
@@ -420,8 +646,10 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 
 		// Create or update the oauth2 service setting the owner reference
 		selectors := client.MatchingLabels{}
-		if configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod) != nil {
-			selectors = configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod).MatchLabels
+
+		targetLabelSelectors := configuration.GetOIDCAppsControllerConfig().GetTargetLabelSelector(&pod)
+		if targetLabelSelectors != nil {
+			selectors = targetLabelSelectors.MatchLabels
 		}
 
 		if statefulSetPodNameLabel, ok := pod.GetLabels()["statefulset.kubernetes.io/pod-name"]; ok {
@@ -445,6 +673,18 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 
 		if err = reconcileHTTPRouteForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
+		}
+
+		if err = reconcileIstioGatewayForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
+		}
+
+		if err = reconcileIstioVirtualServiceForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
+		}
+
+		if err = reconcileIstioDestinationRuleForStatefulSetPod(ctx, c, &pod, object); err != nil {
 			return err
 		}
 	}
@@ -507,6 +747,12 @@ func createOrPatchObject(ctx context.Context, c client.Client, patch client.Obje
 		return createOrPatchIngress(ctx, c, *p)
 	case *gatewayv1.HTTPRoute:
 		return createOrPatchHTTPRoute(ctx, c, *p)
+	case *istioclientnetv1.VirtualService:
+		return createOrPatchVirtualService(ctx, c, p)
+	case *istioclientnetv1.Gateway:
+		return createOrPatchIstioGateway(ctx, c, p)
+	case *istioclientnetv1.DestinationRule:
+		return createOrPatchDestinationRule(ctx, c, p)
 	}
 
 	log.FromContext(ctx).Info("unknown object type", "object", patch)
@@ -560,7 +806,7 @@ func createOrPatchIngress(ctx context.Context, c client.Client, obj networkingv1
 func createOrPatchHTTPRoute(ctx context.Context, c client.Client, obj gatewayv1.HTTPRoute) error {
 	httpRoute := &gatewayv1.HTTPRoute{}
 
-	// Check if HTTPRoute exists
+	// check if HTTPRoute exists and create it if it doesn't
 	err := c.Get(ctx, client.ObjectKeyFromObject(&obj), httpRoute)
 	if apierrors.IsNotFound(err) {
 		// Create an HTTPRoute if it does not exist
@@ -587,6 +833,110 @@ func createOrPatchHTTPRoute(ctx context.Context, c client.Client, obj gatewayv1.
 		return c.Update(ctx, &obj)
 	}); err != nil {
 		return fmt.Errorf("failed to update httproute: %w", err)
+	}
+
+	return nil
+}
+
+func createOrPatchVirtualService(ctx context.Context, c client.Client, obj *istioclientnetv1.VirtualService) error {
+	existing := &istioclientnetv1.VirtualService{}
+
+	// check if VirtualService exists and create it if it doesn't
+	err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing)
+	if apierrors.IsNotFound(err) {
+		if err = c.Create(ctx, obj); err != nil {
+			return fmt.Errorf("failed to create virtualservice: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get virtualservice: %w", err)
+	}
+
+	// Update the VirtualService
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// Re-fetch to get current resourceVersion on each retry
+		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
+			return err
+		}
+
+		obj.SetResourceVersion(existing.GetResourceVersion())
+
+		return c.Update(ctx, obj)
+	}); err != nil {
+		return fmt.Errorf("failed to update virtualservice: %w", err)
+	}
+
+	return nil
+}
+
+func createOrPatchIstioGateway(ctx context.Context, c client.Client, obj *istioclientnetv1.Gateway) error {
+	existing := &istioclientnetv1.Gateway{}
+
+	// Check if Gateway exists
+	err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing)
+	if apierrors.IsNotFound(err) {
+		// Create a Gateway if it does not exist
+		if err = c.Create(ctx, obj); err != nil {
+			return fmt.Errorf("failed to create gateway: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get gateway: %w", err)
+	}
+
+	// Update the Gateway
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// Re-fetch to get current resourceVersion on each retry
+		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
+			return err
+		}
+
+		obj.SetResourceVersion(existing.GetResourceVersion())
+
+		return c.Update(ctx, obj)
+	}); err != nil {
+		return fmt.Errorf("failed to update gateway: %w", err)
+	}
+
+	return nil
+}
+
+func createOrPatchDestinationRule(ctx context.Context, c client.Client, obj *istioclientnetv1.DestinationRule) error {
+	existing := &istioclientnetv1.DestinationRule{}
+
+	// Check if DestinationRule exists
+	err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing)
+	if apierrors.IsNotFound(err) {
+		// Create a DestinationRule if it does not exist
+		if err = c.Create(ctx, obj); err != nil {
+			return fmt.Errorf("failed to create destination rule: %w", err)
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get destination rule: %w", err)
+	}
+
+	// Update the DestinationRule
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// Re-fetch to get current resourceVersion on each retry
+		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
+			return err
+		}
+
+		obj.SetResourceVersion(existing.GetResourceVersion())
+
+		return c.Update(ctx, obj)
+	}); err != nil {
+		return fmt.Errorf("failed to update destination rule: %w", err)
 	}
 
 	return nil

@@ -27,7 +27,7 @@ linters:
           disabled: true
         - name: max-public-structs
           arguments:
-            - 10
+            - 20
         - name: package-comments
           disabled: true
         - name: use-errors-new

@@ -12,8 +12,8 @@ const (
 	AnnotationKey = "oidc-application-controller/component"
 	// AnnotationSuffixKey holds the name suffix of the mounted confguration secrets
 	AnnotationSuffixKey = "oidc-application-controller/suffix"
-	// AnnotationOauth2SecertCehcksumKey holds the checksum of the ouath2 proxy confguration secret
-	AnnotationOauth2SecertCehcksumKey = "oidc-application-controller/oauth2-secret-checksum"
+	// AnnotationOauth2SecretChecksumKey holds the checksum of the ouath2 proxy confguration secret
+	AnnotationOauth2SecretChecksumKey = "oidc-application-controller/oauth2-secret-checksum"
 	// PodWebHookPath is the context path of the mutating webhook for pods
 	PodWebHookPath = "/oidc-mutate-v1-pod"
 	// VpaWebHookPath is the context path of the mutating webhook for pods
@@ -39,6 +39,10 @@ const (
 	IngressName = "oauth2-ingress"
 	// HTTPRouteName is the name of the oauth2 HTTPRoute
 	HTTPRouteName = "oauth2-httproute"
+	// IstioVirtualServiceName is the name of the oauth2 VirtualService
+	IstioVirtualServiceName = "oauth2-virtualservice"
+	// IstioGatewayName is the name of the Istio Gateway
+	IstioGatewayName = "oauth2-gateway"
 
 	// LabelKey is the label added to dependent configuration secrets
 	LabelKey = "oidc-application-controller/component"
@@ -61,6 +65,8 @@ const (
 	GardenerPublicLabelsKey = "networking.gardener.cloud/to-public-networks"
 	// GardenerPrivateLabelsKey is aworkload label used by the gardener network policy controller to manage access to private networks
 	GardenerPrivateLabelsKey = "networking.gardener.cloud/to-private-networks"
+	// GardenerDNSLabelsKey is a label used by the gardener network policy controller to manage egress to in-cluster DNS
+	GardenerDNSLabelsKey = "networking.gardener.cloud/to-dns"
 
 	// Oauth2VolumeName is the volume name of the oauth2-proxy configuration
 	Oauth2VolumeName = "oauth2-proxy"

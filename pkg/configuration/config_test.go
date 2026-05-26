@@ -20,6 +20,9 @@ import (
 //go:embed test/configuration.yaml
 var configYaml string
 
+// defaultIstioGatewaySelector is the default label selector for Istio ingress gateway pods
+var defaultIstioGatewaySelector = map[string]string{"istio": "ingressgateway"}
+
 func TestTargetMatchLabels(t *testing.T) {
 	extensionConfig := OIDCAppsControllerConfig{}
 	g := NewWithT(t)
@@ -426,4 +429,222 @@ func TestIsValidDefaultPath(t *testing.T) {
 	pathOverLimit := "/" + strings.Repeat("a", maxDefaultPathLength)
 	g.Expect(len(pathOverLimit)).To(Equal(maxDefaultPathLength + 1))
 	g.Expect(isValidDefaultPath(pathOverLimit)).To(BeFalse())
+}
+
+func TestIstioGatewayConfiguration(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-10")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(target)).To(BeTrue())
+
+	host := extensionConfig.GetIstioGatewayHost(target)
+	g.Expect(host).To(HavePrefix("test-10-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
+func TestIstioGatewayWithCustomHost(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client
+	target := getDeployment("test-11")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetIstioGatewayHost(target)).To(Equal("custom.virtualservice.host"))
+}
+
+func TestTargetWithoutIstioGateway(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-04 has no IstioGateway configured
+	target := getDeployment("test-04")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(target)).To(BeFalse())
+}
+
+func TestIstioGatewayDisabledGlobally(t *testing.T) {
+	// Even with IstioGateway configured in target, it should return false when global.istioGateway.enabled is false
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-10 has IstioGateway configured with create: true
+	target := getDeployment("test-10")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// Should return false because global.istioGateway.enabled is not set (nil)
+	g.Expect(extensionConfig.ShallCreateIstioGateway(target)).To(BeFalse())
+	g.Expect(extensionConfig.IsIstioGatewayEnabled()).To(BeFalse())
+}
+
+func TestIsIstioGatewayEnabled(t *testing.T) {
+	g := NewWithT(t)
+
+	// Test nil IstioGateway
+	configNil := &OIDCAppsControllerConfig{}
+	g.Expect(configNil.IsIstioGatewayEnabled()).To(BeFalse())
+
+	// Test IstioGateway with enabled=false
+	configDisabled := &OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: false}},
+	}
+	g.Expect(configDisabled.IsIstioGatewayEnabled()).To(BeFalse())
+
+	// Test IstioGateway with enabled=true
+	configEnabled := &OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g.Expect(configEnabled.IsIstioGatewayEnabled()).To(BeTrue())
+}
+
+func TestIstioGatewayWithMinimalConfig(t *testing.T) {
+	// Test that IstioGateway with only create: true works correctly
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// Create a fake client - test-12 has IstioGateway with create: true and hostPrefix only
+	target := getDeployment("test-12")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(target)).To(BeTrue())
+
+	// Verify the host is still generated correctly
+	host := extensionConfig.GetIstioGatewayHost(target)
+	g.Expect(host).To(HavePrefix("test-12-prefix-"))
+	g.Expect(host).To(HaveSuffix(".domain.org"))
+}
+
+func TestGetIstioGatewayDefaultPath(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-13")).
+		WithObjects(getDeployment("test-10")).
+		Build()
+
+	g.Expect(extensionConfig.GetIstioGatewayDefaultPath(getDeployment("test-13"))).To(Equal("/dashboard"))
+	g.Expect(extensionConfig.GetIstioGatewayDefaultPath(getDeployment("test-10"))).To(BeEmpty())
+}
+
+func TestIstioGatewayServerConfiguration(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{
+			Enabled:  true,
+			Selector: defaultIstioGatewaySelector,
+		}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-14")).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(getDeployment("test-14"))).To(BeTrue())
+	g.Expect(extensionConfig.GetIstioGatewaySelector()).To(Equal(defaultIstioGatewaySelector))
+	g.Expect(extensionConfig.GetIstioGatewayTLSSecretRef(getDeployment("test-14"))).To(Equal("my-tls-secret"))
+}
+
+func TestIstioGatewayWithGlobalSelector(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{
+			Enabled:  true,
+			Selector: defaultIstioGatewaySelector,
+		}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	g.Expect(extensionConfig.IsIstioGatewayEnabled()).To(BeTrue())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-15")).
+		Build()
+
+	g.Expect(extensionConfig.ShallCreateIstioGateway(getDeployment("test-15"))).To(BeTrue())
+	g.Expect(extensionConfig.GetIstioGatewayTLSSecretRef(getDeployment("test-15"))).To(Equal("another-tls-secret"))
+	g.Expect(extensionConfig.GetIstioGatewaySelector()).To(Equal(defaultIstioGatewaySelector))
+}
+
+func TestIstioGatewayDisabled(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: true}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-16")).
+		Build()
+
+	// test-16 has create: false, so ShallCreateIstioGateway should be false
+	g.Expect(extensionConfig.ShallCreateIstioGateway(getDeployment("test-16"))).To(BeFalse())
+	g.Expect(extensionConfig.ShallCreateIstioGateway(getDeployment("test-16"))).To(BeFalse())
+}
+
+func TestIstioGatewayRequiresGlobalEnabled(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{
+		Global: Global{IstioGateway: &IstioGatewayGlobalConf{Enabled: false}},
+	}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(getDeployment("test-14")).
+		Build()
+
+	// Even though target has istioGateway.create: true, global istioGateway is disabled
+	g.Expect(extensionConfig.ShallCreateIstioGateway(getDeployment("test-14"))).To(BeFalse())
 }

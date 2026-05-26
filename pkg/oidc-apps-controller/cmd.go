@@ -14,6 +14,7 @@ import (
 	"time"
 
 	gardenextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	istioclientnetv1 "istio.io/client-go/pkg/apis/networking/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -65,9 +66,14 @@ func RunController(ctx context.Context, o *Options) error {
 	// Load extension configuration first to determine HTTPRoute support
 	extensionConfig = configuration.CreateControllerConfigOrDie(o.controllerConfigPath)
 	httpRouteEnabled := extensionConfig.IsHTTPRouteEnabled()
+	istioGatewayEnabled := extensionConfig.IsIstioGatewayEnabled()
 
 	if httpRouteEnabled {
 		_log.Info("Gateway API HTTPRoute support enabled via configuration")
+	}
+
+	if istioGatewayEnabled {
+		_log.Info("Istio Gateway support enabled via configuration")
 	}
 
 	// Initialize a scheme which will contain the API definitions
@@ -87,6 +93,13 @@ func RunController(ctx context.Context, o *Options) error {
 	if httpRouteEnabled {
 		if err := gatewayv1.Install(sch); err != nil {
 			return fmt.Errorf("could not initialize the gateway-api scheme: %w", err)
+		}
+	}
+
+	// Add Istio networking schemes for Istio Gateway support (only when enabled in config)
+	if istioGatewayEnabled {
+		if err := istioclientnetv1.AddToScheme(sch); err != nil {
+			return fmt.Errorf("could not initialize the istio networking scheme: %w", err)
 		}
 	}
 
@@ -130,6 +143,19 @@ func RunController(ctx context.Context, o *Options) error {
 		}
 	}
 
+	// Add Istio resources to cache only when Istio Gateway support is enabled in config
+	if istioGatewayEnabled {
+		cacheOptions.ByObject[&istioclientnetv1.VirtualService{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+		}
+		cacheOptions.ByObject[&istioclientnetv1.Gateway{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+		}
+		cacheOptions.ByObject[&istioclientnetv1.DestinationRule{}] = cache.ByObject{
+			Label: labels.SelectorFromSet(labels.Set{constants.LabelKey: constants.LabelValue}),
+		}
+	}
+
 	// Add additional scheme in case of running in gardener cluster
 	if len(os.Getenv(constants.GardenKubeconfig)) > 0 {
 		// Add gardener Cluster schemes
@@ -142,7 +168,7 @@ func RunController(ctx context.Context, o *Options) error {
 	}
 
 	// NAMESPACE is a required environment variable for the oidc-apps-controller certificate manager
-	if !o.useCertManager && os.Getenv(constants.NAMESPACE) == "" {
+	if !o.useExternalCertManager && os.Getenv(constants.NAMESPACE) == "" {
 		return errors.New("NAMESPACE environment variable is not set")
 	}
 	// NAMESPACE is a required environment variable for the image pull secret reconciler
@@ -238,23 +264,63 @@ func setGardenDomainNameEnvVar(ctx context.Context, cfg *rest.Config) error {
 		return fmt.Errorf("could not initialize the controller-runtime client: %w", err)
 	}
 
+	if host := discoverDomainFromIngress(ctx, c); host != "" {
+		return setDomainEnv(host)
+	}
+
+	if host := discoverDomainFromIstioVirtualService(ctx, c); host != "" {
+		return setDomainEnv(host)
+	}
+
+	// not attempting to discover through an HTTPRoute, as the gardener project
+	// has no such implementation in place
+
+	return errors.New("could not discover seed domain: no kube-apiserver Ingress, VirtualService, or HTTPRoute found in garden namespace")
+}
+
+func setDomainEnv(domain string) error {
+	if err := os.Setenv(constants.GardenSeedDomainName, domain); err != nil {
+		return fmt.Errorf("could not set the garden domain name: %w", err)
+	}
+
+	_log.Info("Set domain name env variable", constants.GardenSeedDomainName, domain)
+
+	return nil
+}
+
+const kubeApiserverHostPrefix = "api-seed."
+
+func discoverDomainFromIngress(ctx context.Context, c client.Client) string {
 	ingress := &networkingv1.Ingress{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, ingress); err != nil {
-		return fmt.Errorf("could not get kube-apiserver ingress: %w", err)
+		return ""
 	}
 
 	if len(ingress.Spec.Rules) > 0 {
-		_, h, ok := strings.Cut(ingress.Spec.Rules[0].Host, ".")
-		if ok {
-			if err := os.Setenv(constants.GardenSeedDomainName, h); err != nil {
-				return fmt.Errorf("could not set the garden domain name: %w", err)
-			}
-
-			_log.Info("Set domain name env variable", constants.GardenSeedDomainName, h)
-		}
+		return stripAPIPrefix(ingress.Spec.Rules[0].Host)
 	}
 
-	return nil
+	return ""
+}
+
+func discoverDomainFromIstioVirtualService(ctx context.Context, c client.Client) string {
+	vs := &istioclientnetv1.VirtualService{}
+	if err := c.Get(ctx, types.NamespacedName{Namespace: "garden", Name: "kube-apiserver"}, vs); err != nil {
+		return ""
+	}
+
+	if len(vs.Spec.Hosts) > 0 {
+		return stripAPIPrefix(vs.Spec.Hosts[0])
+	}
+
+	return ""
+}
+
+// stripAPIPrefix extracts the seed domain from a kube-apiserver host.
+// If the host has the expected "api-seed." prefix, it is stripped.
+// Otherwise the host is returned as-is.
+func stripAPIPrefix(host string) string {
+	return strings.TrimPrefix(host, kubeApiserverHostPrefix)
 }
 
 func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) predicate.GenerationChangedPredicate {
@@ -410,6 +476,53 @@ func initializeManagerIndices(mgr manager.Manager) error {
 		}
 	}
 
+	// Add Istio resource index only when Istio Gateway support is enabled
+	if extensionConfig.IsIstioGatewayEnabled() {
+		if err := mgr.GetFieldIndexer().IndexField(
+			context.Background(),
+			&istioclientnetv1.VirtualService{},
+			"metadata.labels"+constants.LabelKey,
+			func(obj client.Object) []string {
+				vs, ok := obj.(*istioclientnetv1.VirtualService)
+				if !ok {
+					_log.Error(errors.New("object is not a virtualservice"), "object", obj)
+
+					return nil
+				}
+
+				if value, exists := vs.GetLabels()[constants.LabelKey]; exists {
+					return []string{value}
+				}
+
+				return nil
+			},
+		); err != nil {
+			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", istioclientnetv1.VirtualService{}, err)
+		}
+
+		if err := mgr.GetFieldIndexer().IndexField(
+			context.Background(),
+			&istioclientnetv1.Gateway{},
+			"metadata.labels"+constants.LabelKey,
+			func(obj client.Object) []string {
+				gw, ok := obj.(*istioclientnetv1.Gateway)
+				if !ok {
+					_log.Error(errors.New("object is not a gateway"), "object", obj)
+
+					return nil
+				}
+
+				if value, exists := gw.GetLabels()[constants.LabelKey]; exists {
+					return []string{value}
+				}
+
+				return nil
+			},
+		); err != nil {
+			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", istioclientnetv1.Gateway{}, err)
+		}
+	}
+
 	return nil
 }
 
@@ -459,6 +572,34 @@ func addDeploymentController(mgr manager.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
 
+	// Add Istio resource watches only when Istio Gateway support is enabled
+	if extensionConfig.IsIstioGatewayEnabled() {
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.VirtualService{},
+			handler.EnqueueRequestForOwner(
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
+				&appsv1.Deployment{},
+			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.Gateway{},
+			handler.EnqueueRequestForOwner(
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
+				&appsv1.Deployment{},
+			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.DestinationRule{},
+			handler.EnqueueRequestForOwner(
+				mgr.GetScheme(),
+				mgr.GetRESTMapper(),
+				&appsv1.Deployment{},
+			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+	}
+
 	return controllerBuilder.Complete(&controllers.DeploymentReconciler{Client: mgr.GetClient()})
 }
 
@@ -500,12 +641,28 @@ func addStatefulSetController(mgr manager.Manager) error {
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
 
+	// Add Istio resource watches only when Istio Gateway support is enabled
+	if extensionConfig.IsIstioGatewayEnabled() {
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.VirtualService{},
+			handler.EnqueueRequestsFromMapFunc(VirtualServiceMapFuncForStatefulset(mgr)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.Gateway{},
+			handler.EnqueueRequestsFromMapFunc(GatewayMapFuncForStatefulset(mgr)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		controllerBuilder = controllerBuilder.Watches(
+			&istioclientnetv1.DestinationRule{},
+			handler.EnqueueRequestsFromMapFunc(DestinationRuleMapFuncForStatefulset(mgr)),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+	}
+
 	return controllerBuilder.Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
 
 // Add certificate manager in case no external certificate manager is available
 func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
-	if !o.useCertManager {
+	if !o.useExternalCertManager {
 		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
 		if err != nil {
 			return err
@@ -792,6 +949,147 @@ func HTTPRouteMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Contex
 			pod := &corev1.Pod{}
 			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: httpRoute.Namespace}, pod); client.IgnoreNotFound(err) != nil {
 				_log.Error(err, "could not get pod", "name", o.Name, "namespace", httpRoute.Namespace)
+			}
+
+			if len(pod.Name) == 0 {
+				continue
+			}
+
+			for _, r := range pod.GetOwnerReferences() {
+				if r.Kind != "StatefulSet" {
+					continue
+				}
+
+				statefulset := &appsv1.StatefulSet{}
+				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+				}
+
+				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
+
+				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+			}
+		}
+
+		return nil
+	}
+}
+
+// VirtualServiceMapFuncForStatefulset returns a map function that returns reconcile requests for a target statefulset triggered
+// on changes of a VirtualService owned by a pod owned by the statefulset
+func VirtualServiceMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		vs, ok := obj.(*istioclientnetv1.VirtualService)
+		if !ok {
+			_log.Error(errors.New("object is not a virtualservice"), "object", obj)
+
+			return nil
+		}
+
+		c := mgr.GetClient()
+
+		for _, o := range vs.GetOwnerReferences() {
+			if o.Kind != "Pod" {
+				continue
+			}
+
+			pod := &corev1.Pod{}
+			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: vs.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+				_log.Error(err, "could not get pod", "name", o.Name, "namespace", vs.Namespace)
+			}
+
+			if len(pod.Name) == 0 {
+				continue
+			}
+
+			for _, r := range pod.GetOwnerReferences() {
+				if r.Kind != "StatefulSet" {
+					continue
+				}
+
+				statefulset := &appsv1.StatefulSet{}
+				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+				}
+
+				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
+
+				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+			}
+		}
+
+		return nil
+	}
+}
+
+// GatewayMapFuncForStatefulset returns a map function that returns reconcile requests for a target statefulset triggered
+// on changes of a Gateway owned by a pod owned by the statefulset
+func GatewayMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		gw, ok := obj.(*istioclientnetv1.Gateway)
+		if !ok {
+			_log.Error(errors.New("object is not a gateway"), "object", obj)
+
+			return nil
+		}
+
+		c := mgr.GetClient()
+
+		for _, o := range gw.GetOwnerReferences() {
+			if o.Kind != "Pod" {
+				continue
+			}
+
+			pod := &corev1.Pod{}
+			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: gw.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+				_log.Error(err, "could not get pod", "name", o.Name, "namespace", gw.Namespace)
+			}
+
+			if len(pod.Name) == 0 {
+				continue
+			}
+
+			for _, r := range pod.GetOwnerReferences() {
+				if r.Kind != "StatefulSet" {
+					continue
+				}
+
+				statefulset := &appsv1.StatefulSet{}
+				if err := c.Get(ctx, types.NamespacedName{Name: r.Name, Namespace: pod.Namespace}, statefulset); client.IgnoreNotFound(err) != nil {
+					_log.Error(err, "could not get statefulset", "name", r.Name, "namespace", pod.Namespace)
+				}
+
+				_log.V(9).Info("enqueue statefulset", "name", statefulset.Name, "namespace", statefulset.Namespace)
+
+				return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: statefulset.Name, Namespace: statefulset.Namespace}}}
+			}
+		}
+
+		return nil
+	}
+}
+
+// DestinationRuleMapFuncForStatefulset returns a map function that returns reconcile requests for a target statefulset triggered
+// on changes of a DestinationRule owned by a pod owned by the statefulset
+func DestinationRuleMapFuncForStatefulset(mgr manager.Manager) func(ctx context.Context, obj client.Object) []reconcile.Request {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		dr, ok := obj.(*istioclientnetv1.DestinationRule)
+		if !ok {
+			_log.Error(errors.New("object is not a destination rule"), "object", obj)
+
+			return nil
+		}
+
+		c := mgr.GetClient()
+
+		for _, o := range dr.GetOwnerReferences() {
+			if o.Kind != "Pod" {
+				continue
+			}
+
+			pod := &corev1.Pod{}
+			if err := c.Get(ctx, types.NamespacedName{Name: o.Name, Namespace: dr.Namespace}, pod); client.IgnoreNotFound(err) != nil {
+				_log.Error(err, "could not get pod", "name", o.Name, "namespace", dr.Namespace)
 			}
 
 			if len(pod.Name) == 0 {

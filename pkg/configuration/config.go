@@ -49,6 +49,9 @@ type Global struct {
 
 	// HTTPRoutes holds global configuration for Gateway API HTTPRoute support
 	HTTPRoutes *HTTPRoutesGlobalConf `json:"httpRoutes,omitzero"`
+
+	// IstioGateway holds global configuration for Istio Gateway support
+	IstioGateway *IstioGatewayGlobalConf `json:"istioGateway,omitzero"`
 }
 
 // HTTPRoutesGlobalConf holds global configuration for HTTPRoute support
@@ -57,6 +60,17 @@ type HTTPRoutesGlobalConf struct {
 	// When false, no HTTPRoute resources will be created regardless of target configuration.
 	// When true, the controller expects Gateway API CRDs to be present in the cluster.
 	Enabled bool `json:"enabled,omitzero"`
+}
+
+// IstioGatewayGlobalConf holds global configuration for Istio Gateway support
+type IstioGatewayGlobalConf struct {
+	// Enabled controls whether Istio Gateway support is active.
+	// When false, no Istio resources will be created regardless of target configuration.
+	// When true, the controller expects Istio CRDs to be present in the cluster.
+	Enabled bool `json:"enabled,omitzero"`
+	// Selector is a set of labels indicating which workload the gateway configuration is applied to. Conceptually similar to ingressClassName, but for the Istio resources.
+	// Currently only set globally, as I don't see a scenario where targets use different selectors.
+	Selector map[string]string `json:"selector,omitzero"`
 }
 
 // Oauth2ProxyConfig OIDC Provider configuration
@@ -86,6 +100,7 @@ type Target struct {
 	TargetProtocol    string                `json:"targetProtocol,omitzero"`
 	Ingress           *IngressConf          `json:"ingress,omitzero"`
 	HTTPRoute         *HTTPRouteConf        `json:"httpRoute,omitzero"`
+	IstioGateway      *IstioGatewayConf     `json:"istioGateway,omitzero"`
 	Global
 }
 
@@ -117,6 +132,18 @@ type HTTPRouteParentRef struct {
 	Name        string `json:"name"`
 	Namespace   string `json:"namespace,omitzero"`
 	SectionName string `json:"sectionName,omitzero"`
+}
+
+// IstioGatewayConf holds configuration for the Istio Gateway entry-point
+type IstioGatewayConf struct {
+	Create       bool              `json:"create,omitzero"`
+	HostPrefix   string            `json:"hostPrefix,omitzero"`
+	Host         string            `json:"host,omitzero"`
+	Annotations  map[string]string `json:"annotations,omitzero"`
+	Labels       map[string]string `json:"labels,omitzero"`
+	DefaultPath  string            `json:"defaultPath,omitzero"`
+	DeniedPaths  []string          `json:"deniedPaths,omitzero"`
+	TLSSecretRef string            `json:"tlsSecretRef,omitzero"`
 }
 
 var config *OIDCAppsControllerConfig
@@ -202,8 +229,28 @@ func (c *OIDCAppsControllerConfig) Match(o client.Object) bool {
 	return false
 }
 
-// GetHost return the domain name for a given workload target
+// GetHost returns the domain name for a given workload target.
+// It resolves the host based on which entry-point is configured: Ingress, HTTPRoute, or IstioGateway.
 func (c *OIDCAppsControllerConfig) GetHost(object client.Object) string {
+	t := c.FetchTarget(object)
+
+	if t.Ingress != nil && t.Ingress.Create {
+		return c.GetIngressHost(object)
+	}
+
+	if c.IsHTTPRouteEnabled() {
+		return c.GetHTTPRouteHost(object)
+	}
+
+	if c.IsIstioGatewayEnabled() {
+		return c.GetIstioGatewayHost(object)
+	}
+
+	return c.GetIngressHost(object)
+}
+
+// GetIngressHost returns the host derived from the Ingress configuration for the given workload target
+func (c *OIDCAppsControllerConfig) GetIngressHost(object client.Object) string {
 	t := c.FetchTarget(object)
 	domain := c.Global.DomainName
 
@@ -617,6 +664,111 @@ func (c *OIDCAppsControllerConfig) GetHTTPRouteDefaultPath(object client.Object)
 	t := c.FetchTarget(object)
 	if t.HTTPRoute != nil && isValidDefaultPath(t.HTTPRoute.DefaultPath) {
 		return t.HTTPRoute.DefaultPath
+	}
+
+	return ""
+}
+
+// ShallCreateIstioGateway returns true if the target workload shall create Istio resources
+func (c *OIDCAppsControllerConfig) ShallCreateIstioGateway(object client.Object) bool {
+	// Istio Gateway support must be enabled via global.istioGateway.enabled configuration
+	if !c.IsIstioGatewayEnabled() {
+		return false
+	}
+
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil {
+		return t.IstioGateway.Create
+	}
+
+	return false
+}
+
+// IsIstioGatewayEnabled returns true if Istio Gateway support is globally enabled
+func (c *OIDCAppsControllerConfig) IsIstioGatewayEnabled() bool {
+	return c.Global.IstioGateway != nil && c.Global.IstioGateway.Enabled
+}
+
+// GetIstioGatewayHost returns the host for the Istio Gateway for a given workload target
+func (c *OIDCAppsControllerConfig) GetIstioGatewayHost(object client.Object) string {
+	t := c.FetchTarget(object)
+	domain := c.Global.DomainName
+
+	if len(os.Getenv(constants.GardenSeedDomainName)) > 0 {
+		domain = os.Getenv(constants.GardenSeedDomainName)
+	}
+
+	prefix := object.GetName() + "-" + object.GetNamespace()
+	if t.IstioGateway != nil && t.IstioGateway.HostPrefix != "" {
+		prefix = t.IstioGateway.HostPrefix + "-" + randutils.GenerateSha256(prefix)
+	}
+
+	if t.IstioGateway != nil && t.IstioGateway.Host != "" {
+		prefix, domain, _ = strings.Cut(t.IstioGateway.Host, ".")
+	}
+
+	if domain == "" {
+		return prefix
+	}
+
+	return strings.Join([]string{prefix, domain}, ".")
+}
+
+// GetIstioGatewayAnnotations returns the Istio Gateway annotations for the given target
+func (c *OIDCAppsControllerConfig) GetIstioGatewayAnnotations(object client.Object) map[string]string {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil && t.IstioGateway.Annotations != nil {
+		return t.IstioGateway.Annotations
+	}
+
+	return nil
+}
+
+// GetIstioGatewayLabels returns the Istio Gateway labels for the given target
+func (c *OIDCAppsControllerConfig) GetIstioGatewayLabels(object client.Object) map[string]string {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil && t.IstioGateway.Labels != nil {
+		return t.IstioGateway.Labels
+	}
+
+	return nil
+}
+
+// GetIstioGatewayDefaultPath returns the default redirect path for the Istio Gateway of the given target.
+// The path must start with "/" to be valid; invalid paths are ignored.
+func (c *OIDCAppsControllerConfig) GetIstioGatewayDefaultPath(object client.Object) string {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil && isValidDefaultPath(t.IstioGateway.DefaultPath) {
+		return t.IstioGateway.DefaultPath
+	}
+
+	return ""
+}
+
+// GetIstioGatewayDeniedPaths returns the list of path prefixes that should return 403
+func (c *OIDCAppsControllerConfig) GetIstioGatewayDeniedPaths(object client.Object) []string {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil {
+		return t.IstioGateway.DeniedPaths
+	}
+
+	return nil
+}
+
+// GetIstioGatewaySelector returns the selector labels for the Istio Gateway ingress controller
+func (c *OIDCAppsControllerConfig) GetIstioGatewaySelector() map[string]string {
+	if c.Global.IstioGateway != nil && c.Global.IstioGateway.Selector != nil {
+		return c.Global.IstioGateway.Selector
+	}
+
+	return nil
+}
+
+// GetIstioGatewayTLSSecretRef returns the TLS credential name for the Istio Gateway
+func (c *OIDCAppsControllerConfig) GetIstioGatewayTLSSecretRef(object client.Object) string {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil && t.IstioGateway.TLSSecretRef != "" {
+		return t.IstioGateway.TLSSecretRef
 	}
 
 	return ""

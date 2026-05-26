@@ -4,10 +4,10 @@
 
 set -euo pipefail
 
-# Read the ResourceList from stdin
+# Read the ResourceList from stdin. This is a wrapper of the functionConfig
 resourceList=$(cat)
 
-# Extract configuration from functionConfig
+# Extract configuration from functionConfig.
 chartsParentDir=$(echo "$resourceList" | yq e '.functionConfig.spec.chartsParentDir' -)
 chartName=$(echo "$resourceList" | yq e '.functionConfig.spec.chartName' -)
 caCertPath=$(echo "$resourceList" | yq e '.functionConfig.spec.caCertPath' -)
@@ -20,6 +20,8 @@ ca_bundle=$(base64 < "$caCertPath" | tr -d '\n')
 image_repository="${IMAGE_REPOSITORY:-europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/oidc-apps-controller}"
 image_tag="${IMAGE_TAG:-latest}"
 
+# Here we return an output ResourceList. Since this is a generator KRM plugin, 
+# the .items here is what kustomize actually builds.
 cat <<EOF
 kind: ResourceList
 items:
@@ -56,6 +58,8 @@ items:
         - name: local
           clientId: local
       global:
+        istioGateway:
+          enabled: true
         oauth2Proxy:
           sslInsecureSkipVerify: false
           insecureOidcSkipIssuerVerification: false
@@ -68,125 +72,111 @@ items:
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               component: plutono
           targetPort: 3000
-          ingress:
+          istioGateway:
+            create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
-              endpoint.shoot.gardener.cloud/application: creadtiv--plutono
-            create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
+              endpoint.shoot.gardener.cloud/application: credativ--plutono
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "shoot--prometheus"
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               app: prometheus
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: prometheus--prometheus
+            tlsSecretRef: "ingress-wildcard-cert"
+            deniedPaths:
+              - "/-/reload"
+              - "/-/quit"
+              - "/api/v1/targets"
         - name: "shoot--victoria-logs"
           namespaceSelector:
             matchLabels:
               gardener.cloud/role: shoot
+              kubernetes.io/metadata.name: shoot--local--local
           labelSelector:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
           targetPort: 9428
-          ingress:
+          istioGateway:
+            create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
               endpoint.shoot.gardener.cloud/application: victoriametrics--victoria-logs
-            create: true
             defaultPath: "/select/vmui"
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--plutono"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               component: plutono
           targetPort: 3000
-          ingress:
+          istioGateway:
+            create: true
             labels:
               seed: plutono
-            create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-seed"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: seed
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-aggregate"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: aggregate
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--prometheus-cache"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               name: cache
               role: monitoring
           targetPort: 9090
-          ingress:
+          istioGateway:
             create: true
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--victoria-logs"
           namespaceSelector:
             matchLabels:
-              project.gardener.cloud/name: garden
+              gardener.cloud/role: garden
           labelSelector:
             matchLabels:
               app.kubernetes.io/instance: victoria-logs
           targetPort: 9428
-          ingress:
+          istioGateway:
             create: true
             defaultPath: "/select/vmui"
-            ingressClassName: "nginx-ingress-gardener"
-            tlsSecretRef:
-              name: "ingress-wildcard-cert"
-              namespace: "garden"
+            tlsSecretRef: "ingress-wildcard-cert"
 EOF
