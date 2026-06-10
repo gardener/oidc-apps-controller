@@ -18,7 +18,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	autoscalerv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
@@ -83,12 +85,11 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 	return &networkingv1.IngressList{Items: ownedIngresses}, nil
 }
 
+// fetchOidcAppsHTTPRoutes lists HTTPRoutes in the object's namespace that are owned by it.
+// Returns an empty list if the HTTPRoute CRD is not installed in the cluster, so callers
+// (reconcile and cleanup) work whether or not the global HTTPRoute support is enabled.
 func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client.Object) (*gatewayv1.HTTPRouteList,
 	error) {
-	if !configuration.GetOIDCAppsControllerConfig().IsHTTPRouteEnabled() {
-		return &gatewayv1.HTTPRouteList{}, nil
-	}
-
 	oidcHTTPRoutes := &gatewayv1.HTTPRouteList{}
 
 	if err := c.List(ctx, oidcHTTPRoutes,
@@ -99,7 +100,11 @@ func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client
 			}),
 		},
 	); err != nil {
-		return oidcHTTPRoutes, client.IgnoreNotFound(err)
+		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
+			return &gatewayv1.HTTPRouteList{}, nil
+		}
+
+		return oidcHTTPRoutes, err
 	}
 
 	ownedHTTPRoutes := make([]gatewayv1.HTTPRoute, 0, len(oidcHTTPRoutes.Items))
@@ -113,12 +118,10 @@ func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client
 	return &gatewayv1.HTTPRouteList{Items: ownedHTTPRoutes}, nil
 }
 
+// fetchOidcAppsVirtualServices lists VirtualServices in the object's namespace that are owned by it.
+// Returns an empty list if the VirtualService CRD is not installed in the cluster.
 func fetchOidcAppsVirtualServices(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.VirtualServiceList,
 	error) {
-	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
-		return &istioclientnetv1.VirtualServiceList{}, nil
-	}
-
 	oidcVirtualServices := &istioclientnetv1.VirtualServiceList{}
 
 	if err := c.List(ctx, oidcVirtualServices,
@@ -129,7 +132,11 @@ func fetchOidcAppsVirtualServices(ctx context.Context, c client.Client, object c
 			}),
 		},
 	); err != nil {
-		return oidcVirtualServices, client.IgnoreNotFound(err)
+		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
+			return &istioclientnetv1.VirtualServiceList{}, nil
+		}
+
+		return oidcVirtualServices, err
 	}
 
 	ownedVirtualServices := make([]*istioclientnetv1.VirtualService, 0, len(oidcVirtualServices.Items))
@@ -143,12 +150,10 @@ func fetchOidcAppsVirtualServices(ctx context.Context, c client.Client, object c
 	return &istioclientnetv1.VirtualServiceList{Items: ownedVirtualServices}, nil
 }
 
+// fetchOidcAppsIstioGateways lists Istio Gateways in the object's namespace that are owned by it.
+// Returns an empty list if the Gateway CRD is not installed in the cluster.
 func fetchOidcAppsIstioGateways(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.GatewayList,
 	error) {
-	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
-		return &istioclientnetv1.GatewayList{}, nil
-	}
-
 	oidcGateways := &istioclientnetv1.GatewayList{}
 
 	if err := c.List(ctx, oidcGateways,
@@ -159,7 +164,11 @@ func fetchOidcAppsIstioGateways(ctx context.Context, c client.Client, object cli
 			}),
 		},
 	); err != nil {
-		return oidcGateways, client.IgnoreNotFound(err)
+		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
+			return &istioclientnetv1.GatewayList{}, nil
+		}
+
+		return oidcGateways, err
 	}
 
 	ownedGateways := make([]*istioclientnetv1.Gateway, 0, len(oidcGateways.Items))
@@ -173,12 +182,10 @@ func fetchOidcAppsIstioGateways(ctx context.Context, c client.Client, object cli
 	return &istioclientnetv1.GatewayList{Items: ownedGateways}, nil
 }
 
+// fetchOidcAppsDestinationRules lists DestinationRules in the object's namespace that are owned by it.
+// Returns an empty list if the DestinationRule CRD is not installed in the cluster.
 func fetchOidcAppsDestinationRules(ctx context.Context, c client.Client, object client.Object) (*istioclientnetv1.DestinationRuleList,
 	error) {
-	if !configuration.GetOIDCAppsControllerConfig().IsIstioGatewayEnabled() {
-		return &istioclientnetv1.DestinationRuleList{}, nil
-	}
-
 	oidcDestinationRules := &istioclientnetv1.DestinationRuleList{}
 
 	if err := c.List(ctx, oidcDestinationRules,
@@ -189,7 +196,11 @@ func fetchOidcAppsDestinationRules(ctx context.Context, c client.Client, object 
 			}),
 		},
 	); err != nil {
-		return oidcDestinationRules, client.IgnoreNotFound(err)
+		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
+			return &istioclientnetv1.DestinationRuleList{}, nil
+		}
+
+		return oidcDestinationRules, err
 	}
 
 	ownedDestinationRules := make([]*istioclientnetv1.DestinationRule, 0, len(oidcDestinationRules.Items))
@@ -380,6 +391,10 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	if err = reconcileIstioDestinationRuleForDeployment(ctx, c, object); err != nil {
+		return err
+	}
+
+	if err = cleanupInactiveStacks(ctx, c, object, object); err != nil {
 		return err
 	}
 
@@ -685,6 +700,10 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 		}
 
 		if err = reconcileIstioDestinationRuleForStatefulSetPod(ctx, c, &pod, object); err != nil {
+			return err
+		}
+
+		if err = cleanupInactiveStacks(ctx, c, object, &pod); err != nil {
 			return err
 		}
 	}

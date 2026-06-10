@@ -160,7 +160,7 @@ func (c *certManager) Start(ctx context.Context) error {
 }
 
 // setupWebhooksCABundles is invoked during runnable initialization and before the controller manager Start method is called.
-// The purpose is to generate an initial set of CA nad TLS certificates bundle and to update the webhook CABundle resource
+// The purpose is to generate an initial set of CA and TLS certificates bundle and to update the webhook CABundle resource
 // Since the client.Client is not present at this moment, we need to construct a new client.
 func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.Config) error {
 	clientset, err := kubernetes.NewForConfig(config)
