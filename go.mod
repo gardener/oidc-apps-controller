@@ -3,7 +3,7 @@ module github.com/gardener/oidc-apps-controller
 go 1.26.2
 
 require (
-	github.com/gardener/gardener/pkg/apis v1.140.0
+	github.com/gardener/gardener/pkg/apis v1.145.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/spf13/cobra v1.10.2
@@ -19,7 +19,7 @@ require (
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0
 	k8s.io/client-go v0.36.2
 	k8s.io/component-base v0.36.2
-	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
+	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/gateway-api v1.5.1
 	sigs.k8s.io/yaml v1.6.0
@@ -57,7 +57,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0 // indirect
+	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/gomega v1.40.0
+	github.com/onsi/gomega v1.42.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
