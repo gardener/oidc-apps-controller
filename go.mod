@@ -15,7 +15,7 @@ require (
 	istio.io/api v1.30.2
 	istio.io/client-go v1.30.2
 	k8s.io/api v0.36.2
-	k8s.io/apimachinery v0.37.0-alpha.0
+	k8s.io/apimachinery v0.37.0-alpha.2
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0
 	k8s.io/client-go v0.36.2
 	k8s.io/component-base v0.36.2
@@ -83,7 +83,7 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/net v0.55.1-0.20260602153038-42abb857022c // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
@@ -95,6 +95,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.36.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20260414162039-ec9c827d403f // indirect
+	k8s.io/kube-openapi v0.0.0-20260618221249-bc653b64f974 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
