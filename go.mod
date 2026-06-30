@@ -3,7 +3,7 @@ module github.com/gardener/oidc-apps-controller
 go 1.26.2
 
 require (
-	github.com/gardener/gardener/pkg/apis v1.140.0
+	github.com/gardener/gardener/pkg/apis v1.145.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/spf13/cobra v1.10.2
@@ -58,7 +58,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.4.0 // indirect
+	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
