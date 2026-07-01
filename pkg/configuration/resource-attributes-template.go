@@ -6,7 +6,7 @@ package configuration
 import (
 	_ "embed"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed templates/rbac-proxy-resource-attributes.yaml

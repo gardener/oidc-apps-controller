@@ -26,6 +26,15 @@ IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 $(TOOLS_DIR):
 	@mkdir -p $(TOOLS_DIR)
 
+# Extracted for easier use by targets
+define check-git-clean
+@if [ -n "$$(git status --porcelain $(SRC_DIRS))" ]; then \
+    echo "Error: $(1) produced changes. Please run 'make $(1)' locally and commit."; \
+    git --no-pager diff $(SRC_DIRS); \
+    exit 1; \
+fi
+endef
+
 #########################################
 # Targets                               #
 #########################################
@@ -128,8 +137,9 @@ tidy:
 
 .PHONY: gci
 gci: tidy
-	@echo "Running gci..."
+	@echo "Running $@..."
 	@$(GO_TOOL) gci write $(GCI_OPT) $(SRC_DIRS)
+	$(call check-git-clean,$@)
 
 .PHONY: fmt
 fmt: tidy
@@ -137,16 +147,18 @@ fmt: tidy
 	@$(GO_TOOL) golangci-lint fmt \
     	--config=$(REPO_ROOT)/.golangci.yaml \
     	$(SRC_DIRS)
+	$(call check-git-clean,$@)
 
 .PHONY: check-go-fix
 check-go-fix: tidy
-	@echo "Running go fix..."
+	@echo "Running $@..."
 	@go fix $(SRC_DIRS)/...
-	@if [ -n "$$(git status --porcelain $(SRC_DIRS))" ]; then \
-		echo "Error: go fix produced changes. Please run 'go fix ./...' and commit the changes."; \
-		git --no-pager diff; \
-		exit 1; \
-	fi
+	# @if [ -n "$$(git status --porcelain $(SRC_DIRS))" ]; then \
+	# 	echo "Error: go fix produced changes. Please run 'go fix ./...' and commit the changes."; \
+	# 	git --no-pager diff; \
+	# 	exit 1; \
+	# fi
+	$(call check-git-clean,$@)
 
 .PHONY: check
 check: tidy fmt gci lint
@@ -159,8 +171,8 @@ lint: tidy
 		$(SRC_DIRS)
 
 # same as above, but applies the changes for linters and formatters together
-.PHONY: fix
-fix: tidy
+.PHONY: lint-fix
+lint-fix: tidy
 	@echo "Running $@..."
 	@$(GO_TOOL) golangci-lint run \
 		--fix \
