@@ -24,7 +24,7 @@ services:
   dexidp:
     restart: unless-stopped
     container_name: dexidp
-    image: ghcr.io/dexidp/dex:v2.37.0-distroless
+    image: ghcr.io/dexidp/dex:v2.45.1-distroless
     command:
       - /usr/local/bin/dex
       - serve
