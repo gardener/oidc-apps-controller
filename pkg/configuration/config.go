@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package configuration handles the configuration of the main component,
-// including target configuration, oauth proxy and rbac proxy. 
+// including target configuration, oauth proxy and rbac proxy.
 package configuration
 
 import (
