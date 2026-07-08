@@ -1,6 +1,6 @@
 # Stage 1: Build the Go app
 # including patch version temporarily
-FROM golang:1.26.4 AS builder
+FROM golang:1.26.5 AS builder
 
 # Set up the working directory
 WORKDIR /src
