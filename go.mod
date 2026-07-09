@@ -15,7 +15,7 @@ require (
 	istio.io/api v1.30.2
 	istio.io/client-go v1.30.2
 	k8s.io/api v0.36.2
-	k8s.io/apimachinery v0.37.0-alpha.2
+	k8s.io/apimachinery v0.37.0-alpha.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0
 	k8s.io/client-go v0.36.2
 	k8s.io/component-base v0.36.2
@@ -53,7 +53,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 )
 
 require (
