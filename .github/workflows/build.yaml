@@ -91,7 +91,7 @@ jobs:
       contents: read
     steps:
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
       - name: run-linter
