@@ -9,4 +9,12 @@
   postUpdateOptions: [
     'gomodTidy',
   ],
+  packageRules: [
+    {
+      groupName: 'istio.io',
+      matchPackageNames: [
+        'istio.io/**',
+      ],
+    },
+  ],
 }
