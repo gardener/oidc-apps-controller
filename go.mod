@@ -12,8 +12,8 @@ require (
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/mock v0.6.0
 	gopkg.in/yaml.v3 v3.0.1
-	istio.io/api v1.30.2
-	istio.io/client-go v1.30.2
+	istio.io/api v1.30.3
+	istio.io/client-go v1.30.3
 	k8s.io/api v0.36.2
 	k8s.io/apimachinery v0.37.0-alpha.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0
