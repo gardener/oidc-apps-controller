@@ -92,7 +92,7 @@ priorityClass:
 vpa:
   enabled: true
   updatePolicy:
-    updateMode: "Recreate"
+    updateMode: "InPlaceOrRecreate"
   #   evictionRequirements:
   #     - resources: ["cpu", "memory"]
   #       changeRequirement: TargetHigherThanRequests
