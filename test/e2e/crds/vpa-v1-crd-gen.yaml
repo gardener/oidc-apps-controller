@@ -429,6 +429,7 @@ spec:
                     - Initial
                     - Recreate
                     - Auto
+                    - InPlaceOrRecreate
                     type: string
                 type: object
             required:
@@ -665,6 +666,7 @@ spec:
                     - Initial
                     - Recreate
                     - Auto
+                    - InPlaceOrRecreate
                     type: string
                 type: object
             required:
