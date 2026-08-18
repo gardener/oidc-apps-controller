@@ -15,7 +15,7 @@ require (
 	istio.io/api v1.30.3
 	istio.io/client-go v1.30.3
 	k8s.io/api v0.36.3
-	k8s.io/apimachinery v0.37.0-rc.0
+	k8s.io/apimachinery v0.36.3
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0
 	k8s.io/client-go v0.36.3
 	k8s.io/component-base v0.36.3
