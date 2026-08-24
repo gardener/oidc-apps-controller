@@ -27,7 +27,7 @@ certificate:
   # When false, the oidc-apps-controller creates, rotates and updates the webhook certificates.
   create: false
   # The name of the certificate secret to use.
-  # If not set and create is true, a name the name is defaulted to the fullname with "-webhook-tls-cert" suffix
+  # If not set and create is true, the name is defaulted to the fullname with "-webhook-tls-cert" suffix
   secretName:
 
 clusterRole:
