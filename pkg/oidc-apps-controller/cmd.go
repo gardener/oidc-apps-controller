@@ -660,10 +660,25 @@ func addStatefulSetController(mgr manager.Manager) error {
 	return controllerBuilder.Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
 
-// Add certificate manager in case no external certificate manager is available
+// Add certificate manager in case no external certificate manager is available.
+// In both cert modes the controller owns the MutatingWebhookConfiguration (it is no longer
+// deployed via the Helm chart). The difference is caBundle ownership:
+//   - runtime mode (useExternalCertManager=false): the bespoke cert manager generates a self-signed
+//     CA and patches the caBundle, and also reconciles the webhook selectors/rules.
+//   - cert-manager.io mode (useExternalCertManager=true): a lightweight runnable creates/reconciles
+//     the webhook (selectors/rules + inject annotation) while cert-manager.io fills the caBundle.
 func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
+	webhookOpts := certificates.WebhookReconcileOptions{
+		Name:                   o.webhookName,
+		Namespace:              os.Getenv(constants.NAMESPACE),
+		Port:                   int32(o.webhookPort), //nolint:gosec // webhook port is a small, operator-provided value
+		ObjectSelector:         extensionConfig.GetWebhookObjectSelector(),
+		NamespaceSelector:      extensionConfig.GetWebhookNamespaceSelector(),
+		UseExternalCertManager: o.useExternalCertManager,
+	}
+
 	if !o.useExternalCertManager {
-		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
+		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig(), webhookOpts)
 		if err != nil {
 			return err
 		}
@@ -671,7 +686,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
 		return mgr.Add(certManager)
 	}
 
-	return nil
+	return mgr.Add(certificates.NewWebhookReconciler(mgr.GetClient(), webhookOpts))
 }
 
 func addGardenAccessTokenNotifier(mgr manager.Manager) error {

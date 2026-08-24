@@ -31,10 +31,19 @@ import (
 
 // OIDCAppsControllerConfig is the root configuration node
 type OIDCAppsControllerConfig struct {
-	Global  Global   `json:"global"`
-	Targets []Target `json:"targets,omitzero"`
+	Global  Global         `json:"global"`
+	Targets []Target       `json:"targets,omitzero"`
+	Webhook *WebhookConfig `json:"webhook,omitzero"`
 	client  client.Client
 	log     logr.Logger
+}
+
+// WebhookConfig holds the selectors applied to the controller's MutatingWebhookConfiguration.
+// The webhook object is owned and reconciled by the controller (see pkg/certificates), not the
+// Helm chart, so these selectors must be supplied through the controller configuration.
+type WebhookConfig struct {
+	ObjectSelector    *metav1.LabelSelector `json:"objectSelector,omitzero"`
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitzero"`
 }
 
 // Global holds the concrete target configurations for the auth & authz proxies
@@ -850,6 +859,26 @@ func (c *OIDCAppsControllerConfig) GetTargetLabelSelector(o client.Object) *meta
 
 	if t.LabelSelector != nil {
 		return t.LabelSelector
+	}
+
+	return nil
+}
+
+// GetWebhookObjectSelector returns the objectSelector applied to the controller's
+// MutatingWebhookConfiguration, or nil when none is configured.
+func (c *OIDCAppsControllerConfig) GetWebhookObjectSelector() *metav1.LabelSelector {
+	if c.Webhook != nil {
+		return c.Webhook.ObjectSelector
+	}
+
+	return nil
+}
+
+// GetWebhookNamespaceSelector returns the namespaceSelector applied to the controller's
+// MutatingWebhookConfiguration, or nil when none is configured.
+func (c *OIDCAppsControllerConfig) GetWebhookNamespaceSelector() *metav1.LabelSelector {
+	if c.Webhook != nil {
+		return c.Webhook.NamespaceSelector
 	}
 
 	return nil

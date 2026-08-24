@@ -42,6 +42,9 @@ type certManager struct {
 	dnsNames []string
 	// Webhook name
 	webhookName string
+	// webhookOpts holds the desired state (selectors, rules, clientConfig) of the webhook object,
+	// which the cert manager owns and reconciles alongside the caBundle.
+	webhookOpts WebhookReconcileOptions
 	// K8S Client for updating the webhook CABundle resource
 	client client.Client
 	// Managed Certificates
@@ -65,12 +68,13 @@ var _log = logf.Log.WithName("certificate-manager")
 
 // New creates a new controller-runtime runnable providing
 // bundle rotation for the service endpoint of the mutating webhook
-func New(certPath string, name string, namespace string, c client.Client, config *rest.Config) (manager.Runnable,
+func New(certPath string, name string, namespace string, c client.Client, config *rest.Config, webhookOpts WebhookReconcileOptions) (manager.Runnable,
 	error) {
 	runnable := &certManager{
 		certPath:    certPath,
 		client:      c,
 		webhookName: name,
+		webhookOpts: webhookOpts,
 	}
 
 	var cancel context.CancelFunc
@@ -92,6 +96,13 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	}
 
 	runnable.dnsNames = dnsNames
+
+	// Ensure the webhook object exists (and carries the desired selectors/rules) before patching the
+	// caBundle onto it. The webhook is owned by the controller, not the Helm chart, so it may be absent
+	// on a fresh install.
+	if err := ReconcileWebhookConfiguration(runnable.ctx, c, webhookOpts); err != nil {
+		return nil, err
+	}
 
 	var err error
 	// Check if there is valid CA bundle
@@ -479,6 +490,12 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 	for {
 		select {
 		case <-caTicker.C:
+			// Reconcile the webhook selectors/rules so configuration changes (e.g. an updated
+			// objectSelector) propagate to the live object without recreating it.
+			if err := ReconcileWebhookConfiguration(ctx, c.client, c.webhookOpts); err != nil {
+				_log.Error(err, "Error reconciling webhook configuration")
+			}
+
 			webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
 			if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 				_log.Error(err, "Error fetching webhook")
