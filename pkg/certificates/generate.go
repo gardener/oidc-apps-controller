@@ -28,8 +28,9 @@ const (
 	certTLSType         certificateType = "tls"
 	commonTLSNamePrefix                 = "oidc-apps-controller-webhook"
 	commonCANamePrefix                  = "oidc-apps-controller-ca"
-	organizationName                    = "gardener.cloud"
-	keyLength                           = 3072
+	// TODO(bobi-wan): extract this
+	organizationName = "gardener.cloud"
+	keyLength        = 3072
 )
 
 type bundle struct {
@@ -37,6 +38,7 @@ type bundle struct {
 	key  crypto.PrivateKey
 }
 
+// generates the CA bundle which is put in the MutatingWebhookConfiguration caBundle.
 func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	// Generate Certificate Private Key
 	privateKey, err := ops.GenerateKey(keyLength)
@@ -55,13 +57,14 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 			CommonName:   generateCACommonName(commonCANamePrefix),
 			Organization: []string{organizationName},
 		},
-		DNSNames:              []string{"CA"},
 		NotBefore:             time.Now().UTC(),
 		NotAfter:              time.Now().UTC().Add(caCertValidity),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
+		MaxPathLen:            1,
 	}
+
 	// Self-Signed Certificate
 	caCert, err := ops.CreateCertificate(certTmpl, certTmpl, privateKey.Public(), privateKey)
 	if err != nil {
@@ -91,14 +94,17 @@ func rsaToPem(privateKey *rsa.PrivateKey) ([]byte, error) {
 }
 
 func derToPem(certificate *x509.Certificate) ([]byte, error) {
-	certDERBytes, err := x509.ParseCertificate(certificate.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("error parcing bundle: %w", err)
+	// Validate the DER before encoding so a malformed certificate is caught before it is persisted.
+	if _, err := x509.ParseCertificate(certificate.Raw); err != nil {
+		return nil, fmt.Errorf("error parsing certificate: %w", err)
 	}
 
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDERBytes.Raw}), nil
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw}), nil
 }
 
+// persists the CA certificate + private key with predefined filename + extension
+// to the given path. The function takes into account whether the certificate
+// is a CA or not.
 func writeBundle(path string, b *bundle) error {
 	certPEM, err := derToPem(b.cert)
 	if err != nil {
@@ -140,6 +146,7 @@ func writeBundle(path string, b *bundle) error {
 	return nil
 }
 
+// creates and persists a TLS serving certificate
 func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, caBundle *bundle) (*bundle, error) {
 	// Generate Certificate Private Key
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
@@ -231,6 +238,9 @@ func loadTLSFromDisk(path string) (*bundle, error) {
 
 	return &bundle{
 		cert: certificate,
+		//TODO(bobi-wan): we enforce rsa.PrivateKey but propagate it as any.
+		// If I were to pick another private key format that satisfies the x509
+		// interface, it would break here.
 		key:  k.(*rsa.PrivateKey),
 	}, nil
 }

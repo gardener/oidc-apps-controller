@@ -6,11 +6,11 @@ package certificates
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -57,8 +57,8 @@ func desiredWebhookConfiguration(opts WebhookReconcileOptions) *admissionregistr
 			Service: &admissionregistrationv1.ServiceReference{
 				Name:      opts.Name,
 				Namespace: opts.Namespace,
-				Path:      ptr.To(path),
-				Port:      ptr.To(opts.Port),
+				Path:      new(path),
+				Port:      new(opts.Port),
 			},
 		}
 	}
@@ -124,7 +124,7 @@ func ReconcileWebhookConfiguration(ctx context.Context, c client.Client, opts We
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, c, obj, func() error {
-		// Capture caBundles already present on the live object, keyed by webhook name, so an update
+		// Capture caBundles already present in the object, keyed by webhook name, so an update
 		// does not wipe them. On create the map is empty and caBundle stays nil (to be filled later).
 		existingCABundles := map[string][]byte{}
 		for _, w := range obj.Webhooks {
@@ -136,15 +136,12 @@ func ReconcileWebhookConfiguration(ctx context.Context, c client.Client, opts We
 		if obj.Labels == nil {
 			obj.Labels = map[string]string{}
 		}
-		for k, v := range desired.Labels {
-			obj.Labels[k] = v
-		}
+		maps.Copy(obj.Labels, desired.Labels)
+
 		if obj.Annotations == nil {
 			obj.Annotations = map[string]string{}
 		}
-		for k, v := range desired.Annotations {
-			obj.Annotations[k] = v
-		}
+		maps.Copy(obj.Annotations, desired.Annotations)
 
 		for i := range desired.Webhooks {
 			desired.Webhooks[i].ClientConfig.CABundle = existingCABundles[desired.Webhooks[i].Name]

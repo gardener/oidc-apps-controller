@@ -26,6 +26,7 @@ import (
 const (
 	tlsCertValidity  = time.Hour * time.Duration(24)   // 24 hours
 	tlsCertRotation  = time.Hour * time.Duration(1)    // Rotate 1 hour before expire
+	// TODO(bobi-wan): what is the need for the CA bundle to last 1 week?
 	caCertValidity   = time.Hour * time.Duration(168)  // 1w
 	caCertRotation   = time.Hour * time.Duration(10)   // Rotate 10 hours before expire
 	expirationTicker = time.Minute * time.Duration(10) // Check for certificate expiration every 10 minutes
@@ -98,8 +99,7 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	runnable.dnsNames = dnsNames
 
 	// Ensure the webhook object exists (and carries the desired selectors/rules) before patching the
-	// caBundle onto it. The webhook is owned by the controller, not the Helm chart, so it may be absent
-	// on a fresh install.
+	// caBundle onto it. It may be missing on a new deployment.
 	if err := ReconcileWebhookConfiguration(runnable.ctx, c, webhookOpts); err != nil {
 		return nil, err
 	}
