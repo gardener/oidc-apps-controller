@@ -266,6 +266,6 @@ require (
 	honnef.co/go/tools v0.7.0 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.24.1 // indirect
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.25.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
