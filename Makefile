@@ -41,7 +41,7 @@ endef
 # Targets                               #
 #########################################
 .DEFAULT_GOAL := all
-all: check test build envtest # test generates some of the needed files, ref https://github.com/gardener/oidc-apps-controller/pull/362#issuecomment-4506067106
+all: check build test envtest
 
 .PHONY: verify
 verify: check check-go-fix test envtest sast
@@ -69,6 +69,8 @@ PROVIDER_LOCAL_DIR      := $(REPO_ROOT)/example/provider-local
 .PHONY: deploy
 deploy:
 	@# --- Prerequisites ---
+	@# Regenerate files (e.g. controller-registration.yaml chart hash) before deploying, same as make test does
+	@go generate $(SRC_DIRS)
 	@[ -n "$(GARDENER_REPO_ROOT)" ] || { \
 		echo "Error: GARDENER_REPO_ROOT is not set."; \
 		echo "  Run: export GARDENER_REPO_ROOT=/path/to/gardener"; \
@@ -111,72 +113,72 @@ deploy:
 	fi
 
 	@DEX_IP=$$(docker inspect dexidp --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'); \
-	KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
-	kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Service
-metadata:
-  name: dexidp
-  namespace: garden
-spec:
-  clusterIP: None
-  ports:
-  - name: https
-    port: 5556
-    targetPort: 5556
-    protocol: TCP
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: dexidp
-  namespace: garden
-subsets:
-- addresses:
-  - ip: $${DEX_IP}
-  ports:
-  - name: https
-    port: 5556
-    protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dexidp
-  namespace: shoot--local--local
-spec:
-  clusterIP: None
-  ports:
-  - name: https
-    port: 5556
-    targetPort: 5556
-    protocol: TCP
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: dexidp
-  namespace: shoot--local--local
-subsets:
-- addresses:
-  - ip: $${DEX_IP}
-  ports:
-  - name: https
-    port: 5556
-    protocol: TCP
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-all-egress
-  namespace: garden
-spec:
-  podSelector: {}
-  egress:
-  - {}
-  policyTypes:
-  - Egress
-EOF
+	printf '%s\n' \
+		'apiVersion: v1' \
+		'kind: Service' \
+		'metadata:' \
+		'  name: dexidp' \
+		'  namespace: garden' \
+		'spec:' \
+		'  clusterIP: None' \
+		'  ports:' \
+		'  - name: https' \
+		'    port: 5556' \
+		'    targetPort: 5556' \
+		'    protocol: TCP' \
+		'---' \
+		'apiVersion: v1' \
+		'kind: Endpoints' \
+		'metadata:' \
+		'  name: dexidp' \
+		'  namespace: garden' \
+		'subsets:' \
+		'- addresses:' \
+		"  - ip: $${DEX_IP}" \
+		'  ports:' \
+		'  - name: https' \
+		'    port: 5556' \
+		'    protocol: TCP' \
+		'---' \
+		'apiVersion: v1' \
+		'kind: Service' \
+		'metadata:' \
+		'  name: dexidp' \
+		'  namespace: shoot--local--local' \
+		'spec:' \
+		'  clusterIP: None' \
+		'  ports:' \
+		'  - name: https' \
+		'    port: 5556' \
+		'    targetPort: 5556' \
+		'    protocol: TCP' \
+		'---' \
+		'apiVersion: v1' \
+		'kind: Endpoints' \
+		'metadata:' \
+		'  name: dexidp' \
+		'  namespace: shoot--local--local' \
+		'subsets:' \
+		'- addresses:' \
+		"  - ip: $${DEX_IP}" \
+		'  ports:' \
+		'  - name: https' \
+		'    port: 5556' \
+		'    protocol: TCP' \
+		'---' \
+		'apiVersion: networking.k8s.io/v1' \
+		'kind: NetworkPolicy' \
+		'metadata:' \
+		'  name: allow-all-egress' \
+		'  namespace: garden' \
+		'spec:' \
+		'  podSelector: {}' \
+		'  egress:' \
+		'  - {}' \
+		'  policyTypes:' \
+		'  - Egress' \
+	| KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
+	  kubectl apply -f -
 
 	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
 	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
