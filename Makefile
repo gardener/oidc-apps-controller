@@ -11,6 +11,8 @@ LD_FLAGS                    := -w -s $(shell $(REPO_ROOT)/hack/get-build-ld-flag
 BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
+GARDENER_REPO_ROOT          ?=
+
 TOOLS_DIR                   := $(REPO_ROOT)/tools
 TOOLS_MOD                   := $(TOOLS_DIR)/go.mod
 GO_TOOL                     := go tool -modfile=$(TOOLS_MOD)
@@ -39,7 +41,7 @@ endef
 # Targets                               #
 #########################################
 .DEFAULT_GOAL := all
-all: check build test envtest
+all: check test build envtest # test generates some of the needed files, ref https://github.com/gardener/oidc-apps-controller/pull/362#issuecomment-4506067106
 
 .PHONY: verify
 verify: check check-go-fix test envtest sast
@@ -67,8 +69,23 @@ PROVIDER_LOCAL_DIR      := $(REPO_ROOT)/example/provider-local
 .PHONY: deploy
 deploy:
 	@# --- Prerequisites ---
-	@kubectl config current-context | grep -q "virtual-garden" || \
+	@[ -n "$(GARDENER_REPO_ROOT)" ] || { \
+		echo "Error: GARDENER_REPO_ROOT is not set."; \
+		echo "  Run: export GARDENER_REPO_ROOT=/path/to/gardener"; \
+		echo "  Then retry: make deploy"; \
+		exit 1; \
+	}
+	@KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig \
+		kubectl config current-context | grep -q "virtual-garden" || \
 		{ echo "Error: current kubectl context is not virtual-garden"; exit 1; }
+
+	@KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig \
+		kubectl create secret tls ingress-wildcard-cert \
+   		--cert=example/provider-local/certs/wildcard.pem \
+   		--key=example/provider-local/certs/wildcard-key.pem \
+   		-n istio-ingress \
+   		--context virtual-garden
+
 	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
 		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
 	@# --- Dex/LDAP infrastructure ---
@@ -92,6 +109,75 @@ deploy:
 				> $(PROVIDER_LOCAL_DIR)/configs/local.ldif; \
 		fi \
 	fi
+
+	@DEX_IP=$$(docker inspect dexidp --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'); \
+	KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
+	kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: dexidp
+  namespace: garden
+spec:
+  clusterIP: None
+  ports:
+  - name: https
+    port: 5556
+    targetPort: 5556
+    protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: dexidp
+  namespace: garden
+subsets:
+- addresses:
+  - ip: $${DEX_IP}
+  ports:
+  - name: https
+    port: 5556
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dexidp
+  namespace: shoot--local--local
+spec:
+  clusterIP: None
+  ports:
+  - name: https
+    port: 5556
+    targetPort: 5556
+    protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: dexidp
+  namespace: shoot--local--local
+subsets:
+- addresses:
+  - ip: $${DEX_IP}
+  ports:
+  - name: https
+    port: 5556
+    protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+  namespace: garden
+spec:
+  podSelector: {}
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+EOF
+
 	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
 	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
 		echo "Starting Dex IdP and OpenLDAP..."; \
