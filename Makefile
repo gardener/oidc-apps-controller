@@ -77,16 +77,14 @@ deploy:
 		echo "  Then retry: make deploy"; \
 		exit 1; \
 	}
-	@KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig \
-		kubectl config current-context | grep -q "virtual-garden" || \
+	@kubectl config current-context | grep -q "virtual-garden" || \
 		{ echo "Error: current kubectl context is not virtual-garden"; exit 1; }
 
-	@KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig \
-		kubectl create secret tls ingress-wildcard-cert \
+	@kubectl create secret tls ingress-wildcard-cert \
    		--cert=example/provider-local/certs/wildcard.pem \
    		--key=example/provider-local/certs/wildcard-key.pem \
    		-n istio-ingress \
-   		--context virtual-garden
+   		--context kind-gardener-local 2>/dev/null || true
 
 	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
 		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
