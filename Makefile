@@ -110,6 +110,21 @@ deploy:
 		fi \
 	fi
 
+	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
+	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
+		echo "Starting Dex IdP and OpenLDAP..."; \
+		cd $(PROVIDER_LOCAL_DIR) && docker compose down 2>/dev/null; \
+		docker volume rm provider-local_ldap provider-local_sqlite3 -f 2>/dev/null; \
+		cd $(PROVIDER_LOCAL_DIR) && docker compose up -d; \
+		echo "Waiting for dexidp..."; \
+		while ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
+		echo "Waiting for ldap..."; \
+		while ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
+		echo "Dex and LDAP are running."; \
+	else \
+		echo "Dex and LDAP are already running."; \
+	fi
+
 	@DEX_IP=$$(docker inspect dexidp --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'); \
 	printf '%s\n' \
 		'apiVersion: v1' \
@@ -178,20 +193,6 @@ deploy:
 	| KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
 	  kubectl apply -f -
 
-	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
-	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
-		echo "Starting Dex IdP and OpenLDAP..."; \
-		cd $(PROVIDER_LOCAL_DIR) && docker compose down 2>/dev/null; \
-		docker volume rm provider-local_ldap provider-local_sqlite3 -f 2>/dev/null; \
-		cd $(PROVIDER_LOCAL_DIR) && docker compose up -d; \
-		echo "Waiting for dexidp..."; \
-		while ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
-		echo "Waiting for ldap..."; \
-		while ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; do sleep 1; done; \
-		echo "Dex and LDAP are running."; \
-	else \
-		echo "Dex and LDAP are already running."; \
-	fi
 	@# --- Build and load image ---
 	@KIND_ARCH=$$(docker image inspect $$(docker inspect gardener-local-control-plane -f '{{.Config.Image}}') -f '{{.Architecture}}' 2>/dev/null || echo "amd64"); \
 		echo "Building image for linux/$${KIND_ARCH}..."; \
