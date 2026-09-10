@@ -209,8 +209,8 @@ k8s.io/apiextensions-apiserver v0.36.0 h1:Wt7E8J+VBCbj4FjiBfDTK/neXDDjyJVJc7xfuO
 k8s.io/apiextensions-apiserver v0.36.0/go.mod h1:kGDjH0msuiIB3tgsYRV0kS9GqpMYMUsQ3GHv7TApyug=
 k8s.io/apimachinery v0.36.3 h1:PkzMRBRG8joFD8EhCuQAtNPvJlxb82FwplP26HIzvAM=
 k8s.io/apimachinery v0.36.3/go.mod h1:cTSjBWgPe/6CQyBKzY/hDIRWCQQQeK0mfLbml0UYFHE=
-k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0 h1:idgPUJWu1BWi8zWArBfulkQPwE6CEzhPP1yt2PGa7Zw=
-k8s.io/autoscaler/vertical-pod-autoscaler v1.7.0/go.mod h1:Gywys58cO0hqOxKdbkLnRv9L0Tt5KTHuz1VyKEm/ehE=
+k8s.io/autoscaler/vertical-pod-autoscaler v1.7.1 h1:gHgsammWdCT+vyqrBsCfN7+CJrfy0Mo5k1zfg8Dge7o=
+k8s.io/autoscaler/vertical-pod-autoscaler v1.7.1/go.mod h1:4Snt7tcJZFk+ZCItWVp48RWqB7q0Jw8PphLZ6V7H0X0=
 k8s.io/client-go v0.36.3 h1:M4JdVzXxYcZk4fGpfDdYnxSwhLKWCFoQsHW6t+z8Hfg=
 k8s.io/client-go v0.36.3/go.mod h1:gcPwr0c87vjjG6HB6pWEqOeuYVoXSsREjzux2j6GF30=
 k8s.io/component-base v0.36.3 h1:vc/UFvPCkW0irPz84LAodAL1j3f4xktPM6dDJIEheAY=
