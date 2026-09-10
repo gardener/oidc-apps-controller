@@ -11,6 +11,8 @@ LD_FLAGS                    := -w -s $(shell $(REPO_ROOT)/hack/get-build-ld-flag
 BUILD_PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
+GARDENER_REPO_ROOT          ?=
+
 TOOLS_DIR                   := $(REPO_ROOT)/tools
 TOOLS_MOD                   := $(TOOLS_DIR)/go.mod
 GO_TOOL                     := go tool -modfile=$(TOOLS_MOD)
@@ -67,8 +69,23 @@ PROVIDER_LOCAL_DIR      := $(REPO_ROOT)/example/provider-local
 .PHONY: deploy
 deploy:
 	@# --- Prerequisites ---
+	@# Regenerate files (e.g. controller-registration.yaml chart hash) before deploying, same as make test does
+	@go generate $(SRC_DIRS)
+	@[ -n "$(GARDENER_REPO_ROOT)" ] || { \
+		echo "Error: GARDENER_REPO_ROOT is not set."; \
+		echo "  Run: export GARDENER_REPO_ROOT=/path/to/gardener"; \
+		echo "  Then retry: make deploy"; \
+		exit 1; \
+	}
 	@kubectl config current-context | grep -q "virtual-garden" || \
 		{ echo "Error: current kubectl context is not virtual-garden"; exit 1; }
+
+	@kubectl create secret tls ingress-wildcard-cert \
+		--cert=$(REPO_ROOT)/example/provider-local/certs/wildcard.pem \
+		--key=$(REPO_ROOT)/example/provider-local/certs/wildcard-key.pem \
+		-n istio-ingress \
+		--context kind-gardener-local 2>/dev/null || true
+
 	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
 		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
 	@# --- Dex/LDAP infrastructure ---
@@ -92,6 +109,7 @@ deploy:
 				> $(PROVIDER_LOCAL_DIR)/configs/local.ldif; \
 		fi \
 	fi
+
 	@if ! docker inspect dexidp --format '{{.State.Running}}' 2>/dev/null | grep -q true || \
 	    ! docker inspect ldap --format '{{.State.Running}}' 2>/dev/null | grep -q true; then \
 		echo "Starting Dex IdP and OpenLDAP..."; \
@@ -106,6 +124,96 @@ deploy:
 	else \
 		echo "Dex and LDAP are already running."; \
 	fi
+
+	@DEX_IP=$$(docker inspect dexidp --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'); \
+	DEX_SVC_GARDEN=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Service' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: garden' \
+			'spec:' \
+			'  clusterIP: None' \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    targetPort: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_EP_GARDEN=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Endpoints' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: garden' \
+			'subsets:' \
+			'- addresses:' \
+			"  - ip: $${DEX_IP}" \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_SVC_SHOOT=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Service' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: shoot--local--local' \
+			'spec:' \
+			'  clusterIP: None' \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    targetPort: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_EP_SHOOT=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Endpoints' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: shoot--local--local' \
+			'subsets:' \
+			'- addresses:' \
+			"  - ip: $${DEX_IP}" \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_NETPOL=$$( \
+		printf '%s\n' \
+			'apiVersion: networking.k8s.io/v1' \
+			'kind: NetworkPolicy' \
+			'metadata:' \
+			'  name: allow-dexidp-egress' \
+			'  namespace: garden' \
+			'spec:' \
+			'  podSelector:' \
+			'    matchLabels:' \
+			'      oidc-application-controller/component: pod' \
+			'  egress:' \
+			'  - to:' \
+			'    - ipBlock:' \
+			"        cidr: $${DEX_IP}/32" \
+			'    ports:' \
+			'    - port: 5556' \
+			'      protocol: TCP' \
+			'  policyTypes:' \
+			'  - Egress' \
+	); \
+	printf '%s\n---\n%s\n---\n%s\n---\n%s\n---\n%s\n' \
+		"$${DEX_SVC_GARDEN}" "$${DEX_EP_GARDEN}" \
+		"$${DEX_SVC_SHOOT}" "$${DEX_EP_SHOOT}" \
+		"$${DEX_NETPOL}" \
+	| KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
+	  kubectl apply -f -
+
 	@# --- Build and load image ---
 	@KIND_ARCH=$$(docker image inspect $$(docker inspect gardener-local-control-plane -f '{{.Config.Image}}') -f '{{.Architecture}}' 2>/dev/null || echo "amd64"); \
 		echo "Building image for linux/$${KIND_ARCH}..."; \
