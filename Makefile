@@ -81,10 +81,10 @@ deploy:
 		{ echo "Error: current kubectl context is not virtual-garden"; exit 1; }
 
 	@kubectl create secret tls ingress-wildcard-cert \
-   		--cert=example/provider-local/certs/wildcard.pem \
-   		--key=example/provider-local/certs/wildcard-key.pem \
-   		-n istio-ingress \
-   		--context kind-gardener-local 2>/dev/null || true
+		--cert=$(REPO_ROOT)/example/provider-local/certs/wildcard.pem \
+		--key=$(REPO_ROOT)/example/provider-local/certs/wildcard-key.pem \
+		-n istio-ingress \
+		--context kind-gardener-local 2>/dev/null || true
 
 	@kubectl get shoot local -n garden-local > /dev/null 2>&1 || \
 		{ echo "Error: shoot 'local' not found in namespace 'garden-local'"; exit 1; }
@@ -126,70 +126,91 @@ deploy:
 	fi
 
 	@DEX_IP=$$(docker inspect dexidp --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'); \
-	printf '%s\n' \
-		'apiVersion: v1' \
-		'kind: Service' \
-		'metadata:' \
-		'  name: dexidp' \
-		'  namespace: garden' \
-		'spec:' \
-		'  clusterIP: None' \
-		'  ports:' \
-		'  - name: https' \
-		'    port: 5556' \
-		'    targetPort: 5556' \
-		'    protocol: TCP' \
-		'---' \
-		'apiVersion: v1' \
-		'kind: Endpoints' \
-		'metadata:' \
-		'  name: dexidp' \
-		'  namespace: garden' \
-		'subsets:' \
-		'- addresses:' \
-		"  - ip: $${DEX_IP}" \
-		'  ports:' \
-		'  - name: https' \
-		'    port: 5556' \
-		'    protocol: TCP' \
-		'---' \
-		'apiVersion: v1' \
-		'kind: Service' \
-		'metadata:' \
-		'  name: dexidp' \
-		'  namespace: shoot--local--local' \
-		'spec:' \
-		'  clusterIP: None' \
-		'  ports:' \
-		'  - name: https' \
-		'    port: 5556' \
-		'    targetPort: 5556' \
-		'    protocol: TCP' \
-		'---' \
-		'apiVersion: v1' \
-		'kind: Endpoints' \
-		'metadata:' \
-		'  name: dexidp' \
-		'  namespace: shoot--local--local' \
-		'subsets:' \
-		'- addresses:' \
-		"  - ip: $${DEX_IP}" \
-		'  ports:' \
-		'  - name: https' \
-		'    port: 5556' \
-		'    protocol: TCP' \
-		'---' \
-		'apiVersion: networking.k8s.io/v1' \
-		'kind: NetworkPolicy' \
-		'metadata:' \
-		'  name: allow-all-egress' \
-		'  namespace: garden' \
-		'spec:' \
-		'  podSelector: {}' \
-		'  egress:' \
-		'  - {}' \
-		'  policyTypes:' \
-		'  - Egress' \
+	DEX_SVC_GARDEN=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Service' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: garden' \
+			'spec:' \
+			'  clusterIP: None' \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    targetPort: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_EP_GARDEN=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Endpoints' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: garden' \
+			'subsets:' \
+			'- addresses:' \
+			"  - ip: $${DEX_IP}" \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_SVC_SHOOT=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Service' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: shoot--local--local' \
+			'spec:' \
+			'  clusterIP: None' \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    targetPort: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_EP_SHOOT=$$( \
+		printf '%s\n' \
+			'apiVersion: v1' \
+			'kind: Endpoints' \
+			'metadata:' \
+			'  name: dexidp' \
+			'  namespace: shoot--local--local' \
+			'subsets:' \
+			'- addresses:' \
+			"  - ip: $${DEX_IP}" \
+			'  ports:' \
+			'  - name: https' \
+			'    port: 5556' \
+			'    protocol: TCP' \
+	); \
+	DEX_NETPOL=$$( \
+		printf '%s\n' \
+			'apiVersion: networking.k8s.io/v1' \
+			'kind: NetworkPolicy' \
+			'metadata:' \
+			'  name: allow-dexidp-egress' \
+			'  namespace: garden' \
+			'spec:' \
+			'  podSelector:' \
+			'    matchLabels:' \
+			'      oidc-application-controller/component: pod' \
+			'  egress:' \
+			'  - to:' \
+			'    - ipBlock:' \
+			"        cidr: $${DEX_IP}/32" \
+			'    ports:' \
+			'    - port: 5556' \
+			'      protocol: TCP' \
+			'  policyTypes:' \
+			'  - Egress' \
+	); \
+	printf '%s\n---\n%s\n---\n%s\n---\n%s\n---\n%s\n' \
+		"$${DEX_SVC_GARDEN}" "$${DEX_EP_GARDEN}" \
+		"$${DEX_SVC_SHOOT}" "$${DEX_EP_SHOOT}" \
+		"$${DEX_NETPOL}" \
 	| KUBECONFIG=$(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig \
 	  kubectl apply -f -
 
