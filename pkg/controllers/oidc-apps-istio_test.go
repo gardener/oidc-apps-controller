@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/gardener/oidc-apps-controller/pkg/configuration"
 	"github.com/gardener/oidc-apps-controller/pkg/constants"
 )
 
@@ -84,4 +85,42 @@ func TestCreateIstioDestinationRuleForStatefulSetPod(t *testing.T) {
 	g.Expect(dr.Spec.TrafficPolicy).NotTo(BeNil())
 	g.Expect(dr.Spec.TrafficPolicy.Tls).NotTo(BeNil())
 	g.Expect(dr.Spec.TrafficPolicy.Tls.Mode).To(Equal(istionetv1alpha3.ClientTLSSettings_DISABLE))
+}
+
+func TestBuildIstioGatewayDenyRules(t *testing.T) {
+	g := NewWithT(t)
+
+	rules := buildIstioGatewayDenyRules(
+		[]string{"/debug/", "/proxy/unsaved"},
+		[]configuration.DeniedRoute{
+			{Path: "/api/v1/", Method: "POST|PUT|PATCH|DELETE"},
+			{Path: "/admin/"},
+		},
+	)
+
+	// deniedPaths render first, in order, then deniedRoutes.
+	g.Expect(rules).To(HaveLen(4))
+
+	for _, r := range rules {
+		g.Expect(r.DirectResponse.Status).To(Equal(uint32(403)))
+		g.Expect(r.Match).To(HaveLen(1))
+	}
+
+	g.Expect(rules[0].Match[0].Uri.GetPrefix()).To(Equal("/debug/"))
+	g.Expect(rules[0].Match[0].Method).To(BeNil())
+	g.Expect(rules[1].Match[0].Uri.GetPrefix()).To(Equal("/proxy/unsaved"))
+
+	// A route with a method emits a method regex match alongside the URI prefix.
+	g.Expect(rules[2].Match[0].Uri.GetPrefix()).To(Equal("/api/v1/"))
+	g.Expect(rules[2].Match[0].Method).NotTo(BeNil())
+	g.Expect(rules[2].Match[0].Method.GetRegex()).To(Equal("POST|PUT|PATCH|DELETE"))
+
+	// A route without a method denies all methods (no method match).
+	g.Expect(rules[3].Match[0].Uri.GetPrefix()).To(Equal("/admin/"))
+	g.Expect(rules[3].Match[0].Method).To(BeNil())
+}
+
+func TestBuildIstioGatewayDenyRulesEmpty(t *testing.T) {
+	g := NewWithT(t)
+	g.Expect(buildIstioGatewayDenyRules(nil, nil)).To(BeNil())
 }
