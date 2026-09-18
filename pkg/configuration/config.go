@@ -145,7 +145,16 @@ type IstioGatewayConf struct {
 	Labels       map[string]string `json:"labels,omitzero"`
 	DefaultPath  string            `json:"defaultPath,omitzero"`
 	DeniedPaths  []string          `json:"deniedPaths,omitzero"`
+	DeniedRoutes []DeniedRoute     `json:"deniedRoutes,omitzero"`
 	TLSSecretRef string            `json:"tlsSecretRef,omitzero"`
+}
+
+// DeniedRoute denies requests matching a URI prefix and, optionally, an HTTP method regex, returning 403.
+// When Method is empty all methods are denied, equivalent to a DeniedPaths entry.
+type DeniedRoute struct {
+	Path string `json:"path"`
+	// Method is an Istio StringMatch regex applied to the HTTP method, e.g. "POST|PUT|PATCH|DELETE".
+	Method string `json:"method,omitzero"`
 }
 
 var config *OIDCAppsControllerConfig
@@ -752,6 +761,16 @@ func (c *OIDCAppsControllerConfig) GetIstioGatewayDeniedPaths(object client.Obje
 	t := c.FetchTarget(object)
 	if t.IstioGateway != nil {
 		return t.IstioGateway.DeniedPaths
+	}
+
+	return nil
+}
+
+// GetIstioGatewayDeniedRoutes returns the method-aware routes that should return 403
+func (c *OIDCAppsControllerConfig) GetIstioGatewayDeniedRoutes(object client.Object) []DeniedRoute {
+	t := c.FetchTarget(object)
+	if t.IstioGateway != nil {
+		return t.IstioGateway.DeniedRoutes
 	}
 
 	return nil
