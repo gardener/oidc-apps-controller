@@ -223,3 +223,21 @@ targets:
         app.kubernetes.io/name: test-16
     istioGateway:
       create: false
+
+  # A target with both prefix-only deniedPaths and method-aware deniedRoutes
+  - name: test-17
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: test
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: test-17
+    istioGateway:
+      create: true
+      deniedPaths:
+        - /debug/
+        - /proxy/unsaved
+      deniedRoutes:
+        - path: /api/v1/
+          method: POST|PUT|PATCH|DELETE
+        - path: /admin/

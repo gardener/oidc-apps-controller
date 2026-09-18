@@ -337,6 +337,44 @@ func TestHTTPRouteWithEmptyParentRefs(t *testing.T) {
 	g.Expect(host).To(HaveSuffix(".domain.org"))
 }
 
+func TestGetIstioGatewayDeniedRoutes(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	target := getDeployment("test-17")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// deniedPaths is preserved unchanged alongside the new deniedRoutes.
+	g.Expect(extensionConfig.GetIstioGatewayDeniedPaths(target)).To(Equal([]string{"/debug/", "/proxy/unsaved"}))
+
+	routes := extensionConfig.GetIstioGatewayDeniedRoutes(target)
+	g.Expect(routes).To(Equal([]DeniedRoute{
+		{Path: "/api/v1/", Method: "POST|PUT|PATCH|DELETE"},
+		{Path: "/admin/"},
+	}))
+}
+
+func TestGetIstioGatewayDeniedRoutesUnset(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// A target that only uses istioGateway without deniedRoutes is unaffected by the new field.
+	target := getDeployment("test-14")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.GetIstioGatewayDeniedRoutes(target)).To(BeNil())
+}
+
 func getDeployment(name string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
