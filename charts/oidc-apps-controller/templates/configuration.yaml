@@ -15,3 +15,7 @@ stringData:
       {{- toYaml .Values.global | nindent 6 }}
     targets:
       {{- toYaml .Values.targets  | nindent 6 }}
+    {{- with .Values.webhook }}
+    webhook:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
