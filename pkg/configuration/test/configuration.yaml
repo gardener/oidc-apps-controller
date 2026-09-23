@@ -239,5 +239,9 @@ targets:
         - /proxy/unsaved
       deniedRoutes:
         - path: /api/v1/
-          method: POST|PUT|PATCH|DELETE
+          methods:
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
         - path: /admin/

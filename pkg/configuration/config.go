@@ -156,12 +156,14 @@ type IstioGatewayConf struct {
 	TLSSecretRef string            `json:"tlsSecretRef,omitzero"`
 }
 
-// DeniedRoute denies requests matching a URI prefix and, optionally, an HTTP method regex, returning 403.
-// When Method is empty all methods are denied, equivalent to a DeniedPaths entry.
+// DeniedRoute denies requests matching a URI prefix and, optionally, a set of HTTP methods, returning 403.
+// When Methods is empty all methods are denied, equivalent to a DeniedPaths entry.
+// Like DeniedPaths, it only takes effect on targets exposed through an Istio Gateway.
 type DeniedRoute struct {
 	Path string `json:"path"`
-	// Method is an Istio StringMatch regex applied to the HTTP method, e.g. "POST|PUT|PATCH|DELETE".
-	Method string `json:"method,omitzero"`
+	// Methods are HTTP methods matched exactly, e.g. ["POST", "PUT", "PATCH", "DELETE"]. HTTP methods are
+	// case-sensitive, so entries are upper-cased when rendered to ensure a lower-case entry still denies.
+	Methods []string `json:"methods,omitzero"`
 }
 
 var config *OIDCAppsControllerConfig

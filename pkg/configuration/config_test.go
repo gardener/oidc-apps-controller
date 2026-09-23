@@ -354,7 +354,7 @@ func TestGetIstioGatewayDeniedRoutes(t *testing.T) {
 
 	routes := extensionConfig.GetIstioGatewayDeniedRoutes(target)
 	g.Expect(routes).To(Equal([]DeniedRoute{
-		{Path: "/api/v1/", Method: "POST|PUT|PATCH|DELETE"},
+		{Path: "/api/v1/", Methods: []string{"POST", "PUT", "PATCH", "DELETE"}},
 		{Path: "/admin/"},
 	}))
 }

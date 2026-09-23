@@ -259,7 +259,13 @@ func applyIstioGatewayDefaultPathRedirect(vs *istioclientnetv1.VirtualService, o
 func applyIstioGatewayDeniedRules(vs *istioclientnetv1.VirtualService, object client.Object) {
 	config := configuration.GetOIDCAppsControllerConfig()
 
-	denyRules := buildIstioGatewayDenyRules(config.GetIstioGatewayDeniedPaths(object), config.GetIstioGatewayDeniedRoutes(object))
+	prependIstioGatewayDenyRules(vs, config.GetIstioGatewayDeniedPaths(object), config.GetIstioGatewayDeniedRoutes(object))
+}
+
+// prependIstioGatewayDenyRules places the deny rules ahead of the existing routes, as Istio evaluates HTTP routes in
+// order and a deny rule placed after the catch-all route would never match.
+func prependIstioGatewayDenyRules(vs *istioclientnetv1.VirtualService, deniedPaths []string, deniedRoutes []configuration.DeniedRoute) {
+	denyRules := buildIstioGatewayDenyRules(deniedPaths, deniedRoutes)
 	if len(denyRules) == 0 {
 		return
 	}
@@ -268,7 +274,7 @@ func applyIstioGatewayDeniedRules(vs *istioclientnetv1.VirtualService, object cl
 }
 
 // buildIstioGatewayDenyRules renders the prefix-only deniedPaths and the method-aware deniedRoutes into 403
-// direct-response routes. A deniedRoute without a method denies all methods, equivalent to a deniedPath.
+// direct-response routes. A deniedRoute without methods denies all methods, equivalent to a deniedPath.
 func buildIstioGatewayDenyRules(deniedPaths []string, deniedRoutes []configuration.DeniedRoute) []*istionetv1alpha3.HTTPRoute {
 	if len(deniedPaths) == 0 && len(deniedRoutes) == 0 {
 		return nil
@@ -293,23 +299,8 @@ func buildIstioGatewayDenyRules(deniedPaths []string, deniedRoutes []configurati
 	}
 
 	for _, route := range deniedRoutes {
-		match := &istionetv1alpha3.HTTPMatchRequest{
-			Uri: &istionetv1alpha3.StringMatch{
-				MatchType: &istionetv1alpha3.StringMatch_Prefix{
-					Prefix: route.Path,
-				},
-			},
-		}
-		if route.Method != "" {
-			match.Method = &istionetv1alpha3.StringMatch{
-				MatchType: &istionetv1alpha3.StringMatch_Regex{
-					Regex: route.Method,
-				},
-			}
-		}
-
 		denyRules = append(denyRules, &istionetv1alpha3.HTTPRoute{
-			Match: []*istionetv1alpha3.HTTPMatchRequest{match},
+			Match: deniedRouteMatches(route),
 			DirectResponse: &istionetv1alpha3.HTTPDirectResponse{
 				Status: 403,
 			},
@@ -317,6 +308,36 @@ func buildIstioGatewayDenyRules(deniedPaths []string, deniedRoutes []configurati
 	}
 
 	return denyRules
+}
+
+// deniedRouteMatches returns one match per method, which Istio ORs together, as a match request holds a single
+// method. A route without methods yields a single URI prefix match that denies all methods.
+func deniedRouteMatches(route configuration.DeniedRoute) []*istionetv1alpha3.HTTPMatchRequest {
+	uriMatch := func() *istionetv1alpha3.StringMatch {
+		return &istionetv1alpha3.StringMatch{
+			MatchType: &istionetv1alpha3.StringMatch_Prefix{
+				Prefix: route.Path,
+			},
+		}
+	}
+
+	if len(route.Methods) == 0 {
+		return []*istionetv1alpha3.HTTPMatchRequest{{Uri: uriMatch()}}
+	}
+
+	matches := make([]*istionetv1alpha3.HTTPMatchRequest, 0, len(route.Methods))
+	for _, method := range route.Methods {
+		matches = append(matches, &istionetv1alpha3.HTTPMatchRequest{
+			Uri: uriMatch(),
+			Method: &istionetv1alpha3.StringMatch{
+				MatchType: &istionetv1alpha3.StringMatch_Exact{
+					Exact: strings.ToUpper(method),
+				},
+			},
+		})
+	}
+
+	return matches
 }
 
 func createIstioDestinationRuleForDeployment(object client.Object) *istioclientnetv1.DestinationRule {

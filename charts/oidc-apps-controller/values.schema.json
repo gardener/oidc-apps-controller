@@ -541,6 +541,33 @@
                   "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
                 }
               },
+              "deniedRoutes": {
+                "type": "array",
+                "description": "Routes to deny with HTTP 403. Each entry matches a path prefix and, optionally, a set of HTTP methods. Without methods, all methods are denied.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "path"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Path prefix to match.",
+                      "pattern": "^/[a-zA-Z0-9/_\\-.~]+$"
+                    },
+                    "methods": {
+                      "type": "array",
+                      "description": "HTTP methods to deny, matched exactly, e.g. POST. Empty denies all methods.",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]+$"
+                      }
+                    }
+                  }
+                }
+              },
               "tlsSecretRef": {
                 "type": ["string", "null"],
                 "description": "TLS credential name (Kubernetes secret containing TLS certificate)"

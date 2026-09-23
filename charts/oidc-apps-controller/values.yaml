@@ -249,6 +249,11 @@ targets:
       # - "/-/reload"
       # - "/-/quit"
       deniedPaths: []
+      # Routes to deny with HTTP 403. Each entry is a prefix match on path and, optionally, on a set of HTTP methods.
+      # Without methods, all methods are denied.
+      # - path: "/api/v1/"
+      #   methods: ["POST", "PUT", "PATCH", "DELETE"]
+      deniedRoutes: []
       # TLS credential name (Kubernetes secret containing TLS certificate)
       tlsSecretRef: ""
 
