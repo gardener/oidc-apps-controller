@@ -167,7 +167,7 @@ func ReconcileWebhookConfiguration(ctx context.Context, c client.Client, opts We
 
 		obj.Webhooks = desired.Webhooks
 
-		return fmt.Errorf("webhook object to reconcile:\n %s", obj.String())
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to reconcile webhook configuration %q: %w", opts.Name, err)
