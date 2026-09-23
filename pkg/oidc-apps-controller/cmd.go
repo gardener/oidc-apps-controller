@@ -665,7 +665,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
 	webhookOpts := certificates.WebhookReconcileOptions{
 		Name:                   o.webhookName,
 		Namespace:              os.Getenv(constants.NAMESPACE),
-		Port:                   int32(o.webhookPort), //nolint:gosec
+		Port:                   int32(o.webhookPort), // #nosec G115 //nolint:gosec
 		ObjectSelector:         extensionConfig.GetWebhookObjectSelector(),
 		NamespaceSelector:      extensionConfig.GetWebhookNamespaceSelector(),
 		UseExternalCertManager: o.useExternalCertManager,
