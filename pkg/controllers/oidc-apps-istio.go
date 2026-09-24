@@ -158,7 +158,7 @@ func createIstioVirtualServiceForDeployment(object client.Object) (*istioclientn
 	}
 
 	applyIstioGatewayDefaultPathRedirect(vs, object)
-	applyIstioGatewayDeniedPaths(vs, object)
+	applyIstioGatewayDeniedRules(vs, object)
 
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIstioGatewayLabels(object)
 	maps.Copy(vs.Labels, extraLabels)
@@ -223,7 +223,7 @@ func createIstioVirtualServiceForStatefulSetPod(pod *corev1.Pod, object client.O
 	}
 
 	applyIstioGatewayDefaultPathRedirect(vs, object)
-	applyIstioGatewayDeniedPaths(vs, object)
+	applyIstioGatewayDeniedRules(vs, object)
 
 	extraLabels := configuration.GetOIDCAppsControllerConfig().GetIstioGatewayLabels(object)
 	maps.Copy(vs.Labels, extraLabels)
@@ -256,13 +256,25 @@ func applyIstioGatewayDefaultPathRedirect(vs *istioclientnetv1.VirtualService, o
 	vs.Spec.Http = append([]*istionetv1alpha3.HTTPRoute{redirectRule}, vs.Spec.Http...)
 }
 
-func applyIstioGatewayDeniedPaths(vs *istioclientnetv1.VirtualService, object client.Object) {
-	deniedPaths := configuration.GetOIDCAppsControllerConfig().GetIstioGatewayDeniedPaths(object)
-	if len(deniedPaths) == 0 {
+func applyIstioGatewayDeniedRules(vs *istioclientnetv1.VirtualService, object client.Object) {
+	config := configuration.GetOIDCAppsControllerConfig()
+
+	denyRules := buildIstioGatewayDenyRules(config.GetIstioGatewayDeniedPaths(object), config.GetIstioGatewayDeniedRoutes(object))
+	if len(denyRules) == 0 {
 		return
 	}
 
-	denyRules := make([]*istionetv1alpha3.HTTPRoute, 0, len(deniedPaths))
+	vs.Spec.Http = append(denyRules, vs.Spec.Http...)
+}
+
+// buildIstioGatewayDenyRules renders the prefix-only deniedPaths and the method-aware deniedRoutes into 403
+// direct-response routes. A deniedRoute without a method denies all methods, equivalent to a deniedPath.
+func buildIstioGatewayDenyRules(deniedPaths []string, deniedRoutes []configuration.DeniedRoute) []*istionetv1alpha3.HTTPRoute {
+	if len(deniedPaths) == 0 && len(deniedRoutes) == 0 {
+		return nil
+	}
+
+	denyRules := make([]*istionetv1alpha3.HTTPRoute, 0, len(deniedPaths)+len(deniedRoutes))
 	for _, path := range deniedPaths {
 		denyRules = append(denyRules, &istionetv1alpha3.HTTPRoute{
 			Match: []*istionetv1alpha3.HTTPMatchRequest{
@@ -280,7 +292,31 @@ func applyIstioGatewayDeniedPaths(vs *istioclientnetv1.VirtualService, object cl
 		})
 	}
 
-	vs.Spec.Http = append(denyRules, vs.Spec.Http...)
+	for _, route := range deniedRoutes {
+		match := &istionetv1alpha3.HTTPMatchRequest{
+			Uri: &istionetv1alpha3.StringMatch{
+				MatchType: &istionetv1alpha3.StringMatch_Prefix{
+					Prefix: route.Path,
+				},
+			},
+		}
+		if route.Method != "" {
+			match.Method = &istionetv1alpha3.StringMatch{
+				MatchType: &istionetv1alpha3.StringMatch_Regex{
+					Regex: route.Method,
+				},
+			}
+		}
+
+		denyRules = append(denyRules, &istionetv1alpha3.HTTPRoute{
+			Match: []*istionetv1alpha3.HTTPMatchRequest{match},
+			DirectResponse: &istionetv1alpha3.HTTPDirectResponse{
+				Status: 403,
+			},
+		})
+	}
+
+	return denyRules
 }
 
 func createIstioDestinationRuleForDeployment(object client.Object) *istioclientnetv1.DestinationRule {
