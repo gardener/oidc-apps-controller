@@ -37,7 +37,7 @@ type bundle struct {
 	key  crypto.PrivateKey
 }
 
-// generates the trust anchor that is put in the MutatingWebhookConfiguration caBundle field.
+// generateCACert generates the trust anchor that is put in the MutatingWebhookConfiguration caBundle field.
 func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	// Generate Certificate Private Key
 	privateKey, err := ops.GenerateKey(keyLength)
@@ -102,7 +102,7 @@ func derToPem(certificate *x509.Certificate) ([]byte, error) {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw}), nil
 }
 
-// persists the certificate + private key with a predefined filename. The function takes into account
+// writeBundle persists the certificate + private key with a predefined filename. The function takes into account
 // whether the certificate is a CA or not.
 func writeBundle(path string, b *bundle) error {
 	certPEM, err := derToPem(b.cert)
@@ -145,7 +145,7 @@ func writeBundle(path string, b *bundle) error {
 	return nil
 }
 
-// creates and persists a TLS serving certificate + private key
+// generateTLSCert creates and persists a TLS serving certificate + private key
 func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, caBundle *bundle) (*bundle, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	if err != nil {

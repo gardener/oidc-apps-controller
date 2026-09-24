@@ -655,7 +655,7 @@ func addStatefulSetController(mgr manager.Manager) error {
 	return controllerBuilder.Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
 
-// Add certificate manager in case no external certificate manager is available.
+// addWebhookCertificateManager adds a certificate manager in case no external certificate manager is available.
 // In both cert modes the controller owns the MutatingWebhookConfiguration. The difference is caBundle ownership:
 //   - runtime mode (useExternalCertManager=false): the cert manager generates a self-signed
 //     CA and patches the caBundle, and also reconciles the webhook selectors/rules.
