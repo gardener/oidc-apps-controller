@@ -37,6 +37,7 @@ type bundle struct {
 	key  crypto.PrivateKey
 }
 
+// generateCACert generates the trust anchor that is put in the MutatingWebhookConfiguration caBundle field.
 func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 	// Generate Certificate Private Key
 	privateKey, err := ops.GenerateKey(keyLength)
@@ -55,13 +56,15 @@ func generateCACert(path string, ops CertificateOperations) (*bundle, error) {
 			CommonName:   generateCACommonName(commonCANamePrefix),
 			Organization: []string{organizationName},
 		},
-		DNSNames:              []string{"CA"},
 		NotBefore:             time.Now().UTC(),
 		NotAfter:              time.Now().UTC().Add(caCertValidity),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
+		// no intermediate certificates allowed
+		MaxPathLenZero: true,
 	}
+
 	// Self-Signed Certificate
 	caCert, err := ops.CreateCertificate(certTmpl, certTmpl, privateKey.Public(), privateKey)
 	if err != nil {
@@ -91,14 +94,16 @@ func rsaToPem(privateKey *rsa.PrivateKey) ([]byte, error) {
 }
 
 func derToPem(certificate *x509.Certificate) ([]byte, error) {
-	certDERBytes, err := x509.ParseCertificate(certificate.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("error parcing bundle: %w", err)
+	// validate the DER-encoded data before encoding so a malformed certificate is caught before it is persisted
+	if _, err := x509.ParseCertificate(certificate.Raw); err != nil {
+		return nil, fmt.Errorf("error parsing certificate: %w", err)
 	}
 
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDERBytes.Raw}), nil
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw}), nil
 }
 
+// writeBundle persists the certificate + private key with a predefined filename. The function takes into account
+// whether the certificate is a CA or not.
 func writeBundle(path string, b *bundle) error {
 	certPEM, err := derToPem(b.cert)
 	if err != nil {
@@ -140,8 +145,8 @@ func writeBundle(path string, b *bundle) error {
 	return nil
 }
 
+// generateTLSCert creates and persists a TLS serving certificate + private key
 func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, caBundle *bundle) (*bundle, error) {
-	// Generate Certificate Private Key
 	privateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	if err != nil {
 		return nil, fmt.Errorf("error generating the TLS private key: %w", err)
@@ -152,7 +157,6 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 		return nil, fmt.Errorf("error generating bundle serial number: %w", err)
 	}
 
-	// Generate Certificate Template
 	certTmpl := &x509.Certificate{
 		Subject: pkix.Name{
 			CommonName:   generateTLSCommonName(commonTLSNamePrefix),
@@ -163,6 +167,7 @@ func generateTLSCert(path string, ops CertificateOperations, dnsnames []string, 
 		NotAfter:     time.Now().UTC().Add(tlsCertValidity),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IsCA:         false,
 		SerialNumber: serial,
 	}
 

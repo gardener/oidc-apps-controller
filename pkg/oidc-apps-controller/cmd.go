@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/scale/scheme/autoscalingv1"
-	"k8s.io/utils/ptr"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -68,29 +67,23 @@ func RunController(ctx context.Context, o *Options) error {
 	httpRouteEnabled := extensionConfig.IsHTTPRouteEnabled()
 	istioGatewayEnabled := extensionConfig.IsIstioGatewayEnabled()
 
-	if httpRouteEnabled {
-		_log.Info("Gateway API HTTPRoute support enabled via configuration")
-	}
-
-	if istioGatewayEnabled {
-		_log.Info("Istio Gateway support enabled via configuration")
-	}
-
 	// Initialize a scheme which will contain the API definitions
 	sch := scheme.Scheme
 
 	// Add core Kubernetes schemes
 	if err := scheme.AddToScheme(sch); err != nil {
-		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
+		return fmt.Errorf("could not initialize the core runtime scheme: %w", err)
 	}
 
 	// Add autoscaler schemes
 	if err := autoscalerv1.AddToScheme(sch); err != nil {
-		return fmt.Errorf("could not initialize the runtime scheme: %w", err)
+		return fmt.Errorf("could not initialize the vpa runtime scheme: %w", err)
 	}
 
 	// Add Gateway API schemes for HTTPRoute support (only when enabled in config)
 	if httpRouteEnabled {
+		_log.Info("Gateway API HTTPRoute support enabled via configuration")
+
 		if err := gatewayv1.Install(sch); err != nil {
 			return fmt.Errorf("could not initialize the gateway-api scheme: %w", err)
 		}
@@ -98,6 +91,8 @@ func RunController(ctx context.Context, o *Options) error {
 
 	// Add Istio networking schemes for Istio Gateway support (only when enabled in config)
 	if istioGatewayEnabled {
+		_log.Info("Istio Gateway support enabled via configuration")
+
 		if err := istioclientnetv1.AddToScheme(sch); err != nil {
 			return fmt.Errorf("could not initialize the istio networking scheme: %w", err)
 		}
@@ -160,7 +155,7 @@ func RunController(ctx context.Context, o *Options) error {
 	if len(os.Getenv(constants.GardenKubeconfig)) > 0 {
 		// Add gardener Cluster schemes
 		if err := gardenextensionsv1alpha1.AddToScheme(sch); err != nil {
-			return fmt.Errorf("could not initialize the runtime scheme: %w", err)
+			return fmt.Errorf("could not initialize the gardener runtime scheme: %w", err)
 		}
 
 		cluster := &gardenextensionsv1alpha1.Cluster{}
@@ -187,9 +182,9 @@ func RunController(ctx context.Context, o *Options) error {
 			LeaderElection:                true,
 			LeaderElectionID:              "oidc-apps-controller",
 			LeaderElectionNamespace:       os.Getenv(constants.NAMESPACE),
-			LeaseDuration:                 ptr.To(15 * time.Second),
-			RenewDeadline:                 ptr.To(10 * time.Second),
-			RetryPeriod:                   ptr.To(2 * time.Second),
+			LeaseDuration:                 new(15 * time.Second),
+			RenewDeadline:                 new(10 * time.Second),
+			RetryPeriod:                   new(2 * time.Second),
 			LeaderElectionReleaseOnCancel: true,
 			HealthProbeBindAddress:        ":8081",
 			Metrics:                       metricsserver.Options{BindAddress: fmt.Sprintf(":%d", o.metricsPort)},
@@ -660,10 +655,24 @@ func addStatefulSetController(mgr manager.Manager) error {
 	return controllerBuilder.Complete(&controllers.StatefulSetReconciler{Client: mgr.GetClient()})
 }
 
-// Add certificate manager in case no external certificate manager is available
+// addWebhookCertificateManager adds a certificate manager in case no external certificate manager is available.
+// In both cert modes the controller owns the MutatingWebhookConfiguration. The difference is caBundle ownership:
+//   - runtime mode (useExternalCertManager=false): the cert manager generates a self-signed
+//     CA and patches the caBundle, and also reconciles the webhook selectors/rules.
+//   - cert-manager.io mode (useExternalCertManager=true): a lightweight runnable creates/reconciles
+//     the webhook (selectors/rules + inject annotation) while cert-manager.io fills the caBundle.
 func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
+	webhookOpts := certificates.WebhookReconcileOptions{
+		Name:                   o.webhookName,
+		Namespace:              os.Getenv(constants.NAMESPACE),
+		Port:                   int32(o.webhookPort), // #nosec G115 //nolint:gosec
+		ObjectSelector:         extensionConfig.GetWebhookObjectSelector(),
+		NamespaceSelector:      extensionConfig.GetWebhookNamespaceSelector(),
+		UseExternalCertManager: o.useExternalCertManager,
+	}
+
 	if !o.useExternalCertManager {
-		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), mgr.GetConfig())
+		certManager, err := certificates.New(o.webhookCertsDir, o.webhookName, os.Getenv(constants.NAMESPACE), mgr.GetClient(), webhookOpts)
 		if err != nil {
 			return err
 		}
@@ -671,7 +680,7 @@ func addWebhookCertificateManager(mgr manager.Manager, o *Options) error {
 		return mgr.Add(certManager)
 	}
 
-	return nil
+	return mgr.Add(certificates.NewWebhookReconciler(mgr.GetClient(), webhookOpts))
 }
 
 func addGardenAccessTokenNotifier(mgr manager.Manager) error {

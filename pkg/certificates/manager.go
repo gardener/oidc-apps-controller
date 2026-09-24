@@ -7,16 +7,12 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"sync"
 	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -33,6 +29,8 @@ const (
 
 	podsWebhookSuffix = "-pods.gardener.cloud"
 	vpasWebhookSuffix = "-vpas.gardener.cloud"
+
+	pemBlockTypeCertificate = "CERTIFICATE"
 )
 
 type certManager struct {
@@ -42,6 +40,9 @@ type certManager struct {
 	dnsNames []string
 	// Webhook name
 	webhookName string
+	// webhookOpts holds the desired state (selectors, rules, clientConfig) of the webhook object,
+	// which the cert manager owns and reconciles alongside the caBundle.
+	webhookOpts WebhookReconcileOptions
 	// K8S Client for updating the webhook CABundle resource
 	client client.Client
 	// Managed Certificates
@@ -51,8 +52,10 @@ type certManager struct {
 }
 
 // certManager is a controller-runtime runnable, managing a tuple of CA and TLS certificates for the webhook
-var _ manager.Runnable = &certManager{}
-var _ manager.LeaderElectionRunnable = &certManager{}
+var (
+	_ manager.Runnable               = &certManager{}
+	_ manager.LeaderElectionRunnable = &certManager{}
+)
 
 var webhookUpdateRetry = wait.Backoff{
 	Steps:    5,
@@ -64,13 +67,17 @@ var webhookUpdateRetry = wait.Backoff{
 var _log = logf.Log.WithName("certificate-manager")
 
 // New creates a new controller-runtime runnable providing
-// bundle rotation for the service endpoint of the mutating webhook
-func New(certPath string, name string, namespace string, c client.Client, config *rest.Config) (manager.Runnable,
-	error) {
+// bundle rotation for the service endpoint of the mutating webhook.
+//
+// New generates the CA and TLS certs for the webhook and writes them to disk. They are reconciled in Start, once the manager cache is running and the cached client is usable.
+func New(certPath string, name string, namespace string, c client.Client, webhookOpts WebhookReconcileOptions) (manager.Runnable,
+	error,
+) {
 	runnable := &certManager{
 		certPath:    certPath,
 		client:      c,
 		webhookName: name,
+		webhookOpts: webhookOpts,
 	}
 
 	var cancel context.CancelFunc
@@ -94,6 +101,7 @@ func New(certPath string, name string, namespace string, c client.Client, config
 	runnable.dnsNames = dnsNames
 
 	var err error
+
 	// Check if there is valid CA bundle
 	if runnable.ca, err = loadCAFromDisk(certPath); runnable.ca == nil {
 		if err != nil {
@@ -101,10 +109,6 @@ func New(certPath string, name string, namespace string, c client.Client, config
 		}
 
 		if runnable.ca, err = generateCACert(certPath, realCertOps{}); err != nil {
-			return nil, err
-		}
-
-		if err = runnable.setupWebhooksCABundles(runnable.ctx, config); err != nil {
 			return nil, err
 		}
 	}
@@ -133,6 +137,14 @@ func (c *certManager) Start(ctx context.Context) error {
 	_log.Info("Starting webhook certificate manager")
 
 	c.ctx = ctx
+
+	// create/update the MutatingWebhookConfiguration object, including caBundle
+	if err := ReconcileWebhookConfiguration(ctx, c.client, c.webhookOpts, c.updateCABundles); err != nil {
+		_log.Error(err, "Error during initial reconcilation of webhook configuration")
+
+		return err
+	}
+
 	runnableWaitGroup := &sync.WaitGroup{} // Wait group for the certificate manager
 
 	runnableWaitGroup.Go(func() {
@@ -157,85 +169,6 @@ func (c *certManager) Start(ctx context.Context) error {
 	defer cancel()
 
 	return c.cleanUpMutatingWebhookConfiguration(ctx) // Clean up the webhook CABundles
-}
-
-// setupWebhooksCABundles is invoked during runnable initialization and before the controller manager Start method is called.
-// The purpose is to generate an initial set of CA and TLS certificates bundle and to update the webhook CABundle resource
-// Since the client.Client is not present at this moment, we need to construct a new client.
-func (c *certManager) setupWebhooksCABundles(ctx context.Context, config *rest.Config) error {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("error creating k8s client: %w", err)
-	}
-
-	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
-		mutatingWebhook, err := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, c.webhookName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting webhook: %w", err)
-		}
-
-		_log.Info("Fetched webhook CA bundle", "webhook", c.webhookName, "resourceVersion", mutatingWebhook.GetResourceVersion())
-
-		for i, w := range mutatingWebhook.Webhooks {
-			if w.Name != c.webhookName+vpasWebhookSuffix &&
-				w.Name != c.webhookName+podsWebhookSuffix {
-				continue
-			}
-
-			b, err := c.updateCABundles(w.Name, w.ClientConfig.CABundle)
-			if err != nil {
-				_log.Error(err, "Error updating webhook CA bundle")
-
-				break
-			}
-
-			mutatingWebhook.Webhooks[i].ClientConfig.CABundle = b
-		}
-
-		updatedWebhook, err := clientset.AdmissionregistrationV1().MutatingWebhookConfigurations().Update(context.
-			Background(),
-			mutatingWebhook, metav1.UpdateOptions{})
-		if err == nil {
-			_log.Info("Updated webhook CA bundle", "webhook", updatedWebhook.GetName(), "resourceVersion", updatedWebhook.GetResourceVersion())
-		} else {
-			_log.Info(fmt.Errorf("error updating webhook: %w", err).Error())
-		}
-
-		return err
-	})
-}
-
-// updateWebhookConfiguration is invoked when runnable (certManager) is running.
-// At this moment the client.Client is present, and we can use it to update the webhook CABundle resource without
-// creating a new client.
-func (c *certManager) updateWebhookConfiguration(ctx context.Context) error {
-	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
-
-	return retry.RetryOnConflict(webhookUpdateRetry, func() error {
-		if err := c.client.Get(c.ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
-			return err
-		}
-
-		for i, w := range webhook.Webhooks {
-			if w.Name != c.webhookName+vpasWebhookSuffix &&
-				w.Name != c.webhookName+podsWebhookSuffix {
-				continue
-			}
-
-			b, err := c.updateCABundles(w.Name, w.ClientConfig.CABundle)
-			if err != nil {
-				_log.Error(err, "Error updating webhook CA bundle")
-
-				break
-			}
-
-			webhook.Webhooks[i].ClientConfig.CABundle = b
-		}
-
-		_log.Info("Updating webhook CA bundle", "webhook", c.webhookName)
-
-		return c.client.Update(ctx, webhook)
-	})
 }
 
 // rotateTLSCert is a loops over expirationTicker and checks if the TLS bundle is expired.
@@ -305,7 +238,7 @@ OuterLoop:
 			c.ca.cert = crt.cert
 			_log.Info("CA bundle is rotated", "serial", c.ca.cert.SerialNumber.String(), "certificate notAfter", c.ca.cert.NotAfter)
 
-			if err := c.updateWebhookConfiguration(ctx); err != nil {
+			if err := ReconcileWebhookConfiguration(ctx, c.client, c.webhookOpts, c.updateCABundles); err != nil {
 				_log.Error(err, "Error updating webhook CA bundle")
 			}
 
@@ -337,7 +270,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 			break
 		}
 
-		if block.Type != "CERTIFICATE" {
+		if block.Type != pemBlockTypeCertificate {
 			continue
 		}
 
@@ -349,6 +282,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 		currentCAs = append(currentCAs, *crt)
 	}
 
+	found := false
 	// Clean up expired certs or the cert with the currently generated CN
 	for _, ca := range currentCAs {
 		// ca is before now, hence it is expired
@@ -358,19 +292,27 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 			continue
 		}
 
+		// check if cert is already in bundle
+		if ca.SerialNumber.Cmp(c.ca.cert.SerialNumber) == 0 {
+			found = true
+		}
+
 		updatedCAs = append(updatedCAs, ca)
 	}
-	// add the new CA bundle
-	updatedCAs = append(updatedCAs, *c.ca.cert)
+
+	if !found {
+		updatedCAs = append(updatedCAs, *c.ca.cert)
+	}
 
 	var caBundleSlice []byte
 
 	for _, ca := range updatedCAs {
 		block := &pem.Block{
-			Type:  "CERTIFICATE",
+			Type:  pemBlockTypeCertificate,
 			Bytes: ca.Raw,
 		}
 
+		// TODO: use Encode to report potential errors
 		caBundleSlice = append(caBundleSlice, pem.EncodeToMemory(block)...)
 
 		_log.V(9).Info("Certificate added to the CA Bundle",
@@ -425,6 +367,8 @@ func (c *certManager) cleanWebhookCABundles(oidcWebhook *admissionregistrationv1
 	}
 }
 
+// removeCABundle removes the certificate with the given serial number from
+// the CA bundle. Also removes any blocks with type != "certificate".
 func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, error) {
 	currentCAs := []x509.Certificate{}
 
@@ -439,7 +383,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 			break
 		}
 
-		if block.Type != "CERTIFICATE" {
+		if block.Type != pemBlockTypeCertificate {
 			continue
 		}
 
@@ -457,7 +401,7 @@ func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, erro
 
 	for _, ca := range currentCAs {
 		block := &pem.Block{
-			Type:  "CERTIFICATE",
+			Type:  pemBlockTypeCertificate,
 			Bytes: ca.Raw,
 		}
 
@@ -479,21 +423,8 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 	for {
 		select {
 		case <-caTicker.C:
-			webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
-			if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
-				_log.Error(err, "Error fetching webhook")
-			}
-
-			for _, w := range webhook.Webhooks {
-				_log.V(9).Info("CA Bundle", "webhook", w.Name, "size", len(w.ClientConfig.CABundle))
-
-				if !caBundleFound(w.ClientConfig.CABundle, c.ca.cert) {
-					if err := c.updateWebhookConfiguration(ctx); err != nil {
-						_log.Error(err, "Error updating webhook CA bundle")
-					}
-				} else {
-					_log.V(9).Info("Webhook CA bundle is in sync", "webhook", w.Name)
-				}
+			if err := ReconcileWebhookConfiguration(ctx, c.client, c.webhookOpts, c.updateCABundles); err != nil {
+				_log.Error(err, "Error reconciling webhook configuration")
 			}
 		case <-ctx.Done():
 			_log.Info("Shutting down the CA bundle checker")
@@ -501,31 +432,4 @@ func (c *certManager) syncWebhookCaBundle(ctx context.Context, wg *sync.WaitGrou
 			return
 		}
 	}
-}
-
-func caBundleFound(caBundle []byte, cert *x509.Certificate) bool {
-	for len(caBundle) > 0 {
-		var block *pem.Block
-
-		block, caBundle = pem.Decode(caBundle)
-		// no pem block is found
-		if block == nil {
-			return false
-		}
-
-		if block.Type != "CERTIFICATE" {
-			continue
-		}
-
-		crt, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			return false
-		}
-
-		if cert.SerialNumber.String() == crt.SerialNumber.String() {
-			return true
-		}
-	}
-
-	return false
 }
