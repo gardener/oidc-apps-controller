@@ -52,8 +52,10 @@ type certManager struct {
 }
 
 // certManager is a controller-runtime runnable, managing a tuple of CA and TLS certificates for the webhook
-var _ manager.Runnable = &certManager{}
-var _ manager.LeaderElectionRunnable = &certManager{}
+var (
+	_ manager.Runnable               = &certManager{}
+	_ manager.LeaderElectionRunnable = &certManager{}
+)
 
 var webhookUpdateRetry = wait.Backoff{
 	Steps:    5,
@@ -69,7 +71,8 @@ var _log = logf.Log.WithName("certificate-manager")
 //
 // New generates the CA and TLS certs for the webhook and writes them to disk. They are reconciled in Start, once the manager cache is running and the cached client is usable.
 func New(certPath string, name string, namespace string, c client.Client, webhookOpts WebhookReconcileOptions) (manager.Runnable,
-	error) {
+	error,
+) {
 	runnable := &certManager{
 		certPath:    certPath,
 		client:      c,
@@ -279,6 +282,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 		currentCAs = append(currentCAs, *crt)
 	}
 
+	found := false
 	// Clean up expired certs or the cert with the currently generated CN
 	for _, ca := range currentCAs {
 		// ca is before now, hence it is expired
@@ -288,10 +292,17 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 			continue
 		}
 
+		// check if cert is already in bundle
+		if ca.SerialNumber.Cmp(c.ca.cert.SerialNumber) == 0 {
+			found = true
+		}
+
 		updatedCAs = append(updatedCAs, ca)
 	}
-	// add the new CA bundle
-	updatedCAs = append(updatedCAs, *c.ca.cert)
+
+	if !found {
+		updatedCAs = append(updatedCAs, *c.ca.cert)
+	}
 
 	var caBundleSlice []byte
 
@@ -301,6 +312,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 			Bytes: ca.Raw,
 		}
 
+		// TODO: use Encode to report potential errors
 		caBundleSlice = append(caBundleSlice, pem.EncodeToMemory(block)...)
 
 		_log.V(9).Info("Certificate added to the CA Bundle",
@@ -355,6 +367,8 @@ func (c *certManager) cleanWebhookCABundles(oidcWebhook *admissionregistrationv1
 	}
 }
 
+// removeCABundle removes the certificate with the given serial number from
+// the CA bundle. Also removes any blocks with type != "certificate".
 func (c *certManager) removeCABundle(name string, caBundle []byte) ([]byte, error) {
 	currentCAs := []x509.Certificate{}
 

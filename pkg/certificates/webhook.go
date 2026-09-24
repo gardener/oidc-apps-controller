@@ -201,6 +201,7 @@ func (*webhookReconciler) NeedLeaderElection() bool {
 func (w *webhookReconciler) Start(ctx context.Context) error {
 	log := logf.Log.WithName("webhook-reconciler")
 
+	// TODO(bobi-wan): why is this still here?
 	if err := ReconcileWebhookConfiguration(ctx, w.client, w.opts, nil); err != nil {
 		log.Error(err, "Error during initial reconcilation of webhook configuration")
 
