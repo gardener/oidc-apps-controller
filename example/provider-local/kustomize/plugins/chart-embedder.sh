@@ -115,7 +115,7 @@ items:
             create: true
             labels:
               endpoint.shoot.gardener.cloud/advertise: "true"
-              endpoint.shoot.gardener.cloud/application: victoriametrics--victoria-logs
+              endpoint.shoot.gardener.cloud/application: victoria-metrics--victoria-logs
             defaultPath: "/select/vmui"
             tlsSecretRef: "ingress-wildcard-cert"
         - name: "garden--plutono"
