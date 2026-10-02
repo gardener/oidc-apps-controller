@@ -8,6 +8,9 @@ package configuration
 import (
 	"context"
 	"encoding/base64"
+	"errors"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -163,7 +166,21 @@ type DeniedRoute struct {
 	Path string `json:"path"`
 	// Methods are HTTP methods matched exactly, e.g. ["POST", "PUT", "PATCH", "DELETE"]. HTTP methods are
 	// case-sensitive, so entries are upper-cased when rendered to ensure a lower-case entry still denies.
+	// Entries are validated against the methods defined in the net/http package.
 	Methods []string `json:"methods,omitzero"`
+}
+
+// httpMethods holds the HTTP methods defined in the net/http package.
+var httpMethods = map[string]struct{}{
+	http.MethodGet:     {},
+	http.MethodHead:    {},
+	http.MethodPost:    {},
+	http.MethodPut:     {},
+	http.MethodPatch:   {},
+	http.MethodDelete:  {},
+	http.MethodConnect: {},
+	http.MethodOptions: {},
+	http.MethodTrace:   {},
 }
 
 var config *OIDCAppsControllerConfig
@@ -202,9 +219,39 @@ func CreateControllerConfigOrDie(path string, opts ...Options) *OIDCAppsControll
 		if err = yaml.Unmarshal(cf, config); err != nil {
 			handleError(err, "failed to unmarshal extension configuration", path)
 		}
+
+		if err = config.validateDeniedRouteMethods(); err != nil {
+			handleError(err, "invalid extension configuration", path)
+		}
 	})
 
 	return config
+}
+
+// validateDeniedRouteMethods verifies the HTTP methods of every istioGateway.deniedRoutes entry. An unknown method
+// would silently render a deny rule that never matches, hence the controller refuses to start instead of leaving a
+// route unexpectedly reachable. The chart schema rejects such values at install time already, this is the backstop
+// for configurations supplied directly, e.g. through a ConfigMap.
+func (c *OIDCAppsControllerConfig) validateDeniedRouteMethods() error {
+	var errs []error
+
+	for _, target := range c.Targets {
+		if target.IstioGateway == nil {
+			continue
+		}
+
+		for _, route := range target.IstioGateway.DeniedRoutes {
+			for _, method := range route.Methods {
+				if _, ok := httpMethods[strings.ToUpper(method)]; !ok {
+					errs = append(errs, fmt.Errorf(
+						"target %q: deniedRoutes entry for path %q contains an unknown HTTP method %q",
+						target.Name, route.Path, method))
+				}
+			}
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 // SetClient sets the client for the configuration
