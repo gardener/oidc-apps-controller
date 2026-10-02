@@ -337,6 +337,81 @@ func TestHTTPRouteWithEmptyParentRefs(t *testing.T) {
 	g.Expect(host).To(HaveSuffix(".domain.org"))
 }
 
+func TestGetIstioGatewayDeniedRoutes(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	target := getDeployment("test-17")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	// deniedPaths is preserved unchanged alongside the new deniedRoutes.
+	g.Expect(extensionConfig.GetIstioGatewayDeniedPaths(target)).To(Equal([]string{"/debug/", "/proxy/unsaved"}))
+
+	routes := extensionConfig.GetIstioGatewayDeniedRoutes(target)
+	g.Expect(routes).To(Equal([]DeniedRoute{
+		{Path: "/api/v1/", Methods: []string{"POST", "PUT", "PATCH", "DELETE"}},
+		{Path: "/admin/"},
+	}))
+}
+
+func TestGetIstioGatewayDeniedRoutesUnset(t *testing.T) {
+	extensionConfig := OIDCAppsControllerConfig{}
+	g := NewWithT(t)
+	err := yaml.Unmarshal([]byte(configYaml), &extensionConfig)
+	g.Expect(err).ShouldNot(HaveOccurred())
+
+	// A target that only uses istioGateway without deniedRoutes is unaffected by the new field.
+	target := getDeployment("test-14")
+	extensionConfig.client = fake.NewClientBuilder().
+		WithObjects(getTestNamespace()).
+		WithObjects(target).
+		Build()
+
+	g.Expect(extensionConfig.GetIstioGatewayDeniedRoutes(target)).To(BeNil())
+}
+
+func TestValidateDeniedRouteMethods(t *testing.T) {
+	g := NewWithT(t)
+
+	// The methods of the embedded test configuration are valid.
+	extensionConfig := OIDCAppsControllerConfig{}
+	g.Expect(yaml.Unmarshal([]byte(configYaml), &extensionConfig)).To(Succeed())
+	g.Expect(extensionConfig.validateDeniedRouteMethods()).To(Succeed())
+
+	// A target without an istioGateway section is skipped.
+	g.Expect((&OIDCAppsControllerConfig{Targets: []Target{{Name: "no-istio"}}}).validateDeniedRouteMethods()).To(Succeed())
+
+	// Known methods are accepted regardless of case, as they are upper-cased when rendered.
+	valid := &OIDCAppsControllerConfig{Targets: []Target{{
+		Name: "valid",
+		IstioGateway: &IstioGatewayConf{DeniedRoutes: []DeniedRoute{
+			{Path: "/api/v1/", Methods: []string{"POST", "delete"}},
+			{Path: "/admin/"},
+		}},
+	}}}
+	g.Expect(valid.validateDeniedRouteMethods()).To(Succeed())
+
+	// A typo must be rejected, otherwise it renders a deny rule that never matches.
+	invalid := &OIDCAppsControllerConfig{Targets: []Target{{
+		Name: "invalid",
+		IstioGateway: &IstioGatewayConf{DeniedRoutes: []DeniedRoute{
+			{Path: "/api/v1/", Methods: []string{"POSTT", "GET", "PURGE"}},
+		}},
+	}}}
+	err := invalid.validateDeniedRouteMethods()
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(ContainSubstring(`target "invalid"`))
+	g.Expect(err.Error()).To(ContainSubstring(`path "/api/v1/"`))
+	g.Expect(err.Error()).To(ContainSubstring(`"POSTT"`))
+	g.Expect(err.Error()).To(ContainSubstring(`"PURGE"`))
+	g.Expect(err.Error()).ToNot(ContainSubstring(`"GET"`))
+}
+
 func getDeployment(name string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
