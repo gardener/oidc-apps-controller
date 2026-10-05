@@ -332,6 +332,9 @@
             },
             "insecureOidcSkipNonce": {
               "type": "boolean"
+            },
+            "insecureOidcAllowUnverifiedEmail": {
+              "type": "boolean"
             }
           }
         },

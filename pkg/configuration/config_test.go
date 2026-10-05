@@ -142,6 +142,7 @@ func TestTargetGlobalConfiguration(t *testing.T) {
 	g.Expect(extensionConfig.GetSslInsecureSkipVerify(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(target)).To(BeFalse())
+	g.Expect(extensionConfig.GetInsecureOidcAllowUnverifiedEmail(target)).To(BeFalse())
 	g.Expect(extensionConfig.GetKubeConfigStr(target)).To(Equal("Imt1YmVjb25maWci"))
 	g.Expect(extensionConfig.GetKubeSecretName(target)).To(Equal("kubeconfig"))
 	g.Expect(extensionConfig.ShallCreateIngress(target)).To(BeFalse())
@@ -169,6 +170,7 @@ func TestTargetConfiguration(t *testing.T) {
 	g.Expect(extensionConfig.GetSslInsecureSkipVerify(target)).To(BeTrue())
 	g.Expect(extensionConfig.GetInsecureOidcSkipIssuerVerification(target)).To(BeTrue())
 	g.Expect(extensionConfig.GetInsecureOidcSkipNonce(target)).To(BeTrue())
+	g.Expect(extensionConfig.GetInsecureOidcAllowUnverifiedEmail(target)).To(BeTrue())
 	g.Expect(extensionConfig.GetKubeConfigStr(target)).To(Equal("a3ViZWNvbmZpZy10YXJnZXQK"))
 	g.Expect(extensionConfig.GetKubeSecretName(target)).To(Equal("target-kubeconfig"))
 }
