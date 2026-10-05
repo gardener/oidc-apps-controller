@@ -54,6 +54,7 @@ func get2ProxySecretChecksum(object client.Object) string {
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
+			configuration.WithInsecureOidcAllowUnverifiedEmail(extConfig.GetInsecureOidcAllowUnverifiedEmail(object)),
 		).Parse()
 	default:
 		cfg = configuration.NewOAuth2Config(
@@ -65,6 +66,7 @@ func get2ProxySecretChecksum(object client.Object) string {
 			configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 			configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 			configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
+			configuration.WithInsecureOidcAllowUnverifiedEmail(extConfig.GetInsecureOidcAllowUnverifiedEmail(object)),
 		).Parse()
 	}
 

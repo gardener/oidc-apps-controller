@@ -42,6 +42,7 @@ targets:
       sslInsecureSkipVerify: true
       insecureOidcSkipIssuerVerification: true
       insecureOidcSkipNonce: true
+      insecureOidcAllowUnverifiedEmail: true
     kubeRbacProxy:
       kubeConfigStr: a3ViZWNvbmZpZy10YXJnZXQK
       kubeSecretRef:

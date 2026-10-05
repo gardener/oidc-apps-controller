@@ -30,6 +30,7 @@ type oauth2Config struct {
 	sslInsecureSkipVerify              bool
 	insecureOidcSkipIssuerVerification bool
 	insecureOidcSkipNonce              bool
+	insecureOidcAllowUnverifiedEmail   bool
 }
 
 // Parse returns the parsed oauth2 config
@@ -75,6 +76,8 @@ func (o *oauth2Config) Parse() string {
 					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipIssuerVerification) + "\""
 				case "insecure_oidc_skip_nonce":
 					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcSkipNonce) + "\""
+				case "insecure_oidc_allow_unverified_email":
+					line = l + "=" + "\"" + strconv.FormatBool(o.insecureOidcAllowUnverifiedEmail) + "\""
 				default:
 				}
 			}
@@ -160,5 +163,12 @@ func EnableInsecureOidcSkipIssuerVerification(b bool) OptOauth2 {
 func EnableInsecureOidcSkipNonce(b bool) OptOauth2 {
 	return func(o *oauth2Config) {
 		o.insecureOidcSkipNonce = b
+	}
+}
+
+// WithInsecureOidcAllowUnverifiedEmail sets the insecure oidc allow unverified email
+func WithInsecureOidcAllowUnverifiedEmail(b bool) OptOauth2 {
+	return func(o *oauth2Config) {
+		o.insecureOidcAllowUnverifiedEmail = b
 	}
 }

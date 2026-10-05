@@ -39,6 +39,7 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 		configuration.EnableSslInsecureSkipVerify(extConfig.GetSslInsecureSkipVerify(object)),
 		configuration.EnableInsecureOidcSkipIssuerVerification(extConfig.GetInsecureOidcSkipIssuerVerification(object)),
 		configuration.EnableInsecureOidcSkipNonce(extConfig.GetInsecureOidcSkipNonce(object)),
+		configuration.WithInsecureOidcAllowUnverifiedEmail(extConfig.GetInsecureOidcAllowUnverifiedEmail(object)),
 	}
 
 	// TODO(bobi-wan): do we want to error out when running the controller

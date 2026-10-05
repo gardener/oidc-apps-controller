@@ -22,7 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -95,6 +94,7 @@ type Oauth2ProxyConfig struct {
 	SSLInsecureSkipVerify              *bool  `json:"sslInsecureSkipVerify,omitzero"`
 	InsecureOidcSkipIssuerVerification *bool  `json:"insecureOidcSkipIssuerVerification,omitzero"`
 	InsecureOidcSkipNonce              *bool  `json:"insecureOidcSkipNonce,omitzero"`
+	InsecureOidcAllowUnverifiedEmail   *bool  `json:"insecureOidcAllowUnverifiedEmail,omitzero"`
 }
 
 // KubeRbacProxyConfig kube-rbac-proxy configuration
@@ -540,12 +540,12 @@ func (c *OIDCAppsControllerConfig) GetSslInsecureSkipVerify(object client.Object
 	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.SSLInsecureSkipVerify != nil {
-		return ptr.Deref(t.Oauth2Proxy.SSLInsecureSkipVerify, false)
+		return *t.Oauth2Proxy.SSLInsecureSkipVerify
 	}
 
 	if c.Global.Oauth2Proxy != nil &&
 		c.Global.Oauth2Proxy.SSLInsecureSkipVerify != nil {
-		return ptr.Deref(c.Global.Oauth2Proxy.SSLInsecureSkipVerify, false)
+		return *c.Global.Oauth2Proxy.SSLInsecureSkipVerify
 	}
 
 	return false
@@ -556,12 +556,12 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipIssuerVerification(object 
 	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
-		return ptr.Deref(t.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
+		return *t.Oauth2Proxy.InsecureOidcSkipIssuerVerification
 	}
 
 	if c.Global.Oauth2Proxy != nil &&
 		c.Global.Oauth2Proxy.InsecureOidcSkipIssuerVerification != nil {
-		return ptr.Deref(c.Global.Oauth2Proxy.InsecureOidcSkipIssuerVerification, false)
+		return *c.Global.Oauth2Proxy.InsecureOidcSkipIssuerVerification
 	}
 
 	return false
@@ -572,12 +572,28 @@ func (c *OIDCAppsControllerConfig) GetInsecureOidcSkipNonce(object client.Object
 	t := c.FetchTarget(object)
 	if t.Oauth2Proxy != nil &&
 		t.Oauth2Proxy.InsecureOidcSkipNonce != nil {
-		return ptr.Deref(t.Oauth2Proxy.InsecureOidcSkipNonce, false)
+		return *t.Oauth2Proxy.InsecureOidcSkipNonce
 	}
 
 	if c.Global.Oauth2Proxy != nil &&
 		c.Global.Oauth2Proxy.InsecureOidcSkipNonce != nil {
-		return ptr.Deref(c.Global.Oauth2Proxy.InsecureOidcSkipNonce, false)
+		return *c.Global.Oauth2Proxy.InsecureOidcSkipNonce
+	}
+
+	return false
+}
+
+// GetInsecureOidcAllowUnverifiedEmail designates if oauth2-proxy shall accept ID tokens with unverified email claims
+func (c *OIDCAppsControllerConfig) GetInsecureOidcAllowUnverifiedEmail(object client.Object) bool {
+	t := c.FetchTarget(object)
+	if t.Oauth2Proxy != nil &&
+		t.Oauth2Proxy.InsecureOidcAllowUnverifiedEmail != nil {
+		return *t.Oauth2Proxy.InsecureOidcAllowUnverifiedEmail
+	}
+
+	if c.Global.Oauth2Proxy != nil &&
+		c.Global.Oauth2Proxy.InsecureOidcAllowUnverifiedEmail != nil {
+		return *c.Global.Oauth2Proxy.InsecureOidcAllowUnverifiedEmail
 	}
 
 	return false

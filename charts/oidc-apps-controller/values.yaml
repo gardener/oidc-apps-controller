@@ -153,6 +153,7 @@ global:
     sslInsecureSkipVerify: false
     insecureOidcSkipIssuerVerification: false
     insecureOidcSkipNonce: false
+    insecureOidcAllowUnverifiedEmail: false
   kubeRbacProxy:
     # kubeConfig used by kube-rbac-proxy to create SubjectAccessReview authorizing incoming requests
     # A string that will be marshaled to a clientcmd.Config https://pkg.go.dev/k8s.io/client-go/tools/clientcmd/api/v1#Config
