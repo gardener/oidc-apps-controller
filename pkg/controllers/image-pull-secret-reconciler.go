@@ -40,7 +40,8 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 	}
 
 	secretsList := &corev1.SecretList{}
-	if err := r.Client.List(ctx, secretsList,
+
+	err := r.Client.List(ctx, secretsList,
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(
 				map[string]string{
@@ -49,7 +50,8 @@ func (r *ImagePullSecretReconciler) Reconcile(ctx context.Context, request recon
 				},
 			),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		_log.Error(err, "Error fetching image pull secrets")
 
 		return reconcile.Result{}, err

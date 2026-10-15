@@ -202,8 +202,9 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 	for _, o := range owners {
 		if o.Kind == "StatefulSet" {
 			statefulset := &appsv1.StatefulSet{}
-			if err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()},
-				statefulset); err != nil {
+
+			err := c.Get(ctx, client.ObjectKey{Name: o.Name, Namespace: pod.GetNamespace()}, statefulset)
+			if err != nil {
 				log.FromContext(ctx).Error(err, "unable to get statefulset for object", "object", pod)
 
 				return false, nil
@@ -234,9 +235,9 @@ func isTarget(ctx context.Context, c client.Client, pod *corev1.Pod) (bool, clie
 			}
 
 			deployment := &appsv1.Deployment{}
-			if err := c.Get(ctx, client.ObjectKey{Name: ownerRefs[0].Name,
-				Namespace: pod.GetNamespace()},
-				deployment); err != nil {
+
+			err := c.Get(ctx, client.ObjectKey{Name: ownerRefs[0].Name, Namespace: pod.GetNamespace()}, deployment)
+			if err != nil {
 				log.FromContext(ctx).Error(err, "unable to get deployment for object", "object", pod)
 
 				return false, nil

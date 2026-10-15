@@ -64,13 +64,14 @@ var _ = Describe("Oidc Apps HTTPRoute Deployment Target Test", Ordered, func() {
 			httpRoutes := gatewayv1.HTTPRouteList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{httpRouteTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &httpRoutes,
+				err = clt.List(ctx, &httpRoutes,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -147,13 +148,14 @@ var _ = Describe("Oidc Apps HTTPRoute Deployment Target Test", Ordered, func() {
 			services := corev1.ServiceList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{httpRouteTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -210,13 +212,14 @@ var _ = Describe("Oidc Apps HTTPRoute Deployment Target Test", Ordered, func() {
 			suffix := randutils.GenerateSha256(strings.Join([]string{httpRouteSkipTarget, defaultNamespace}, "-"))
 
 			Eventually(func() error {
-				if err = clt.List(ctx, &httpRoutes,
+				err = clt.List(ctx, &httpRoutes,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -258,13 +261,14 @@ var _ = Describe("Oidc Apps HTTPRoute Deployment Target Test", Ordered, func() {
 			httpRoutes := gatewayv1.HTTPRouteList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{httpRouteDefaultPathTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &httpRoutes,
+				err = clt.List(ctx, &httpRoutes,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -349,13 +353,14 @@ var _ = Describe("Oidc Apps HTTPRoute StatefulSet Target Test", Ordered, func() 
 		It("there shall be oidc-apps HTTPRoutes present for each pod in the statefulSet namespace", func(ctx SpecContext) {
 			httpRoutes := gatewayv1.HTTPRouteList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &httpRoutes,
+				err = clt.List(ctx, &httpRoutes,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -378,13 +383,14 @@ var _ = Describe("Oidc Apps HTTPRoute StatefulSet Target Test", Ordered, func() 
 		It("there shall be oauth2 services present for each pod in the statefulSet namespace", func(ctx SpecContext) {
 			services := corev1.ServiceList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 

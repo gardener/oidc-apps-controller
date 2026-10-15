@@ -13,6 +13,7 @@ import (
 //go:embed templates/oauth2-proxy.cfg
 var oauth2 string
 
+// configParser renders a configuration template to its string form.
 type configParser interface {
 	Parse() string
 }

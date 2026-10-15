@@ -135,11 +135,13 @@ func (g *gardenerAccessTokenNotifier) updateSecrets(ctx context.Context) {
 	}
 
 	kubeConfigList := &corev1.SecretList{}
-	if err = g.client.List(ctx, kubeConfigList,
+
+	err = g.client.List(ctx, kubeConfigList,
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{constants.SecretLabelKey: constants.KubeconfigLabelValue}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		_log.Error(err, "error fetching kubeconfig secretes")
 
 		return

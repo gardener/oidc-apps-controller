@@ -73,13 +73,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the ingress for the first pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &ingresses,
+				err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -116,13 +117,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the ingress for the second pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &ingresses,
+				err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -163,13 +165,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the service for the first pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -186,13 +189,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the service for the second pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -212,13 +216,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		It("there shall be an oauth2 secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -240,13 +245,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		It("there shall be a rbac secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -312,13 +318,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		It("there shall be no oidc-apps ingress per pod present in the statefulset namespace", func(ctx SpecContext) {
 			ingresses := networkingv1.IngressList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &ingresses,
+				err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -345,13 +352,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the service for the first pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -368,13 +376,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 
 			By("checking the service for the second pod")
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -394,13 +403,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		It("there shall be an oauth2 secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -422,13 +432,14 @@ var _ = Describe("Oidc Apps Statefulset Target Test", Ordered, func() {
 		It("there shall be a rbac secret present in the statefulset namespace", func(ctx SpecContext) {
 			secrets := corev1.SecretList{}
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 

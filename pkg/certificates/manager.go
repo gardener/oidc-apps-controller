@@ -331,7 +331,7 @@ func (c *certManager) updateCABundles(name string, caBundle []byte) ([]byte, err
 func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) error {
 	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{}
 
-	if err := retry.RetryOnConflict(webhookUpdateRetry, func() error {
+	err := retry.RetryOnConflict(webhookUpdateRetry, func() error {
 		if err := c.client.Get(ctx, types.NamespacedName{Name: c.webhookName}, webhook); err != nil {
 			return err
 		}
@@ -339,7 +339,8 @@ func (c *certManager) cleanUpMutatingWebhookConfiguration(ctx context.Context) e
 		c.cleanWebhookCABundles(webhook)
 
 		return c.client.Update(ctx, webhook)
-	}); err != nil {
+	})
+	if err != nil {
 		// panic if we cannot get/update the webhook
 		_log.Error(err, "Error updating webhook")
 
