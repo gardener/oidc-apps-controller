@@ -71,13 +71,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			ingresses := networkingv1.IngressList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &ingresses,
+				err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -127,13 +128,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			services := corev1.ServiceList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &services,
+				err = clt.List(ctx, &services,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -152,13 +154,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -181,13 +184,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{target, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.RbacLabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -226,13 +230,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 				suffix := randutils.GenerateSha256(strings.Join([]string{skipIngressTarget, defaultNamespace}, "-"))
 
 				Eventually(func() error {
-					if err = clt.List(ctx, &ingresses,
+					err = clt.List(ctx, &ingresses,
 						client.InNamespace(defaultNamespace),
 						client.MatchingLabelsSelector{
 							Selector: labels.SelectorFromSet(map[string]string{
 								constants.LabelKey: constants.LabelValue,
 							}),
-						}); err != nil {
+						})
+					if err != nil {
 						return err
 					}
 
@@ -379,13 +384,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			secrets := corev1.SecretList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{redirectURLTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &secrets,
+				err = clt.List(ctx, &secrets,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.SecretLabelKey: constants.Oauth2LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 
@@ -435,13 +441,14 @@ var _ = Describe("Oidc Apps Deployment Target Test", Ordered, func() {
 			ingresses := networkingv1.IngressList{}
 			suffix := randutils.GenerateSha256(strings.Join([]string{defaultPathTarget, defaultNamespace}, "-"))
 			Eventually(func() error {
-				if err = clt.List(ctx, &ingresses,
+				err = clt.List(ctx, &ingresses,
 					client.InNamespace(defaultNamespace),
 					client.MatchingLabelsSelector{
 						Selector: labels.SelectorFromSet(map[string]string{
 							constants.LabelKey: constants.LabelValue,
 						}),
-					}); err != nil {
+					})
+				if err != nil {
 					return err
 				}
 

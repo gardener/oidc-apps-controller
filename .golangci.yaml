@@ -30,6 +30,8 @@ linters:
             - 20
         - name: package-comments
           disabled: true
+        - name: unexported-return
+          disabled: true
         - name: use-errors-new
           disabled: true
     wsl_v5:

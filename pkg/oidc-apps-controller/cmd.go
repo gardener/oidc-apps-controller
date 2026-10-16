@@ -380,7 +380,7 @@ func fetchPredicates(extensionConfig *configuration.OIDCAppsControllerConfig) pr
 }
 
 func initializeManagerIndices(mgr manager.Manager) error {
-	if err := mgr.GetFieldIndexer().IndexField(
+	err := mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&corev1.Secret{},
 		"metadata.labels"+constants.LabelKey,
@@ -398,11 +398,12 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 			return nil
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", corev1.Secret{}, err)
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(
+	err = mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&corev1.Service{},
 		"metadata.labels"+constants.LabelKey,
@@ -420,11 +421,12 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 			return nil
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", corev1.Service{}, err)
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(
+	err = mgr.GetFieldIndexer().IndexField(
 		context.Background(),
 		&networkingv1.Ingress{},
 		"metadata.labels"+constants.LabelKey,
@@ -442,13 +444,14 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 			return nil
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", networkingv1.Ingress{}, err)
 	}
 
 	// Add HTTPRoute index only when Gateway API support is enabled
 	if extensionConfig.IsHTTPRouteEnabled() {
-		if err := mgr.GetFieldIndexer().IndexField(
+		err := mgr.GetFieldIndexer().IndexField(
 			context.Background(),
 			&gatewayv1.HTTPRoute{},
 			"metadata.labels"+constants.LabelKey,
@@ -466,14 +469,15 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 				return nil
 			},
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", gatewayv1.HTTPRoute{}, err)
 		}
 	}
 
 	// Add Istio resource index only when Istio Gateway support is enabled
 	if extensionConfig.IsIstioGatewayEnabled() {
-		if err := mgr.GetFieldIndexer().IndexField(
+		err := mgr.GetFieldIndexer().IndexField(
 			context.Background(),
 			&istioclientnetv1.VirtualService{},
 			"metadata.labels"+constants.LabelKey,
@@ -491,11 +495,12 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 				return nil
 			},
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", istioclientnetv1.VirtualService{}, err)
 		}
 
-		if err := mgr.GetFieldIndexer().IndexField(
+		err = mgr.GetFieldIndexer().IndexField(
 			context.Background(),
 			&istioclientnetv1.Gateway{},
 			"metadata.labels"+constants.LabelKey,
@@ -513,7 +518,8 @@ func initializeManagerIndices(mgr manager.Manager) error {
 
 				return nil
 			},
-		); err != nil {
+		)
+		if err != nil {
 			return fmt.Errorf("could not set up the oidc-app-controller %T index: %w", istioclientnetv1.Gateway{}, err)
 		}
 	}
@@ -724,12 +730,14 @@ func addPrivateRegistrySecretControllers(mgr manager.Manager, o *Options) error 
 				},
 			},
 		}
-		if err := controllerruntime.NewControllerManagedBy(mgr).
+
+		err := controllerruntime.NewControllerManagedBy(mgr).
 			Named("image-pull-secret").
 			For(&corev1.Secret{}).
 			WithEventFilter(imagePullSecretPredicates).
 			Complete(&controllers.ImagePullSecretReconciler{Client: mgr.GetClient(),
-				SecretName: o.registrySecret}); err != nil {
+				SecretName: o.registrySecret})
+		if err != nil {
 			return err
 		}
 
@@ -738,10 +746,11 @@ func addPrivateRegistrySecretControllers(mgr manager.Manager, o *Options) error 
 			Name:      o.registrySecret,
 		}
 
-		if err := controllerruntime.NewControllerManagedBy(mgr).
+		err = controllerruntime.NewControllerManagedBy(mgr).
 			Named("namespace").
 			For(&corev1.Namespace{}).
-			Complete(&controllers.NamespaceReconciler{Client: mgr.GetClient(), Secret: secretKey}); err != nil {
+			Complete(&controllers.NamespaceReconciler{Client: mgr.GetClient(), Secret: secretKey})
+		if err != nil {
 			return err
 		}
 	}

@@ -37,14 +37,15 @@ import (
 func fetchOidcAppsServices(ctx context.Context, c client.Client, object client.Object) (*corev1.ServiceList, error) {
 	oidcService := &corev1.ServiceList{}
 
-	if err := c.List(ctx, oidcService,
+	err := c.List(ctx, oidcService,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return oidcService, client.IgnoreNotFound(err)
 	}
 
@@ -63,14 +64,15 @@ func fetchOidcAppsIngress(ctx context.Context, c client.Client, object client.Ob
 	error) {
 	oidcIngress := &networkingv1.IngressList{}
 
-	if err := c.List(ctx, oidcIngress,
+	err := c.List(ctx, oidcIngress,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return oidcIngress, client.IgnoreNotFound(err)
 	}
 
@@ -92,14 +94,15 @@ func fetchOidcAppsHTTPRoutes(ctx context.Context, c client.Client, object client
 	error) {
 	oidcHTTPRoutes := &gatewayv1.HTTPRouteList{}
 
-	if err := c.List(ctx, oidcHTTPRoutes,
+	err := c.List(ctx, oidcHTTPRoutes,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
 			return &gatewayv1.HTTPRouteList{}, nil
 		}
@@ -124,14 +127,15 @@ func fetchOidcAppsVirtualServices(ctx context.Context, c client.Client, object c
 	error) {
 	oidcVirtualServices := &istioclientnetv1.VirtualServiceList{}
 
-	if err := c.List(ctx, oidcVirtualServices,
+	err := c.List(ctx, oidcVirtualServices,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
 			return &istioclientnetv1.VirtualServiceList{}, nil
 		}
@@ -156,14 +160,15 @@ func fetchOidcAppsIstioGateways(ctx context.Context, c client.Client, object cli
 	error) {
 	oidcGateways := &istioclientnetv1.GatewayList{}
 
-	if err := c.List(ctx, oidcGateways,
+	err := c.List(ctx, oidcGateways,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
 			return &istioclientnetv1.GatewayList{}, nil
 		}
@@ -188,14 +193,15 @@ func fetchOidcAppsDestinationRules(ctx context.Context, c client.Client, object 
 	error) {
 	oidcDestinationRules := &istioclientnetv1.DestinationRuleList{}
 
-	if err := c.List(ctx, oidcDestinationRules,
+	err := c.List(ctx, oidcDestinationRules,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
 				constants.LabelKey: constants.LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || runtime.IsNotRegisteredError(err) {
 			return &istioclientnetv1.DestinationRuleList{}, nil
 		}
@@ -218,7 +224,7 @@ func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Ob
 	error) {
 	oidcSecrets := &corev1.SecretList{}
 
-	if err := c.List(ctx, oidcSecrets,
+	err := c.List(ctx, oidcSecrets,
 		client.InNamespace(object.GetNamespace()),
 		client.MatchingLabelsSelector{
 			Selector: labels.SelectorFromSet(map[string]string{
@@ -226,7 +232,8 @@ func fetchOidcAppsSecrets(ctx context.Context, c client.Client, object client.Ob
 				constants.SecretLabelKey: constants.Oauth2LabelValue,
 			}),
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return oidcSecrets, client.IgnoreNotFound(err)
 	}
 
@@ -791,9 +798,10 @@ func createOrPatchSecret(ctx context.Context, c client.Client, obj corev1.Secret
 	}
 
 	// Update the secret
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return c.Update(ctx, &obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update secret: %w", err)
 	}
 
@@ -813,9 +821,10 @@ func createOrPatchIngress(ctx context.Context, c client.Client, obj networkingv1
 	}
 
 	// Update the ingress
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return c.Update(ctx, &obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update ingress: %w", err)
 	}
 
@@ -841,7 +850,7 @@ func createOrPatchHTTPRoute(ctx context.Context, c client.Client, obj gatewayv1.
 	}
 
 	// Update the HTTPRoute
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Re-fetch to get current resourceVersion on each retry
 		if err := c.Get(ctx, client.ObjectKeyFromObject(&obj), httpRoute); err != nil {
 			return err
@@ -850,7 +859,8 @@ func createOrPatchHTTPRoute(ctx context.Context, c client.Client, obj gatewayv1.
 		obj.SetResourceVersion(httpRoute.GetResourceVersion())
 
 		return c.Update(ctx, &obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update httproute: %w", err)
 	}
 
@@ -875,7 +885,7 @@ func createOrPatchVirtualService(ctx context.Context, c client.Client, obj *isti
 	}
 
 	// Update the VirtualService
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Re-fetch to get current resourceVersion on each retry
 		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
 			return err
@@ -884,7 +894,8 @@ func createOrPatchVirtualService(ctx context.Context, c client.Client, obj *isti
 		obj.SetResourceVersion(existing.GetResourceVersion())
 
 		return c.Update(ctx, obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update virtualservice: %w", err)
 	}
 
@@ -910,7 +921,7 @@ func createOrPatchIstioGateway(ctx context.Context, c client.Client, obj *istioc
 	}
 
 	// Update the Gateway
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Re-fetch to get current resourceVersion on each retry
 		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
 			return err
@@ -919,7 +930,8 @@ func createOrPatchIstioGateway(ctx context.Context, c client.Client, obj *istioc
 		obj.SetResourceVersion(existing.GetResourceVersion())
 
 		return c.Update(ctx, obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update gateway: %w", err)
 	}
 
@@ -945,7 +957,7 @@ func createOrPatchDestinationRule(ctx context.Context, c client.Client, obj *ist
 	}
 
 	// Update the DestinationRule
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Re-fetch to get current resourceVersion on each retry
 		if err := c.Get(ctx, client.ObjectKeyFromObject(obj), existing); err != nil {
 			return err
@@ -954,7 +966,8 @@ func createOrPatchDestinationRule(ctx context.Context, c client.Client, obj *ist
 		obj.SetResourceVersion(existing.GetResourceVersion())
 
 		return c.Update(ctx, obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update destination rule: %w", err)
 	}
 
@@ -973,9 +986,10 @@ func createOrPatchService(ctx context.Context, c client.Client, obj corev1.Servi
 	}
 
 	// Update the service
-	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return c.Update(ctx, &obj)
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("failed to update service: %w", err)
 	}
 
