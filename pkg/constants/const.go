@@ -28,6 +28,11 @@ const (
 	ContainerNameKubeRbacProxy = "kube-rbac-proxy"
 	// SecretNameOauth2Proxy is the name of the kube-rbac-proxy container
 	SecretNameOauth2Proxy = "oauth2-proxy" // #nosec G101 -- This is a false positive
+	// Oauth2ConfigKey is the data key holding the oauth2-proxy configuration in the oauth2 secret
+	Oauth2ConfigKey = "oauth2-proxy.cfg"
+	// CookieSecretKey is the data key holding the oauth2-proxy cookie secret in the oauth2 secret.
+	// It is also the file name projected into the pod under the oauth2-proxy volume.
+	CookieSecretKey = "cookie-secret" // #nosec G101 -- This is a false positive
 	// SecretNameResourceAttributes is the name of the resource attributes secret
 	SecretNameResourceAttributes = "resource-attributes"
 	// SecretNameKubeconfig is the name of the kubeconfig secret

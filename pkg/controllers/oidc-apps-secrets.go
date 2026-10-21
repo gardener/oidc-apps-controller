@@ -1,9 +1,12 @@
 // SPDX-FileCopyrightText: Contributors to the Gardener project
 // SPDX-License-Identifier: Apache-2.0
 
+// Package controllers handles the main logic for the oidc-apps controller
 package controllers
 
 import (
+	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -11,6 +14,7 @@ import (
 	"path/filepath"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientcmdv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,7 +27,23 @@ import (
 
 var errSecretDoesNotExist = errors.New("secret does not exist")
 
-func createOauth2Secret(object client.Object) (corev1.Secret, error) {
+// cookieSecretBytes is the number of random bytes used for the oauth2-proxy cookie secret.
+// oauth2-proxy accepts a 16, 24, or 32 byte key; 32 bytes selects AES-256.
+const cookieSecretBytes = 32
+
+// generateCookieSecret returns a random oauth2-proxy cookie secret.
+// The value is 32 bytes from crypto/rand, base64 url encoded (no padding). oauth2-proxy
+// decodes it back to the raw 32 bytes before it builds the AES cipher.
+func generateCookieSecret() (string, error) {
+	b := make([]byte, cookieSecretBytes)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate cookie secret: %w", err)
+	}
+
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func createOauth2Secret(ctx context.Context, c client.Client, object client.Object) (corev1.Secret, error) {
 	var cfg string
 
 	suffix := randutils.GenerateSha256(object.GetName() + "-" + object.GetNamespace())
@@ -54,9 +74,19 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 
 	checksum := randutils.GenerateFullSha256(cfg)
 
+	secretName := constants.SecretNameOauth2Proxy + "-" + suffix
+
+	// Read back the cookie secret: reuse the existing value when present, generate once otherwise.
+	// createOrPatchSecret replaces the whole Data map on update, so the value must be carried
+	// forward here. Regenerating on every reconcile would rotate the value and drop all sessions.
+	cookieSecret, err := reuseOrGenerateCookieSecret(ctx, c, object.GetNamespace(), secretName)
+	if err != nil {
+		return corev1.Secret{}, err
+	}
+
 	return corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        constants.SecretNameOauth2Proxy + "-" + suffix,
+			Name:        secretName,
 			Namespace:   object.GetNamespace(),
 			Annotations: map[string]string{constants.AnnotationOauth2SecretChecksumKey: checksum},
 			Labels: map[string]string{
@@ -64,8 +94,30 @@ func createOauth2Secret(object client.Object) (corev1.Secret, error) {
 				constants.SecretLabelKey: constants.Oauth2LabelValue,
 			},
 		},
-		Data: map[string][]byte{"oauth2-proxy.cfg": []byte(cfg)},
+		Data: map[string][]byte{
+			constants.Oauth2ConfigKey: []byte(cfg),
+			constants.CookieSecretKey: []byte(cookieSecret),
+		},
 	}, nil
+}
+
+// reuseOrGenerateCookieSecret returns the cookie secret stored in the named oauth2 secret when it
+// is already present, or a freshly generated value when the secret or the key is absent.
+func reuseOrGenerateCookieSecret(ctx context.Context, c client.Client, namespace, name string) (string, error) {
+	existing := &corev1.Secret{}
+	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, existing)
+	switch {
+	case err == nil:
+		if v, ok := existing.Data[constants.CookieSecretKey]; ok && len(v) > 0 {
+			return string(v), nil
+		}
+	case apierrors.IsNotFound(err):
+		// jump to generation.
+	default:
+		return "", fmt.Errorf("failed to get oauth2 secret %s/%s: %w", namespace, name, err)
+	}
+
+	return generateCookieSecret()
 }
 
 func createResourceAttributesSecret(object client.Object, targetNamespace string) (corev1.Secret, error) {
