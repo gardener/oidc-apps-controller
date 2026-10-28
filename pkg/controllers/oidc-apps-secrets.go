@@ -106,6 +106,7 @@ func createOauth2Secret(ctx context.Context, c client.Client, object client.Obje
 func reuseOrGenerateCookieSecret(ctx context.Context, c client.Client, namespace, name string) (string, error) {
 	existing := &corev1.Secret{}
 	err := c.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, existing)
+
 	switch {
 	case err == nil:
 		if v, ok := existing.Data[constants.CookieSecretKey]; ok && len(v) > 0 {
