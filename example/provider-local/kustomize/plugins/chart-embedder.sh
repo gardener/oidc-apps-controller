@@ -60,6 +60,9 @@ items:
       global:
         istioGateway:
           enabled: true
+        # needed for access to dexidp in provider-local setup.
+        labels:
+          networking.gardener.cloud/to-kind-network: allowed
         oauth2Proxy:
           sslInsecureSkipVerify: false
           insecureOidcSkipIssuerVerification: false

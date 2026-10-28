@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -897,6 +898,16 @@ func (c *OIDCAppsControllerConfig) FetchTarget(o client.Object) Target {
 	}
 
 	return Target{}
+}
+
+// GetTargetPodLabels returns any additional labels to be added to the target pod template. Global labels
+// apply to every target; a matching target may add or override entries via its own labels field.
+func (c *OIDCAppsControllerConfig) GetTargetPodLabels(o client.Object) map[string]string {
+	merged := make(map[string]string, len(c.Global.Labels))
+	maps.Copy(merged, c.Global.Labels)
+	maps.Copy(merged, c.FetchTarget(o).Labels)
+
+	return merged
 }
 
 // Add namespace support for matching targets

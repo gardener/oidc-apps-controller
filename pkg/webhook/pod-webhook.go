@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"slices"
 	"strings"
@@ -80,12 +81,16 @@ func (p *PodMutator) Handle(ctx context.Context, req webhook.AdmissionRequest) w
 		},
 	)
 
-	// Add required labels to pod spec template
-	addPodLabels(patch,
-		map[string]string{
-			constants.LabelKey: "pod",
-		},
-	)
+	// Add required labels to pod spec template.
+	podLabels := map[string]string{
+		constants.LabelKey: "pod",
+	}
+	extraLabels := configuration.GetOIDCAppsControllerConfig().GetTargetPodLabels(owner)
+
+	if extraLabels != nil && len(extraLabels) > 0 {
+		maps.Copy(podLabels, extraLabels)
+	}
+	addPodLabels(patch, podLabels)
 
 	// Add the oauth2-proxy volume
 	addProjectedSecretSourceVolume(
