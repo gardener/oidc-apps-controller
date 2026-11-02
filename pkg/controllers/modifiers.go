@@ -311,7 +311,7 @@ func reconcileDeploymentDependencies(ctx context.Context, c client.Client, objec
 	}
 
 	// Create or update the oauth2 secret setting the owner reference
-	if oauth2Secret, err = createOauth2Secret(object); err != nil {
+	if oauth2Secret, err = createOauth2Secret(ctx, c, object); err != nil {
 		return fmt.Errorf("failed to create oauth2 secret: %w", err)
 	}
 
@@ -638,7 +638,7 @@ func reconcileStatefulSetDependencies(ctx context.Context, c client.Client, obje
 	}
 
 	// Create or update the oauth2 secret setting the owner reference
-	if oauth2Secret, err = createOauth2Secret(object); err != nil {
+	if oauth2Secret, err = createOauth2Secret(ctx, c, object); err != nil {
 		return fmt.Errorf("failed to create oauth2 secret: %w", err)
 	}
 
