@@ -1,0 +1,44 @@
+ocm:
+  component_name: github.com/gardener/kube-rbac-proxy-watcher
+  component_version: v0.8.0
+release_notes:
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: Bobi-Wan
+  category: feature
+  contents: Add Ilia Petrov (@iypetrov) to CODEOWNERS file
+  mimetype: text/markdown
+  reference: '[#151](https://github.com/gardener/kube-rbac-proxy-watcher/pull/151)'
+  type: standard
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: Bobi-Wan
+  category: feature
+  contents: Update x/net, x/test, go runtime
+  mimetype: text/markdown
+  reference: '[#155](https://github.com/gardener/kube-rbac-proxy-watcher/pull/155)'
+  type: standard
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: Bobi-Wan
+  category: feature
+  contents: Bump golang runtime to 1.27.3
+  mimetype: text/markdown
+  reference: '[#150](https://github.com/gardener/kube-rbac-proxy-watcher/pull/150)'
+  type: standard
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: Bobi-Wan
+  category: feature
+  contents: Bump kube-rbac-proxy image to v0.23.1
+  mimetype: text/markdown
+  reference: '[#152](https://github.com/gardener/kube-rbac-proxy-watcher/pull/152)'
+  type: standard
